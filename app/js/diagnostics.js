@@ -18,7 +18,6 @@ function saveDiagnostics() {
   localStorage.setItem('disableDROupdates', disableDROupdates);
   localStorage.setItem('disableElectron19FileOpen', disableElectron19FileOpen);
   localStorage.setItem('disableAggressiveHomeReset', disableAggressiveHomeReset);
-  socket.emit('aggrressiveHomeReset', !disableAggressiveHomeReset);
 }
 
 function initDiagnostics() {
@@ -100,7 +99,6 @@ function initDiagnostics() {
     if (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true) {
       disableAggressiveHomeReset = true;
       $('#disableAggressiveHomeResetTick').addClass("checked");
-      socket.emit('aggrressiveHomeReset', false);
     }
   } else {
     disableAggressiveHomeReset = false;
