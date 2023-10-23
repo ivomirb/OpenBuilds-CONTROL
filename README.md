@@ -9,6 +9,7 @@ This is a fork by Ivo Beltchev. Notable changes:
 * Remembers the last used COM port and auto-selects it on startup
 * Converted to a plain Windows app - no auto-start, no tray icon
 * Added event for the Grbl "ok" response, which enables more reliable and responsive macros
+* Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
 
 ## Download
 
