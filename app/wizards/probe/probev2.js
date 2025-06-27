@@ -31,6 +31,7 @@ var probemode = {
     position: "fl" // fl, fr, rl, rr, c
   },
   probe: xyzprobeplate,
+  interval: undefined,
 }
 
 $(document).ready(function() {
@@ -46,6 +47,16 @@ $(document).ready(function() {
   if (localStorage.getItem('z0platethickness')) {
     zprobeplate.zoffset = localStorage.getItem('z0platethickness')
   }
+
+  if (localStorage.getItem('probediameterxyz')) {
+    probediameterxyz = localStorage.getItem('probediameterxyz')
+    $("#probediameterxyz").val(probediameterxyz)
+  }
+
+  if (localStorage.getItem('probeunitxyz')) {
+    probeunitxyz = localStorage.getItem('probeunitxyz')
+    $('#probeunitxyz').data('select').val(probeunitxyz)
+  }
 });
 
 if (localStorage.getItem('customProbe')) {
@@ -57,14 +68,37 @@ $("#z0platethickness").keyup(function() {
   zprobeplate.zoffset = $("#z0platethickness").val()
 });
 
+$("#probediameterxyz").keyup(function() {
+  localStorage.setItem('probediameterxyz', $("#probediameterxyz").val())
+});
+
+$("#probeunitxyz").change(function() {
+  localStorage.setItem('probeunitxyz', $("#probeunitxyz").val())
+});
+
 
 // still beta, lets hide it from users
 // if (!enableBetaFeatures) {
 //   $(".needsXYZProbe").hide();
 // }
 
-function openProbeDialog() {
+function initProbeDialog() {
   Metro.dialog.open("#xyzProbeWindow");
+  $('#confirmNewProbeBtn')[0].innerHTML = "Confirm Probe Position";
+
+  probemode.interval = setInterval(() => {
+    if (laststatus.machine.inputs.contains("P")) {
+      $('#confirmNewProbeBtn').addClass("disabled");
+      $('#confirmNewProbeBtn')[0].innerHTML = "Touched";
+      $('#runNewProbeBtn').removeClass("disabled").focus();
+      clearInterval(probemode.interval);
+      probemode.interval = undefined;
+    }
+  }, 100);
+}
+
+function openProbeDialog() {
+  initProbeDialog();
   if (localStorage.getItem('probeType')) {
     probetype(localStorage.getItem('probeType'))
     if (localStorage.getItem('probeType') == "z") { // Z Touchplate
@@ -96,7 +130,7 @@ function openProbeDialog() {
 }
 
 function openProbeXDialog() {
-  Metro.dialog.open("#xyzProbeWindow");
+  initProbeDialog();
   if (localStorage.getItem('probeType')) {
     probetype(localStorage.getItem('probeType'))
     if (localStorage.getItem('probeType') == "z") {
@@ -122,7 +156,7 @@ function openProbeXDialog() {
 }
 
 function openProbeYDialog() {
-  Metro.dialog.open("#xyzProbeWindow");
+  initProbeDialog();
   if (localStorage.getItem('probeType')) {
     probetype(localStorage.getItem('probeType'))
     if (localStorage.getItem('probeType') == "z") {
@@ -148,7 +182,7 @@ function openProbeYDialog() {
 }
 
 function openProbeZDialog() {
-  Metro.dialog.open("#xyzProbeWindow");
+  initProbeDialog();
   if (localStorage.getItem('probeType')) {
     probetype(localStorage.getItem('probeType'))
     if (localStorage.getItem('probeType') == "z") {
@@ -390,8 +424,10 @@ function probetype(type) {
 }
 
 function confirmProbeInPlace(operation) {
-  $('#confirmNewProbeBtn').addClass("disabled")
+  $('#confirmNewProbeBtn').addClass("disabled");
   $('#runNewProbeBtn').removeClass("disabled").focus();
+  clearInterval(probemode.interval);
+  probemode.interval = undefined;
 }
 
 function resetJogModeAfterProbe() {
@@ -407,10 +443,13 @@ function resetJogModeAfterProbe() {
     }
   }
   $('#confirmNewProbeBtn').removeClass("disabled")
+  clearInterval(probemode.interval)
+  probemode.interval = undefined;
 }
 
 
 function runProbeNew() {
+  $('#confirmNewProbeBtn')[0].innerHTML = "Confirm Probe Position";
   resetJogModeAfterProbe()
   $("#consoletab").click()
   probemode.stock.x = $("#stockwidth").val();
@@ -424,7 +463,12 @@ function runProbeNew() {
   template += `Probe: Z:` + probemode.probe.zoffset + `\n`
 
   if (probemode.mode == "xyz" || probemode.mode == "xzero" || probemode.mode == "yzero" || probemode.mode == "zzero") {
-    probemode.endmilldia = parseFloat($("#probediameterxyz").val());
+    var endmillUnit = $("#probeunitxyz").val();
+    if (endmillUnit == "mm") {
+      probemode.endmilldia = parseFloat($("#probediameterxyz").val());
+    } else {
+      probemode.endmilldia = (parseFloat($("#probediameterxyz").val()) * 25.4);
+    }
     template += `Endmill: ` + probemode.endmilldia + `mm\n`
   }
 

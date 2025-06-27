@@ -81,6 +81,7 @@ var xcaltemplate = `
 `
 
 function applycalibrationx() {
+  autoBackup("Calibrated X");
   var actualdist = $('#xcaltraveldist').val();
   var currentstepspermm = parseFloat(grblParams['$100']);
   // var currentstepspermm = 199.9;
@@ -90,9 +91,7 @@ function applycalibrationx() {
   // $('#val-100-input').val(newsteps)
   // checkifchanged();
   sendGcode("$100=" + newsteps);
-  setTimeout(function() {
-    sendGcode(String.fromCharCode(0x18));
-  }, 500);
+  askToResetOnGrblSettingsChange()
 }
 
 
@@ -111,6 +110,10 @@ function xstepscalibrate() {
       }
     }]
   });
+
+  // Restore value to entry field
+  $("#xcalmovedistance").val(xcalmovedistance);
+
 
   $("#xcalmovedistance").keyup(function() {
     xcalmovedistance = $("#xcalmovedistance").val();

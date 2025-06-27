@@ -33,9 +33,10 @@ function checkUpdate() {
           }, 1000);
         } else {
           printLog("<span class='fg-darkRed'>[ update ] </span><span class='fg-green'>You are already running OpenBuilds CONTROL " + currentVersion + "</span>")
-          setTimeout(function() {
-            checkUpdate()
-          }, 60 * 60 * 1000) // 60 mins
+          // setTimeout(function() {
+          //   checkUpdate()
+          // }, 60 * 60 * 1000) // 60 mins
+          // disable regular check - once on startup is enough
         }
       });
     }, 1000)
