@@ -79,6 +79,7 @@ var ycaltemplate = `
 `
 
 function applycalibrationy() {
+  autoBackup("Calibrated Y");
   var actualdist = $('#ycaltraveldist').val();
   var currentstepspermm = parseFloat(grblParams['$101']);
   // var currentstepspermm = 199.9;
@@ -88,9 +89,7 @@ function applycalibrationy() {
   // $('#val-101-input').val(newsteps)
   // checkifchanged();
   sendGcode("$101=" + newsteps);
-  setTimeout(function() {
-    sendGcode(String.fromCharCode(0x18));
-  }, 500);
+  askToResetOnGrblSettingsChange()
 }
 
 
@@ -110,6 +109,9 @@ function ystepscalibrate() {
       }
     }]
   });
+
+  // Restore value to entry field
+  $("#ycalmovedistance").val(ycalmovedistance);
 
   $("#ycalmovedistance").keyup(function() {
     ycalmovedistance = $("#ycalmovedistance").val();

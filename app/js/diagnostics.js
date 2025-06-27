@@ -5,7 +5,6 @@ var disable3Drealtimepos = false;
 var disable3Dgcodepreview = false;
 var disableSerialLog = false; // todo also hide tab when set to true
 var disableDROupdates = false;
-var disableElectron19FileOpen = false;
 var disableAggressiveHomeReset = false;
 
 function saveDiagnostics() {
@@ -16,7 +15,6 @@ function saveDiagnostics() {
   localStorage.setItem('disable3Dgcodepreview', disable3Dgcodepreview);
   localStorage.setItem('disableSerialLog', disableSerialLog);
   localStorage.setItem('disableDROupdates', disableDROupdates);
-  localStorage.setItem('disableElectron19FileOpen', disableElectron19FileOpen);
   localStorage.setItem('disableAggressiveHomeReset', disableAggressiveHomeReset);
 }
 
@@ -86,14 +84,7 @@ function initDiagnostics() {
     disableDROupdates = false;
   }
 
-  if (localStorage.getItem('disableElectron19FileOpen')) {
-    if (JSON.parse(localStorage.getItem('disableElectron19FileOpen')) == true) {
-      disableElectron19FileOpen = true;
-      $('#disableElectron19FileOpenTick').addClass("checked");
-    }
-  } else {
-    disableElectron19FileOpen = false;
-  }
+
 
   if (localStorage.getItem('disableAggressiveHomeReset')) {
     if (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true) {
