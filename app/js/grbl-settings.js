@@ -225,11 +225,11 @@ function grblPopulate() {
 
     <ul data-role="tabs" data-expand="true" class="mb-2">
       <li id="grblSettingsBasicTab" onclick="showBasicSettings()"><a href="#"><small><i class="fas fa-fw fa-cog mr-1 fg-darkGreen"></i>Basic Settings</a></small></li>
-      <li id="grblSettingsAdvTab" onclick="showAdvSettings()"><a href="#"><small><i class="fas fa-fw fa-cogs mr-1 fg-darkRed"></i>Advanced Settings</a></small></li>
+      <li id="grblSettingsAdvTab" onclick="showAdvSettings()" class="active"><a href="#"><small><i class="fas fa-fw fa-cogs mr-1 fg-darkRed"></i>Advanced Settings</a></small></li>
     </ul>
 
 
-    <div id="grbl-settings-basic">
+    <div id="grbl-settings-basic" style="display: none;">
         <ul class="step-list mb-3">
           <li>
             <h6>Select your Machine<br><small>Tell us what machine you have?</small></h6>
@@ -357,7 +357,7 @@ function grblPopulate() {
 
         </ul>
     </div>
-    <div id="grbl-settings-advanced" style="display: none; overflow-y: scroll; max-height: calc(100vh - 300px);">
+    <div id="grbl-settings-advanced" style="overflow-y: scroll; max-height: calc(100vh - 300px);">
         <div id="grblSettingsTableView">
           <table data-role="table"
             data-table-search-title="Search for Parameters by Name or $-Key"
