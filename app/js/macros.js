@@ -100,6 +100,19 @@ function populateMacroButtons(firstRun) {
   localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
 }
 
+function onMacroShortcutInputClick()
+{
+  $('#macrokeyboardshortcut').addClass('primary');
+}
+
+function onMacroShortcutInputChange()
+{
+  if ($('#macrokeyboardshortcut').val() == "") {
+    $('#alreadyAssignedWarnMacro').hide();
+    $('#macrokeyboardshortcut').removeClass('alert');
+  }
+}
+
 function edit(i, evt) {
   if (evt) {
     evt.preventDefault();
@@ -207,7 +220,7 @@ function edit(i, evt) {
 
           <label class="cell-sm-3">Keyboard Shortcut</label>
           <div class="cell-sm-9" >
-            <input id="macrokeyboardshortcut" class="macrokeyboardshortcutinput" type="text" value="` + macrokeyboardshortcut + `" data-role="input" data-clear-button="true" data-editable="true" onclick="$('.macrokeyboardshortcutinput').removeClass('newMacroKeyAssignment'); $('#macrokeyboardshortcut').addClass('newMacroKeyAssignment')">
+            <input id="macrokeyboardshortcut" readonly class="macrokeyboardshortcutinput" type="text" value="` + macrokeyboardshortcut + `" data-role="input" data-clear-button="true" data-editable="true" onclick="onMacroShortcutInputClick()" onchange="onMacroShortcutInputChange()">
             <span class="text-small fg-red" id="alreadyAssignedWarnMacro" style="display: none;"></span>
             <span class="text-small">Click above to assign a new Keyboard Shortcut / combination to a function. Ctrl, Alt and Shift can be added to create combinations.</span>
           </div>
@@ -300,20 +313,16 @@ function edit(i, evt) {
       } else {
         newVal += e.key.toLowerCase();
       }
-      // $('.newMacroKeyAssignment').val(newVal)
 
-      var alreadyAssigned = false;
-      var assignedMacro = '';
-      var alreadyAssigned = keyInUse(newVal).inUse;
+      var alreadyAssigned = newVal != macrokeyboardshortcut && newVal.length > 0 && keyInUse(newVal, true).inUse;
       if (alreadyAssigned) {
+        $('#alreadyAssignedWarnMacro').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal, true).source);
         $('#alreadyAssignedWarnMacro').show();
-        $('#alreadyAssignedWarnMacro').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal).source);
-        $('#macrokeyboardshortcut').addClass("alert")
+        $('#macrokeyboardshortcut').removeClass("primary").addClass("alert");
       } else {
         $('#alreadyAssignedWarnMacro').hide();
-        $('#macrokeyboardshortcut').removeClass("alert")
-        $('.newMacroKeyAssignment').val(newVal)
-        $('#macrokeyboardshortcut').addClass("primary")
+        $('#macrokeyboardshortcut').val(newVal);
+        $('#macrokeyboardshortcut').removeClass("alert").addClass("primary");
       }
     }
 

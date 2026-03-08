@@ -9,35 +9,38 @@ $(document).ready(function() {
       keyboardShortcuts.xP == "right"
     }
     // add new key defaults to existing allocations
-    if (!keyboardShortcuts.incJogMode) {
+    if (keyboardShortcuts.incJogMode == undefined) {
       keyboardShortcuts.incJogMode = "/"
     }
-    if (!keyboardShortcuts.conJogMode) {
+    if (keyboardShortcuts.conJogMode == undefined) {
       keyboardShortcuts.conJogMode = "*"
     }
-    if (!keyboardShortcuts.gotozeroxyz) {
+    if (keyboardShortcuts.gotozeroxyz == undefined) {
       keyboardShortcuts.gotozeroxyz = "del"
     }
     // add new key defaults to existing allocations (1.0.257 and older)
-    if (!keyboardShortcuts.froInc) {
+    if (keyboardShortcuts.froInc == undefined) {
       keyboardShortcuts.froInc = "q"
     }
-    if (!keyboardShortcuts.froDec) {
+    if (keyboardShortcuts.froDec == undefined) {
       keyboardShortcuts.froDec = "a"
     }
-    if (!keyboardShortcuts.toInc) {
+    if (keyboardShortcuts.toInc == undefined) {
       keyboardShortcuts.toInc = "w"
     }
-    if (!keyboardShortcuts.jogSpeedM) {
+    if (keyboardShortcuts.toDec == undefined) {
+      keyboardShortcuts.toDec = "s"
+    }
+    if (keyboardShortcuts.jogSpeedM == undefined) {
       keyboardShortcuts.jogSpeedM = "0"
     }
-    if (!keyboardShortcuts.jogSpeedP) {
+    if (keyboardShortcuts.jogSpeedP == undefined) {
       keyboardShortcuts.jogSpeedP = "."
     }
-    if (!keyboardShortcuts.aM) {
+    if (keyboardShortcuts.aM == undefined) {
       keyboardShortcuts.aM = "1"
     }
-    if (!keyboardShortcuts.aP) {
+    if (keyboardShortcuts.aP == undefined) {
       keyboardShortcuts.aP = "2"
     }
 
@@ -63,10 +66,10 @@ $(document).ready(function() {
       gotozeroxyz: "del", // go to zero xyz
       incJogMode: "/", // Incremental Jog Mode
       conJogMode: "*", // Continuous Jog Mode
-      froInc: "", // Increase Feedrate Override
-      froDec: "", // Decrease Feedrate Override
-      toInc: "", // Increase Tool Speed Override
-      toDec: "", // Decrease Tool Speed Override
+      froInc: "q", // Increase Feedrate Override
+      froDec: "a", // Decrease Feedrate Override
+      toInc: "w", // Increase Tool Speed Override
+      toDec: "s", // Decrease Tool Speed Override
       jogSpeedM: "0", // Increase Step Size
       jogSpeedP: ".", // Decrease Step Size
     }
@@ -458,7 +461,33 @@ function bindKeys() {
 
 }
 
+var newKeyAssignment = undefined;
+
+function onShortcutInputClick(id)
+{
+  var input = $('#' + id);
+  if (newKeyAssignment == undefined || input[0] != newKeyAssignment[0]) {
+    if (newKeyAssignment != undefined) {
+      $('#alreadyAssignedWarnShortcut').hide();
+      newKeyAssignment.removeClass('primary').removeClass('alert');
+    }
+
+    input.addClass('primary');
+    newKeyAssignment = input;
+  }
+}
+
+function onShortcutInputChange()
+{
+  if (newKeyAssignment != undefined && newKeyAssignment.val() == "") {
+    $('#alreadyAssignedWarnShortcut').hide();
+    newKeyAssignment.removeClass('alert');
+  }
+}
+
 function keyboardShortcutsEditor() {
+
+  newKeyAssignment = undefined;
 
   var template = `
   <span class="text-small fg-red" id="alreadyAssignedWarnShortcut" style="display: none;"></span>
@@ -472,151 +501,151 @@ function keyboardShortcutsEditor() {
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-stop fg-openbuilds fa-fw"></i> Stop / Abort</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="stopnewKey" value="` + keyboardShortcuts.estop + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#stopnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="stopnewKey" value="` + keyboardShortcuts.estop + `" onclick="onShortcutInputClick('stopnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-play fg-openbuilds fa-fw"></i> Run / <i class="fas fa-pause fg-openbuilds fa-fw"></i> Pause</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="playPausenewKey" value="` + keyboardShortcuts.playpause + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#playPausenewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="playPausenewKey" value="` + keyboardShortcuts.playpause + `" onclick="onShortcutInputClick('playPausenewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-crosshairs fg-openbuilds fa-fw"></i> Setzero XYZ</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="setzeroxyznewKey" value="` + keyboardShortcuts.setzeroxyz + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#setzeroxyznewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="setzeroxyznewKey" value="` + keyboardShortcuts.setzeroxyz + `" onclick="onShortcutInputClick('setzeroxyznewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-chart-line fg-openbuilds fa-fw"></i> Goto XYZ Zero</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="gotozeroxyznewKey" value="` + keyboardShortcuts.gotozeroxyz + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#gotozeroxyznewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="gotozeroxyznewKey" value="` + keyboardShortcuts.gotozeroxyz + `" onclick="onShortcutInputClick('gotozeroxyznewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-bell fg-openbuilds fa-fw"></i> Unlock Alarm</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="unlocknewKey" value="` + keyboardShortcuts.unlockAlarm + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#unlocknewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="unlocknewKey" value="` + keyboardShortcuts.unlockAlarm + `" onclick="onShortcutInputClick('unlocknewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-home fg-openbuilds fa-fw"></i> Home</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="homenewKey"  value="` + keyboardShortcuts.home + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#homenewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="homenewKey"  value="` + keyboardShortcuts.home + `" onclick="onShortcutInputClick('homenewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-arrow-left fg-red fa-fw"></i> Jog X-</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="xMnewKey"  value="` + keyboardShortcuts.xM + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#xMnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="xMnewKey"  value="` + keyboardShortcuts.xM + `" onclick="onShortcutInputClick('xMnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-arrow-right fg-red fa-fw"></i> Jog X+</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="xPnewKey" value="` + keyboardShortcuts.xP + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#xPnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="xPnewKey" value="` + keyboardShortcuts.xP + `" onclick="onShortcutInputClick('xPnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-arrow-down fg-green fa-fw"></i> Jog Y-</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="yMnewKey" value="` + keyboardShortcuts.yM + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#yMnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="yMnewKey" value="` + keyboardShortcuts.yM + `" onclick="onShortcutInputClick('yMnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-arrow-up fg-green fa-fw"></i> Jog Y+</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="yPnewKey" value="` + keyboardShortcuts.yP + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#yPnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="yPnewKey" value="` + keyboardShortcuts.yP + `" onclick="onShortcutInputClick('yPnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-arrow-down fg-blue fa-fw"></i>Jog Z-</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="zMnewKey" value="` + keyboardShortcuts.zM + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#zMnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="zMnewKey" value="` + keyboardShortcuts.zM + `" onclick="onShortcutInputClick('zMnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-arrow-up fg-blue fa-fw"></i> Jog Z+</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="zPnewKey" value="` + keyboardShortcuts.zP + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#zPnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="zPnewKey" value="` + keyboardShortcuts.zP + `" onclick="onShortcutInputClick('zPnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-undo fg-orange fa-fw"></i> Jog A-</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="aMnewKey" value="` + keyboardShortcuts.aM + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#aMnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="aMnewKey" value="` + keyboardShortcuts.aM + `" onclick="onShortcutInputClick('aMnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-redo fg-orange fa-fw"></i> Jog A+</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="aPnewKey" value="` + keyboardShortcuts.aP + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#aPnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="aPnewKey" value="` + keyboardShortcuts.aP + `" onclick="onShortcutInputClick('aPnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-minus fg-openbuilds fa-fw"></i> Decrease Step Size<br><span class="text-small">For Incremental Jogging</span></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="stepMnewKey" value="` + keyboardShortcuts.stepM + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#stepMnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="stepMnewKey" value="` + keyboardShortcuts.stepM + `" onclick="onShortcutInputClick('stepMnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-plus fg-openbuilds fa-fw"></i> Increase Step Size<br><span class="text-small">For Incremental Jogging</span></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="stepPnewKey" value="` + keyboardShortcuts.stepP + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#stepPnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="stepPnewKey" value="` + keyboardShortcuts.stepP + `" onclick="onShortcutInputClick('stepPnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
 
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-fast-backward fg-openbuilds fa-fw"></i> Decrease Jog Speed</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="jogSpeedMnewKey" value="` + keyboardShortcuts.jogSpeedM + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#jogSpeedMnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="jogSpeedMnewKey" value="` + keyboardShortcuts.jogSpeedM + `" onclick="onShortcutInputClick('jogSpeedMnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-fast-forward fg-openbuilds fa-fw"></i> Increase Jog Speed</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="jogSpeedPnewKey" value="` + keyboardShortcuts.jogSpeedP + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#jogSpeedPnewKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="jogSpeedPnewKey" value="` + keyboardShortcuts.jogSpeedP + `" onclick="onShortcutInputClick('jogSpeedPnewKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
 
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-step-forward fg-openbuilds fa-fw"></i> Incremental Jog Mode<br></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="incJogModeKey" value="` + keyboardShortcuts.incJogMode + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#incJogModeKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="incJogModeKey" value="` + keyboardShortcuts.incJogMode + `" onclick="onShortcutInputClick('incJogModeKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-running fg-openbuilds fa-fw"></i> Continuous Jog Mode<br></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="conJogModeKey" value="` + keyboardShortcuts.conJogMode + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#conJogModeKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="conJogModeKey" value="` + keyboardShortcuts.conJogMode + `" onclick="onShortcutInputClick('conJogModeKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
 
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-level-up-alt fg-openbuilds fa-fw"></i> Increase Feed Override<br></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="froIncKey" value="` + keyboardShortcuts.froInc + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#froIncKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="froIncKey" value="` + keyboardShortcuts.froInc + `" onclick="onShortcutInputClick('froIncKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
 
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="fas fa-level-down-alt fg-openbuilds fa-fw"></i> Decrease Feed Override<br></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="froDecKey" value="` + keyboardShortcuts.froDec + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#froDecKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="froDecKey" value="` + keyboardShortcuts.froDec + `" onclick="onShortcutInputClick('froDecKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
 
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="far fa-hand-point-up fg-openbuilds fa-fw"></i> Increase Tool Override<br></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="toIncKey" value="` + keyboardShortcuts.toInc + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#toIncKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="toIncKey" value="` + keyboardShortcuts.toInc + `" onclick="onShortcutInputClick('toIncKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
 
       <div class="row mb-1 ml-1 mr-1">
         <label class="cell-sm-6"><i class="far fa-hand-point-down fg-openbuilds fa-fw"></i>  Decrease Tool Override<br></label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly id="toDecKey" value="` + keyboardShortcuts.toDec + `" onclick="$('.keyboardshortcutinput').removeClass('primary').removeClass('newKeyAssignment'); $('#toDecKey').addClass('primary').addClass('newKeyAssignment')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" id="toDecKey" value="` + keyboardShortcuts.toDec + `" onclick="onShortcutInputClick('toDecKey')" onchange="onShortcutInputChange()">
         </div>
       </div>
 
@@ -690,7 +719,7 @@ function keyboardShortcutsEditor() {
       newVal += 'shift+'
     }
 
-    if (e.key.toLowerCase() != 'alt' && e.key.toLowerCase() != 'control' && e.key.toLowerCase() != 'shift') {
+    if (newKeyAssignment != undefined && e.key.toLowerCase() != 'alt' && e.key.toLowerCase() != 'control' && e.key.toLowerCase() != 'shift') {
       // Handle MetroUI naming non-standards of some keys
       if (e.keyCode == 32) {
         newVal += 'space';
@@ -709,21 +738,22 @@ function keyboardShortcutsEditor() {
       } else {
         newVal += e.key.toLowerCase();
       }
-      var inUse = keyInUse(newVal).inUse;
-      if ($('.newKeyAssignment').val() == newVal) {
+
+      var inUse = newVal.length > 0 && keyInUse(newVal, false).inUse;
+      if (newKeyAssignment.val() == newVal) {
         $('#alreadyAssignedWarnShortcut').hide();
-        $('.newKeyAssignment').removeClass('alert').addClass('primary')
+        newKeyAssignment.removeClass('alert').addClass('primary');
       } else {
         if (inUse) {
           console.log(newVal + " is already in use")
+          $('#alreadyAssignedWarnShortcut').appendTo(newKeyAssignment.parent().parent());
           $('#alreadyAssignedWarnShortcut').show();
-          $('#alreadyAssignedWarnShortcut').appendTo($('.newKeyAssignment').parent());
-          $('.newKeyAssignment').removeClass('primary').addClass('alert')
-          $('#alreadyAssignedWarnShortcut').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal).source);
+          $('#alreadyAssignedWarnShortcut').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal, false).source);
+          newKeyAssignment.removeClass('primary').addClass('alert');
         } else {
           $('#alreadyAssignedWarnShortcut').hide();
-          $('.newKeyAssignment').removeClass('alert').addClass('primary')
-          $('.newKeyAssignment').val(newVal)
+          newKeyAssignment.removeClass('alert').addClass('primary');
+          newKeyAssignment.val(newVal);
         }
       }
 
@@ -734,17 +764,9 @@ function keyboardShortcutsEditor() {
 
 }
 
-function keyInUse(newVal) {
+function keyInUse(newVal, forMacro) {
   var inUse = false;
   var usedBy = false;
-
-  // Check currently saved Keyboard Shortcuts
-  for (const prop in keyboardShortcuts) {
-    if (`${keyboardShortcuts[prop]}` == newVal) {
-      inUse = true;
-      usedBy = "keyboard:" + prop
-    }
-  }
 
   // Check Internally hardcoded keys
   if (newVal == "f1") {
@@ -768,11 +790,23 @@ function keyInUse(newVal) {
     }
   }
 
+  if (forMacro) {
+    // Check currently saved Keyboard Shortcuts
+    for (const prop in keyboardShortcuts) {
+      if (`${keyboardShortcuts[prop]}` == newVal) {
+        inUse = true;
+        usedBy = "keyboard:" + prop
+      }
+    }
+  }
+  else {
   // Check currently edited in keys, not saved yet
-  for (i = 0; i < $(".keyboardshortcutinput").length; i++) {
-    if ($(".keyboardshortcutinput")[i].value == newVal) {
-      inUse = true;
-      usedBy = "keyboard:" + $("#" + $(".keyboardshortcutinput")[i].id).parent().siblings().html().trim();
+    var inputs = $(".keyboardshortcutinput > input");
+    for (i = 0; i < inputs.length; i++) {
+      if (inputs[i].value == newVal) {
+        inUse = true;
+        usedBy = "keyboard:" + $("#" + inputs[i].id).parent().parent().siblings().html().trim();
+      }
     }
   }
 
