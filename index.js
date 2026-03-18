@@ -1887,6 +1887,7 @@ io.on("connection", function(socket) {
         debug_log('Adding jog commands to queue. blocked=' + status.comms.blocked + ', paused=' + status.comms.paused + ', Q=' + gcodeQueue.length);
         switch (status.machine.firmware.type) {
           case 'grbl':
+            addQToEnd('$J=G91G21' + mode + xVal + yVal + zVal + feed);
             break;
           default:
             debug_log('ERROR: Unknown firmware!');
