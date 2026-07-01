@@ -1,16 +1,19 @@
-// Adds a 5 second delay after each M3 or M4 command
-// Requires OpenBuilds v1.0.371 or newer
-//
-// To use it
-// * Go to the Macros tab in OpenBuilds
-// * Click the +Create button
-// * Set the Label to "Spindle Delay"
-// * Change the type from GCODE to Javascript
-// * Copy this entire file to the text box
-// * Select "Run Macro on startup"
-// * Close and restart OpenBuilds
+// Adds a 5 second delay after each M3 or M4 command.
+// Uses the pause/resume functionality instead of the G4 command.
+// This is useful if G4 is not working for some reason.
 
-const SPINDLE_DELAY_IN_SECONDS = 5.0;
+// Requires OpenBuilds v1.0.371 or newer.
+
+// To install it:
+//   * Go to the Macros tab in OpenBuilds
+//   * Click the +Create button
+//   * Set the Label to "Spindle Delay"
+//   * Change the type from GCODE to Javascript
+//   * Copy this entire file to the text box
+//   * Select "Run Macro on startup"
+//   * Close and restart OpenBuilds
+
+const SPINDLE_DELAY_IN_SECONDS = 5.0; // change this number to change the delay duration
 
 $(document).ready(function()
 {
