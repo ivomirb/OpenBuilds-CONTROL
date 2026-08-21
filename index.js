@@ -2391,6 +2391,7 @@ function stopPort() {
   status.machine.firmware.version = ""; // get version
   status.machine.firmware.date = "";
   status.machine.firmware.buffer = "";
+	status.machine.modals.homedRecently = false;
   gcodeQueue.length = 0;
   sentBuffer.length = 0; // dump bufferSizes
   // port.drain(port.close());
