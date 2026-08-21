@@ -95,15 +95,6 @@ function initDiagnostics() {
     disableAggressiveHomeReset = false;
   }
 
-  if (localStorage.getItem('disableAggressiveHomeReset')) {
-    if (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true) {
-      disableAggressiveHomeReset = true;
-      $('#disableAggressiveHomeResetTick').addClass("checked");
-    }
-  } else {
-    disableAggressiveHomeReset = false;
-  }
-
 };
 
 initDiagnostics();
