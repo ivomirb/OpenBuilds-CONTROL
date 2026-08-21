@@ -47,7 +47,7 @@ var surfacingWizardTemplate = `
 
           <div class="row mb-2 pb-2 border-bottom bd-gray">
             <label class="cell-sm-6"
-               title="Allows the center of the bit to travel the fill Width and Length, which effctively extends the surfaced area by the bit's radius.
+               title="Allows the center of the bit to travel the full Width and Length, which effctively extends the surfaced area by the bit's radius.
 Best when surfacing the entire spoilboard. Use with caution when flattening stock">Extend by Tool Radius</label>
             <div class="cell-sm-6">
               <select id="extendRadius" data-role="input" data-clear-button="false">
