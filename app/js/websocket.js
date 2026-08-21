@@ -116,6 +116,18 @@ function printLog(string) {
   }
 };
 
+// Round small negative values to 0 so they don't show up as -0
+function prettyCoord(val, dec) {
+  val = Number(val);
+  if (dec == 2 && val < 0 && val > -0.005) {
+    return 0;
+  }
+  if (dec == 3 && val < 0 && val > -0.0005) {
+    return 0;
+  }
+  return val;
+}
+
 function initSocket() {
   socket = io.connect(server, {
     'timeout': 60000,
@@ -670,29 +682,33 @@ function initSocket() {
 
     if (!disableDROupdates) {
       if (unit == "mm") {
-        var xpos = status.machine.position.work.x.toFixed(3) + unit;
-        var ypos = status.machine.position.work.y.toFixed(3) + unit;
-        var zpos = status.machine.position.work.z.toFixed(3) + unit;
-        var apos = status.machine.position.work.a.toFixed(3) + "deg";
 
-        $(" #xPos ").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit + "/ X Work: " + xpos);
-        $(" #yPos ").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit + "/ Y Work: " + ypos);
-        $(" #zPos ").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit + "/ Z Work: " + zpos);
-        $(" #aPos ").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "deg" + "/ A Work: " + apos);
+        $(" #xPos ").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit +
+          "/ X Work: " + status.machine.position.work.x.toFixed(3) + unit);
+        $(" #yPos ").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit +
+          "/ Y Work: " + status.machine.position.work.y.toFixed(3) + unit);
+        $(" #zPos ").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit +
+          "/ Z Work: " + status.machine.position.work.z.toFixed(3) + unit);
 
+        var xpos = prettyCoord(status.machine.position.work.x, 2).toFixed(2) + unit;
+        var ypos = prettyCoord(status.machine.position.work.y, 2).toFixed(2) + unit;
+        var zpos = prettyCoord(status.machine.position.work.z, 2).toFixed(2) + unit;
       } else if (unit == "in") {
-        var xpos = (status.machine.position.work.x / 25.4).toFixed(3) + unit;
-        var ypos = (status.machine.position.work.y / 25.4).toFixed(3) + unit;
-        var zpos = (status.machine.position.work.z / 25.4).toFixed(3) + unit;
-        var apos = status.machine.position.work.a.toFixed(3) + "deg";
 
-        $(" #xPos ").attr('title', 'X Machine: ' + ((status.machine.position.work.x / 25.4) + (status.machine.position.offset.x / 25.4)).toFixed(3) + unit + "/ X Work: " + xpos);
-        $(" #yPos ").attr('title', 'Y Machine: ' + ((status.machine.position.work.y / 25.4) + (status.machine.position.offset.y / 25.4)).toFixed(3) + unit + "/ Y Work: " + ypos);
-        $(" #zPos ").attr('title', 'Z Machine: ' + ((status.machine.position.work.z / 25.4) + (status.machine.position.offset.z / 25.4)).toFixed(3) + unit + "/ Z Work: " + zpos);
-        $(" #aPos ").attr('title', 'A Machine: ' + ((status.machine.position.work.a) + (status.machine.position.offset.a)).toFixed(3) + "deg" + "/ A Work: " + apos);
-
-
+        $(" #xPos ").attr('title', 'X Machine: ' + ((status.machine.position.work.x + status.machine.position.offset.x) / 25.4).toFixed(3) + unit +
+          "/ X Work: " + (status.machine.position.work.x / 25.4).toFixed(3) + unit);
+        $(" #yPos ").attr('title', 'Y Machine: ' + ((status.machine.position.work.y + status.machine.position.offset.y) / 25.4).toFixed(3) + unit +
+          "/ Y Work: " + (status.machine.position.work.y / 25.4).toFixed(3) + unit);
+        $(" #zPos ").attr('title', 'Z Machine: ' + ((status.machine.position.work.z + status.machine.position.offset.z) / 25.4).toFixed(3) + unit +
+          "/ Z Work: " + (status.machine.position.work.z / 25.4).toFixed(3) + unit);
+        var xpos = prettyCoord(status.machine.position.work.x / 25.4, 3).toFixed(3) + unit;
+        var ypos = prettyCoord(status.machine.position.work.y / 25.4, 3).toFixed(3) + unit;
+        var zpos = prettyCoord(status.machine.position.work.z / 25.4, 3).toFixed(3) + unit;
       }
+
+      $(" #aPos ").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "deg" +
+        "/ A Work: " + status.machine.position.work.a.toFixed(3) + "deg");
+      var apos = prettyCoord(status.machine.position.work.a, 2).toFixed(2) + "deg";
 
       if ($('#xPos').html() != xpos) {
         $('#xPos').html(xpos);
