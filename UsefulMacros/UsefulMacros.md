@@ -20,9 +20,10 @@ This happened to me too many times, so I decided to do something about it.
 ## SmartHome
 Prevents accidental homing if the machine was recently homed.
 
-Relies on the *homedRecently* status of OpenBuilds.
-Use in combination with the new "Disable Aggressive Home Reset" setting that exists in this version of OpenBuilds.
-Without that setting, the *homedRecently* status is cleared after every benign alert, making it not very useful.
+Relies on the **homedRecently** status of OpenBuilds.
+
+Best when used in combination with the new "Disable Aggressive Home Reset" setting that exists in this version of OpenBuilds.
+Without that setting, the **homedRecently** status is cleared after every benign alert, making it not very useful.
 
 ## OpenFile
 Removes the dropdown from the file button and adds a dedicated reload button
@@ -44,6 +45,8 @@ Vertical group tabs
 
 ## Spindle Delay
 Pauses the execution after M3 and M4 commands without using the G4 G-code. Useful on some machines where G4 is not working properly.
+
+Requires OpenBuilds v1.0.371 or later.
 
 ## SmartGCode
 Few useful features for the currently loaded G-code file
