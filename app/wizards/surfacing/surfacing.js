@@ -32,28 +32,40 @@ var surfacingWizardTemplate = `
           </div>
 
           <div class="row mb-2">
-            <label class="cell-sm-6">Width<br> <small class="dark">X-Axis</small></label>
+            <label class="cell-sm-6">Width <small class="dark">(X-Axis)</small></label>
             <div class="cell-sm-6">
               <input id="surfaceX" type="number" data-role="input" data-append="mm" data-clear-button="false" value="200" data-editable="true">
             </div>
           </div>
 
-          <div class="row mb-2 border-bottom bd-gray">
-            <label class="cell-sm-6">Length<br> <small class="dark">Y-Axis</small></label>
+          <div class="row mb-2">
+            <label class="cell-sm-6">Length <small class="dark">(Y-Axis)</small></label>
             <div class="cell-sm-6">
               <input id="surfaceY" type="number" data-role="input" data-append="mm" data-clear-button="false" value="300" data-editable="true">
             </div>
           </div>
 
           <div class="row mb-2 pb-2 border-bottom bd-gray">
-           <label class="cell-sm-6">Surface Direction</label>
-           <div class="cell-sm-6">
-             <select id="surfaceDirection" data-role="input" data-clear-button="false">
-               <option value="X" selected>Along X-Axis</option>
-               <option value="Y">Along Y-Axis</option>
-             </select>
-           </div>
-         </div>
+            <label class="cell-sm-6"
+               title="Allows the center of the bit to travel the full Width and Length, which effctively extends the surfaced area by the bit's radius.
+Best when surfacing the entire spoilboard. Use with caution when flattening stock">Extend by Tool Radius</label>
+            <div class="cell-sm-6">
+              <select id="extendRadius" data-role="input" data-clear-button="false">
+                <option value="enabled">Enabled</option>
+                <option value="disabled" selected>Disabled</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row mb-2 pb-2 border-bottom bd-gray">
+            <label class="cell-sm-6">Surface Direction</label>
+            <div class="cell-sm-6">
+              <select id="surfaceDirection" data-role="input" data-clear-button="false">
+                <option value="X" selected>Along X-Axis</option>
+                <option value="Y">Along Y-Axis</option>
+              </select>
+            </div>
+          </div>
 
           <div class="row mb-2">
             <label class="cell-sm-6">Cut Depth per Pass</label>
@@ -90,6 +102,7 @@ var surfacingWizardTemplate = `
           </div>
 
         </div>
+
         <div class="cell-sm-5">
           <small class="dark">NB: make sure your spindle is 100% perpendicular (trammed) to your bed, before running a Surfacing operation. Incorrectly trammed spindles will cause uneven machining of the surface, leading to pitting and
             uneven surface finish
@@ -132,13 +145,6 @@ function populateSurfaceToolForm() {
           createSurfaceGcode()
         }
       }
-      // {
-      //   caption: "Cancel",
-      //   cls: "js-dialog-close",
-      //   onclick: function() {
-      //     // do nothing
-      //   }
-      // }
     ]
   });
 
@@ -155,6 +161,7 @@ function populateSurfaceToolForm() {
       surfaceFinalDepth: 3,
       surfaceCoolant: "enabled",
       surfaceFraming: "enabled",
+      extendRadius: "disabled",
       surfaceRPM: 1000,
       surfaceDirection: "X"
     };
@@ -176,6 +183,9 @@ function populateSurfaceToolForm() {
   }
   if (data.surfaceFraming != undefined) {
     $('#surfaceFraming').val(data.surfaceFraming)
+  }
+  if (data.extendRadius!= undefined) {
+    $('#extendRadius').val(data.extendRadius)
   }
 
   $('#surfaceRPM').val(data.surfaceRPM)
@@ -202,6 +212,7 @@ function createSurfaceGcode() {
     surfaceRPM: $('#surfaceRPM').val(),
     surfaceCoolant: $('#surfaceCoolant').val(),
     surfaceFraming: $('#surfaceFraming').val(),
+    extendRadius: $('#extendRadius').val(),
     surfaceDirection: $('#surfaceDirection').val() // New dropdown value
   };
 
@@ -217,31 +228,41 @@ function createSurfaceGcode() {
   localStorage.setItem("lastSurfacingTool", JSON.stringify(data));
 
   var startpoint, endpoint, primaryAxis, secondaryAxis;
+	var offsetRadius = data.extendRadius == "enabled" ? 0 : data.surfaceDiameter / 2;
   if (data.surfaceDirection === "X") {
     primaryAxis = "X";
     secondaryAxis = "Y";
     startpoint = {
-      primary: 0 + data.surfaceDiameter / 2,
-      secondary: 0 + data.surfaceDiameter / 2
+      primary: 0 + offsetRadius,
+      secondary: 0 + offsetRadius
     };
     endpoint = {
-      primary: data.surfaceX - data.surfaceDiameter / 2,
-      secondary: data.surfaceY - data.surfaceDiameter / 2
+      primary: data.surfaceX - offsetRadius,
+      secondary: data.surfaceY - offsetRadius
     };
   } else {
     primaryAxis = "Y";
     secondaryAxis = "X";
     startpoint = {
-      primary: 0 + data.surfaceDiameter / 2,
-      secondary: 0 + data.surfaceDiameter / 2
+      primary: 0 + offsetRadius,
+      secondary: 0 + offsetRadius
     };
     endpoint = {
-      primary: data.surfaceY - data.surfaceDiameter / 2,
-      secondary: data.surfaceX - data.surfaceDiameter / 2
+      primary: data.surfaceY - offsetRadius,
+      secondary: data.surfaceX - offsetRadius
     };
   }
 
   var lineOver = data.surfaceDiameter * (data.surfaceStepover / 100);
+
+  // add extra line if necessary to cover the entire area
+  var totalDistance = endpoint.secondary - startpoint.secondary;
+  var lines = Math.floor(totalDistance / lineOver) + 1;
+  if (totalDistance - (lines-1) * lineOver > 0.01)
+  {
+    lineOver = totalDistance / lines;
+    lines = lines + 1;
+  }
 
   var gcode =
     `; Surfacing / Flattening Operation
@@ -288,18 +309,20 @@ G1 F` +
 
     var reverse = false;
 
-    for (i = startpoint.secondary; i.toFixed(4) < endpoint.secondary; i += lineOver) {
+    var secondary = startpoint.secondary;
+    for (i = 0; i < lines; i++) {
       if (!reverse) {
-        gcode += `G1 ` + secondaryAxis + i.toFixed(4) + `\n`;
-        gcode += `G1 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + i.toFixed(4) + ` Z` + zval + `\n`;
-        gcode += `G1 ` + primaryAxis + endpoint.primary.toFixed(4) + ` ` + secondaryAxis + i.toFixed(4) + ` Z` + zval + `\n`;
+        gcode += `G1 ` + secondaryAxis + secondary.toFixed(4) + `\n`;
+        gcode += `G1 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + secondary.toFixed(4) + ` Z` + zval + `\n`;
+        gcode += `G1 ` + primaryAxis + endpoint.primary.toFixed(4) + ` ` + secondaryAxis + secondary.toFixed(4) + ` Z` + zval + `\n`;
         reverse = true;
       } else {
-        gcode += `G1 ` + secondaryAxis + i.toFixed(4) + `\n`;
-        gcode += `G1 ` + primaryAxis + endpoint.primary.toFixed(4) + ` ` + secondaryAxis + i.toFixed(4) + ` Z` + zval + `\n`;
-        gcode += `G1 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + i.toFixed(4) + ` Z` + zval + `\n`;
+        gcode += `G1 ` + secondaryAxis + secondary.toFixed(4) + `\n`;
+        gcode += `G1 ` + primaryAxis + endpoint.primary.toFixed(4) + ` ` + secondaryAxis + secondary.toFixed(4) + ` Z` + zval + `\n`;
+        gcode += `G1 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + secondary.toFixed(4) + ` Z` + zval + `\n`;
         reverse = false;
       }
+      secondary += lineOver;
     }
 
     gcode += `G0 Z10; Pass complete, lifting to Z Safe height\n`;
