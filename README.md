@@ -2,14 +2,19 @@
 OpenBuilds CONTROL - Grbl Host / Interface for all CNC style machines running Grbl
 
 This is a fork by Ivo Beltchev. Notable changes:
-* Fix for showing the RPM value in the tool slider
-* Fix for dragging the slider with the mouse (bug in the external Metro UI library)
-* Fix for inconsistencies between the click areas of menu items
-* Added an option to reload the last gcode file
 * Remembers the last used COM port and auto-selects it on startup
-* Converted to a plain Windows app - no auto-start, no tray icon
-* Added event for the Grbl "ok" response, which enables more reliable and responsive macros
+* Added an option to reload the last gcode file
+* Fix for dragging the slider with the mouse (bug in the external Metro UI library)
+* Fix for a bug in the Surfacing Wizard, which was skipping the last row
+* Added an option to the Surfacing Wizard to extend the area by the tool radius
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
+* Allow clearning the key assignment in the keyboard shortcut editor and the macro editor
+* Added many useful macros in the [Useful Macros folder](blob/master/UsefulMacros/UsefulMacros.md)
+
+Additionally, the ivobe/custom branch has a few more changes that I use in my own build:
+* Converted to a plain Windows app - no auto-start, no tray icon
+* Reduced the millimeter precision in the DRO to 2 decimals and improved the rounding algorithm
+* Made the "Advanced" tab in Grbl Settings selected by default
 
 ## Download
 

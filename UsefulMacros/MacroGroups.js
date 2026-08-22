@@ -225,6 +225,12 @@ window.SelectMacroGroup = function(groupIdx)
 
 function CreateTabContents(tabs, activeIdx)
 {
+	var space = "";
+	if (tabs.id == 'macroVerticalTabs')
+	{
+		 justify = ` style="justify-content: left;"`;
+		 space = `&nbsp;`;
+	}
 	tabs.replaceChildren();
 	var style= CreateFromHtml(`
 <style>
@@ -242,12 +248,12 @@ function CreateTabContents(tabs, activeIdx)
 }
 <style/>`);
 	tabs.appendChild(style);
-	var line = CreateFromHtml(`<li onclick="SelectMacroGroup(0);"><a href="#">Default</a></li>`);
+	var line = CreateFromHtml(`<li onclick="SelectMacroGroup(0);"><a href="#"` + justify + `>Default` + space + `</a></li>`);
 	if (activeIdx == 0) { line.classList.add("active"); }
 	tabs.appendChild(line);
 	for (var i = 1; i < g_Groups.length; i++)
 	{
-		var html = `<li onclick="SelectMacroGroup(` + i + `);" oncontextmenu="MacroTabContextMenu(event, ` + i + `)"><a href="#">` + g_Groups[i] + `</a></li>`;
+		var html = `<li onclick="SelectMacroGroup(` + i + `);" oncontextmenu="MacroTabContextMenu(event, ` + i + `)"><a href="#"` + justify + `>` + g_Groups[i] + space+space+space+ `</a></li>`;
 		var line = CreateFromHtml(html);
 		if (i == activeIdx) { line.classList.add("active"); }
 		tabs.appendChild(line);
