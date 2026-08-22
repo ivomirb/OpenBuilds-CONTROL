@@ -225,6 +225,7 @@ window.SelectMacroGroup = function(groupIdx)
 
 function CreateTabContents(tabs, activeIdx)
 {
+	var justify = "";
 	var space = "";
 	if (tabs.id == 'macroVerticalTabs')
 	{
