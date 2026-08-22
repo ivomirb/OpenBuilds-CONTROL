@@ -25,7 +25,7 @@ Use in combination with the new "Disable Aggressive Home Reset" setting that exi
 Without that setting, the *homedRecently* status is cleared after every benign alert, making it not very useful.
 
 ## OpenFile
-Removes the drodown from the file button and adds a dedicated reload button
+Removes the dropdown from the file button and adds a dedicated reload button
 
 Based on https://thayneco.com/single-click-to-open-a-file-browser-in-openbuilds-control/
 
@@ -34,9 +34,12 @@ Requires this version of OpenBuilds, which adds the "reload" functionality.
 ![Screenshot](screenshots/open_gcode.png)
 
 ## MacroGroups
-Allows macro buttons to be organized in groups, which makes a large number of macros more manageable.
+Allows macro buttons to be organized in groups, which makes large number of macros more manageable.
 
+Horizontal group tabs
 ![Screenshot](screenshots/macros_h.png)
+
+Vertical group tabs
 ![Screenshot](screenshots/macros_v.png)
 
 ## Spindle Delay

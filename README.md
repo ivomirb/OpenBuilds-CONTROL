@@ -8,8 +8,8 @@ This is a fork by Ivo Beltchev. Notable changes:
 * Fix for a bug in the Surfacing Wizard, which was skipping the last row
 * Added an option to the Surfacing Wizard to extend the area by the tool radius
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
-* Allow clearning the key assignment in the keyboard shortcut editor and the macro editor
-* Added many useful macros in the [Useful Macros folder](blob/master/UsefulMacros/UsefulMacros.md)
+* Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
+* Added many useful macros in the [Useful Macros folder](UsefulMacros/UsefulMacros.md)
 
 Additionally, the ivobe/custom branch has a few more changes that I use in my own build:
 * Converted to a plain Windows app - no auto-start, no tray icon
