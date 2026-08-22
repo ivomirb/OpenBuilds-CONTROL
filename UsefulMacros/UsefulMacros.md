@@ -35,12 +35,15 @@ Requires this version of OpenBuilds, which adds the "reload" functionality.
 ![Screenshot](screenshots/open_gcode.png)
 
 ## MacroGroups
-Allows macro buttons to be organized in groups, which makes large number of macros more manageable. It works best when set to autorun on startup.
+Allows macro buttons to be organized in groups, which makes large number of macros more manageable.
+The group tabs can be horizontal or vertical.
 
-### Horizontal group tabs
+It works best when set to autorun on startup.
+
+**Horizontal group tabs**
 ![Screenshot](screenshots/macros_h.png)
 
-### Vertical group tabs
+**Vertical group tabs**
 ![Screenshot](screenshots/macros_v.png)
 
 ## Spindle Delay

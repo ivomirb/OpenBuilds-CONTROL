@@ -209,7 +209,6 @@ window.MacroTabContextMenu = function(event, groupIdx)
 	g_SelectedGroup = groupIdx;
 	event.preventDefault();
 	event.stopPropagation();
-	console.log("MENU");
 	$('#macroTabContextMenu').css({
 		display: 'block',
 		left: event.clientX,
