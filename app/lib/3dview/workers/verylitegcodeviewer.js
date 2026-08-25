@@ -18,7 +18,7 @@ self.addEventListener('message', function(e) {
 // Updated by PvdW in 2018 - Webworker Version
 // Updated by PvdW in 2019 - Improve Performance
 // Updated by PvdW in 2021 - New Sim Data, Smaller footprint, more efficient "lines" userData
-
+// Updated by Ivo in 2026 - Fixed arc maths
 
 var lastLine = {
   x: 0,
@@ -253,12 +253,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
       // console.log("USING UNITS:" + units)
 
     }
-    // these are extra Object3D elements added during
-    // the gcode rendering to attach to scene
-    this.extraObjects = [];
-    this.extraObjects["G17"] = [];
-    this.extraObjects["G18"] = [];
-    this.extraObjects["G19"] = [];
     this.offsetG92 = {
       x: 0,
       y: 0,
@@ -277,6 +271,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
     // that even the simulator can follow along better
     var linePoints = [];
     var totalDist = 0;
+    this.arcPlane = "G17";
 
     this.drawArc = function(aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
       //console.log("drawArc:", aX, aY, aZ, aRadius, aStartAngle, aEndAngle, aClockwise);
@@ -289,105 +284,88 @@ GCodeParser = function(handlers, modecmdhandlers) {
       });
       var acgeo = new THREE.Geometry();
       var ctr = 0;
-      var z = aZ;
       var points = []
       ac.getPoints(20).forEach(function(v) {
         //console.log(v);
-        z = (((endaZ - aZ) / 20) * ctr) + aZ;
-        acgeo.vertices.push(new THREE.Vector3(v.x, v.y, z));
+        var z = (((endaZ - aZ) / 20) * ctr) + aZ;
+        switch (plane) {
+          case "G18":
+            acgeo.vertices.push(new THREE.Vector3(v.y, z, v.x));
+            points.push({'x': v.y, 'y': z, 'z': v.x });
+            break;
+          case "G19":
+            acgeo.vertices.push(new THREE.Vector3(v.z, v.x, v.y));
+            points.push({'x': v.z, 'y': v.x, 'z': v.y });
+            break;
+          default:
+            acgeo.vertices.push(new THREE.Vector3(v.x, v.y, z));
+            points.push({'x': v.x, 'y': v.y, 'z': z });
+        }
         ctr++;
-        points.push({
-          'x': v.x,
-          'y': v.y,
-          'z': z,
-        })
       });
       var aco = new THREE.Line(acgeo, acmat);
       aco.userData.points = points;
-
-      //aco.position.set(pArc.x, pArc.y, pArc.z);
-      //console.log("aco:", aco);
-      this.extraObjects[plane].push(aco);
       return aco;
     };
 
     this.drawArcFrom2PtsAndCenter = function(vp1, vp2, vpArc, args) {
-      //console.log("drawArcFrom2PtsAndCenter. vp1:", vp1, "vp2:", vp2, "vpArc:", vpArc, "args:", args);
 
-      //var radius = vp1.distanceTo(vpArc);
-      //console.log("radius:", radius);
+      var p1deltaX = vp1.x - vpArc.x;
+      var p1deltaY = vp1.y - vpArc.y;
+      var p1deltaZ = vp1.z - vpArc.z;
 
-      // Find angle
-      var p1deltaX = vpArc.x - vp1.x;
-      var p1deltaY = vpArc.y - vp1.y;
-      var p1deltaZ = vpArc.z - vp1.z;
+      var p2deltaX = vp2.x - vpArc.x;
+      var p2deltaY = vp2.y - vpArc.y;
+      var p2deltaZ = vp2.z - vpArc.z;
 
-      var p2deltaX = vpArc.x - vp2.x;
-      var p2deltaY = vpArc.y - vp2.y;
-      var p2deltaZ = vpArc.z - vp2.z;
+      switch (this.arcPlane) {
+        case "G18": { // ZX
+          var radius = Math.sqrt(p1deltaX*p1deltaX + p1deltaZ*p1deltaZ);
+          var radius2 = Math.sqrt(p2deltaX*p2deltaX + p2deltaZ*p2deltaZ);
+          //console.log("radius:", radius);
 
-      switch (args.plane) {
-        case "G18":
-          var anglepArcp1 = Math.atan(p1deltaZ / p1deltaX);
-          var anglepArcp2 = Math.atan(p2deltaZ / p2deltaX);
-          break;
-        case "G19":
-          var anglepArcp1 = Math.atan(p1deltaZ / p1deltaY);
-          var anglepArcp2 = Math.atan(p2deltaZ / p2deltaY);
-          break;
-        default:
-          var anglepArcp1 = Math.atan(p1deltaY / p1deltaX);
-          var anglepArcp2 = Math.atan(p2deltaY / p2deltaX);
-      }
+          if (Math.abs(radius - radius2) > 0.01)
+            console.log("Radiuses not equal. r1:", radius, ", r2:", radius2, " with args:", args, "difference:", Math.abs(radius - radius2));
 
-      // Draw arc from arc center
-      var radius = vpArc.distanceTo(vp1);
-      var radius2 = vpArc.distanceTo(vp2);
-      //console.log("radius:", radius);
-
-      if (Number((radius).toFixed(2)) != Number((radius2).toFixed(2))) console.log("Radiuses not equal. r1:", radius, ", r2:", radius2, " with args:", args, " rounded vals r1:", Number((radius).toFixed(2)), ", r2:", Number((radius2).toFixed(2)));
-
-      // arccurve
-      var clwise = true;
-      if (args.clockwise === false) clwise = false;
-      //if (anglepArcp1 < 0) clockwise = false;
-
-      switch (args.plane) {
-        case "G19":
-          if (p1deltaY >= 0) anglepArcp1 += Math.PI;
-          if (p2deltaY >= 0) anglepArcp2 += Math.PI;
-          break;
-        default:
-          if (p1deltaX >= 0) anglepArcp1 += Math.PI;
-          if (p2deltaX >= 0) anglepArcp2 += Math.PI;
-      }
-
-      //if (anglepArcp1 === anglepArcp2 && clwise === false) // commented out 9 apr 2024 to see if it helps for #257
-      if (anglepArcp1 === anglepArcp2)
-        // Draw full circle if angles are both zero,
-        // start & end points are same point... I think
-        switch (args.plane) {
-          case "G18":
-            var threeObj = this.drawArc(vpArc.x, vpArc.z, (-1 * vp1.y), (-1 * vp2.y), radius, anglepArcp1, (anglepArcp2 + (2 * Math.PI)), clwise, "G18");
-            break;
-          case "G19":
-            var threeObj = this.drawArc(vpArc.y, vpArc.z, vp1.x, vp2.x, radius, anglepArcp1, (anglepArcp2 + (2 * Math.PI)), clwise, "G19");
-            break;
-          default:
-            var threeObj = this.drawArc(vpArc.x, vpArc.y, vp1.z, vp2.z, radius, anglepArcp1, (anglepArcp2 + (2 * Math.PI)), clwise, "G17");
+          // Find start and end angles
+          var anglepArcp1 = Math.atan2(p1deltaX, p1deltaZ);
+          var anglepArcp2 = Math.atan2(p2deltaX, p2deltaZ);
+          if (anglepArcp2 < anglepArcp1) anglepArcp2 += 2*Math.PI; // order counterclockwise
+          if ((vp2.z-vp1.z)*(vp2.z-vp1.z) + (vp2.x-vp1.x)*(vp2.x-vp1.x) < 0.0001)
+            anglepArcp2 = anglepArcp1 + 2 * Math.PI; // start and end points are close together, draw a full circle
+          return this.drawArc(vpArc.z, vpArc.x, vp1.y, vp2.y, radius, anglepArcp1, anglepArcp2, args.clockwise !== false, "G18");
         }
-      else
-        switch (args.plane) {
-          case "G18":
-            var threeObj = this.drawArc(vpArc.x, vpArc.z, (-1 * vp1.y), (-1 * vp2.y), radius, anglepArcp1, anglepArcp2, clwise, "G18");
-            break;
-          case "G19":
-            var threeObj = this.drawArc(vpArc.y, vpArc.z, vp1.x, vp2.x, radius, anglepArcp1, anglepArcp2, clwise, "G19");
-            break;
-          default:
-            var threeObj = this.drawArc(vpArc.x, vpArc.y, vp1.z, vp2.z, radius, anglepArcp1, anglepArcp2, clwise, "G17");
+        case "G19": { // YZ
+          var radius = Math.sqrt(p1deltaY*p1deltaY + p1deltaZ*p1deltaZ);
+          var radius2 = Math.sqrt(p2deltaY*p2deltaY + p2deltaZ*p2deltaZ);
+          //console.log("radius:", radius);
+
+          if (Math.abs(radius - radius2) > 0.01)
+            console.log("Radiuses not equal. r1:", radius, ", r2:", radius2, " with args:", args, "difference:", Math.abs(radius - radius2));
+
+          var anglepArcp1 = Math.atan2(p1deltaZ, p1deltaY);
+          var anglepArcp2 = Math.atan2(p2deltaZ, p2deltaY);
+          if (anglepArcp2 < anglepArcp1) anglepArcp2 += 2*Math.PI;
+          if ((vp2.y-vp1.y)*(vp2.y-vp1.y) + (vp2.z-vp1.z)*(vp2.z-vp1.z) < 0.0001)
+            anglepArcp2 = anglepArcp1 + 2 * Math.PI;
+          return this.drawArc(vpArc.y, vpArc.z, vp1.x, vp2.x, radius, anglepArcp1, anglepArcp2, args.clockwise !== false, "G19");
         }
-      return threeObj;
+        default: { // XY
+          var radius = Math.sqrt(p1deltaX*p1deltaX + p1deltaY*p1deltaY);
+          var radius2 = Math.sqrt(p2deltaX*p2deltaX+p2deltaY*p2deltaY);
+          //console.log("radius:", radius);
+
+          if (Math.abs(radius - radius2) > 0.01)
+            console.log("Radiuses not equal. r1:", radius, ", r2:", radius2, " with args:", args, "difference:", Math.abs(radius - radius2));
+
+          var anglepArcp1 = Math.atan2(p1deltaY, p1deltaX);
+          var anglepArcp2 = Math.atan2(p2deltaY, p2deltaX);
+          if (anglepArcp2 < anglepArcp1) anglepArcp2 += 2*Math.PI;
+          if ((vp2.x-vp1.x)*(vp2.x-vp1.x) + (vp2.y-vp1.y)*(vp2.y-vp1.y) < 0.0001)
+            anglepArcp2 = anglepArcp1 + 2 * Math.PI;
+          return this.drawArc(vpArc.x, vpArc.y, vp1.z, vp2.z, radius, anglepArcp1, anglepArcp2, args.clockwise !== false, "G17");
+        }
+      }
     };
 
     this.addSegment = function(p1, p2, args) {
@@ -398,18 +376,8 @@ GCodeParser = function(handlers, modecmdhandlers) {
         //console.log("");
         //console.log("drawing arc. p1:", p1, ", p2:", p2);
 
-        //var segmentCount = 12;
-        // figure out the 3 pts we are dealing with
-        // the start, the end, and the center of the arc circle
-        // radius is dist from p1 x/y/z to pArc x/y/z
-        //if(args.clockwise === false || args.cmd === "G3"){
-        //    var vp2 = new THREE.Vector3(p1.x, p1.y, p1.z);
-        //    var vp1 = new THREE.Vector3(p2.x, p2.y, p2.z);
-        //}
-        //else {
         var vp1 = new THREE.Vector3(p1.x, p1.y, p1.z);
         var vp2 = new THREE.Vector3(p2.x, p2.y, p2.z);
-        //}
         var vpArc;
 
         // if this is an R arc gcode command, we're given the radius, so we
@@ -421,119 +389,64 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
           radius = parseFloat(args.r);
 
-          // First, find the distance between points 1 and 2.  We'll call that q,
-          // and it's given by sqrt((x2-x1)^2 + (y2-y1)^2).
-          var q = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2));
-
-          // Second, find the point halfway between your two points.  We'll call it
-          // (x3, y3).  x3 = (x1+x2)/2  and  y3 = (y1+y2)/2.
+          // First, find the point halfway between your two points.  We'll call it p3
           var x3 = (p1.x + p2.x) / 2;
           var y3 = (p1.y + p2.y) / 2;
           var z3 = (p1.z + p2.z) / 2;
 
-          // There will be two circle centers as a result of this, so
-          // we will have to pick the correct one. In gcode we can get
-          // a + or - val on the R to indicate which circle to pick
-          // One answer will be:
-          // x = x3 + sqrt(r^2-(q/2)^2)*(y1-y2)/q
-          // y = y3 + sqrt(r^2-(q/2)^2)*(x2-x1)/q
-          // The other will be:
-          // x = x3 - sqrt(r^2-(q/2)^2)*(y1-y2)/q
-          // y = y3 - sqrt(r^2-(q/2)^2)*(x2-x1)/q
-          var pArc_1 = undefined;
-          var pArc_2 = undefined;
-          var calc = Math.sqrt((radius * radius) - Math.pow(q / 2, 2));
+          // Second, find the vector from p1 to p3
+          var deltaX = x3 - p1.x;
+          var deltaY = y3 - p1.y;
+          var deltaZ = z3 - p1.z;
 
-          // calc can be NaN if q/2 is epsilon larger than radius due to finite precision
-          // When that happens, the calculated center is incorrect
-          if (isNaN(calc)) {
-            calc = 0.0;
-          }
-          var angle_point = undefined;
-
-          switch (args.plane) {
-            case "G18":
-              pArc_1 = {
-                x: x3 + calc * (p1.z - p2.z) / q,
-                y: y3 + calc * (p2.y - p1.y) / q,
-                z: z3 + calc * (p2.x - p1.x) / q
-              };
-              pArc_2 = {
-                x: x3 - calc * (p1.z - p2.z) / q,
-                y: y3 - calc * (p2.y - p1.y) / q,
-                z: z3 - calc * (p2.x - p1.x) / q
-              };
-              angle_point = Math.atan2(p1.z, p1.x) - Math.atan2(p2.z, p2.x);
-              if (((p1.x - pArc_1.x) * (p1.z + pArc_1.z)) + ((pArc_1.x - p2.x) * (pArc_1.z + p2.z)) >=
-                ((p1.x - pArc_2.x) * (p1.z + pArc_2.z)) + ((pArc_2.x - p2.x) * (pArc_2.z + p2.z))) {
-                var cw = pArc_1;
-                var ccw = pArc_2;
-              } else {
-                var cw = pArc_2;
-                var ccw = pArc_1;
+          switch (this.arcPlane) {
+            case "G18": { // ZX
+              var halfSq = deltaZ*deltaZ + deltaX*deltaX; // squared half distsance
+              var distSq = radius*radius - halfSq; // squared distsance from p3 to the center
+              if (distSq < 0) {
+                // the points are further apart than twice the radius, which is invalid. pick the mid point
+                console.log("Radius is too small:", radius, "Should be at least:", Math.sqrt(halfSq));
+                vpArc = new THREE.Vector3(x3, y3, z3);
+              }
+              else {
+                var scale = Math.sqrt(distSq / halfSq); // ratio between the half vector length and the distance from p3 to the center
+                if ((args.clockwise === false ? radius : -radius) < 0) scale = -scale; // flip the sign if necessary
+                vpArc = new THREE.Vector3(x3 + deltaZ*scale, y3, z3 - deltaX*scale); // the Y is irrelevant, so just pick the middle y3
               }
               break;
-            case "G19":
-              pArc_1 = {
-                x: x3 + calc * (p1.x - p2.x) / q,
-                y: y3 + calc * (p1.z - p2.z) / q,
-                z: z3 + calc * (p2.y - p1.y) / q
-              };
-              pArc_2 = {
-                x: x3 - calc * (p1.x - p2.x) / q,
-                y: y3 - calc * (p1.z - p2.z) / q,
-                z: z3 - calc * (p2.y - p1.y) / q
-              };
-
-              if (((p1.y - pArc_1.y) * (p1.z + pArc_1.z)) + ((pArc_1.y - p2.y) * (pArc_1.z + p2.z)) >=
-                ((p1.y - pArc_2.y) * (p1.z + pArc_2.z)) + ((pArc_2.y - p2.y) * (pArc_2.z + p2.z))) {
-                var cw = pArc_1;
-                var ccw = pArc_2;
-              } else {
-                var cw = pArc_2;
-                var ccw = pArc_1;
+            }
+            case "G19": { // YZ
+              var halfSq = deltaY*deltaY + deltaZ*deltaZ;
+              var distSq = radius*radius - halfSq;
+              if (distSq < 0) {
+                console.log("Radius is too small:", radius, "Should be at least:", Math.sqrt(halfSq));
+                vpArc = new THREE.Vector3(x3, y3, z3);
+              }
+              else {
+                var scale = Math.sqrt(distSq / halfSq);
+                if ((args.clockwise === false ? radius : -radius) < 0) scale = -scale;
+                vpArc = new THREE.Vector3(x3, y3 - deltaZ*scale, z3 + deltaY*scale);
               }
               break;
-            default:
-              pArc_1 = {
-                x: x3 + calc * (p1.y - p2.y) / q,
-                y: y3 + calc * (p2.x - p1.x) / q,
-                z: z3 + calc * (p2.z - p1.z) / q
-              };
-              pArc_2 = {
-                x: x3 - calc * (p1.y - p2.y) / q,
-                y: y3 - calc * (p2.x - p1.x) / q,
-                z: z3 - calc * (p2.z - p1.z) / q
-              };
-              if (((p1.x - pArc_1.x) * (p1.y + pArc_1.y)) + ((pArc_1.x - p2.x) * (pArc_1.y + p2.y)) >=
-                ((p1.x - pArc_2.x) * (p1.y + pArc_2.y)) + ((pArc_2.x - p2.x) * (pArc_2.y + p2.y))) {
-                var cw = pArc_1;
-                var ccw = pArc_2;
-              } else {
-                var cw = pArc_2;
-                var ccw = pArc_1;
+            }
+            default: { // XY
+              var halfSq = deltaX*deltaX + deltaY*deltaY;
+              var distSq = radius*radius - halfSq;
+              if (distSq < 0) {
+                console.log("Radius is too small:", radius, "Should be at least:", Math.sqrt(halfSq));
+                vpArc = new THREE.Vector3(x3, y3, z3);
               }
+              else {
+                var scale = Math.sqrt(distSq / halfSq);
+                if ((args.clockwise === false ? radius : -radius) < 0) scale = -scale;
+                vpArc = new THREE.Vector3(x3 - deltaY*scale, y3 + deltaX*scale, z3);
+              }
+            }
           }
-
-          if ((p2.clockwise === true && radius >= 0) || (p2.clockwise === false && radius < 0)) vpArc = new THREE.Vector3(cw.x, cw.y, cw.z);
-          else vpArc = new THREE.Vector3(ccw.x, ccw.y, ccw.z);
 
         } else {
           // this code deals with IJK gcode commands
-          /*if(args.clockwise === false || args.cmd === "G3")
-              var pArc = {
-                  x: p2.arci ? p1.x + p2.arci : p1.x,
-                  y: p2.arcj ? p1.y + p2.arcj : p1.y,
-                  z: p2.arck ? p1.z + p2.arck : p1.z,
-              };
-          else*/
-          var pArc = {
-            x: p2.arci,
-            y: p2.arcj,
-            z: p2.arck,
-          };
-          //console.log("new pArc:", pArc);
-          vpArc = new THREE.Vector3(pArc.x, pArc.y, pArc.z);
+          vpArc = new THREE.Vector3(p2.arci, p2.arcj, p2.arck);
           //console.log("vpArc:", vpArc);
         }
 
@@ -542,17 +455,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
         // still push the normal p1/p2 point for debug
         p2.g2 = true;
         p2.threeObjArc = threeObjArc;
-        // these golden lines showing start/end of a g2 or g3 arc were confusing people
-        // so hiding them for now. jlauer 8/15/15
-        /*
-        geometry = group.geometry;
-        geometry.vertices.push(
-            new THREE.Vector3(p1.x, p1.y, p1.z));
-        geometry.vertices.push(
-            new THREE.Vector3(p2.x, p2.y, p2.z));
-        geometry.colors.push(group.color);
-        geometry.colors.push(group.color);
-        */
         // end of if p2.arc
         // console.log( p2.threeObjArc.userData.points)
 
@@ -592,27 +494,13 @@ GCodeParser = function(handlers, modecmdhandlers) {
             timeMinutes = timeMinutes * 1.32;
           }
           this.totalTime += timeMinutes;
-          var p2sub = {
-            x: threeObjArc.userData.points[i].x,
-            y: threeObjArc.userData.points[i].y,
-            z: threeObjArc.userData.points[i].z,
-            e: p2.e,
-            f: p2.f,
-            g2: true,
-            g2segment: true,
-            feedrate: fr,
-            dist: dist,
-            distSum: this.totalDist,
-            timeMins: timeMinutes,
-            timeMinsSum: this.totalTime,
-          }
           linePoints.push({
             src: 607,
             x: threeObjArc.userData.points[i].x,
             y: threeObjArc.userData.points[i].y,
             z: threeObjArc.userData.points[i].z,
             g: 2,
-            timeMins: p2sub.timeMins
+            timeMins: timeMinutes
           });
         }
 
@@ -892,19 +780,22 @@ GCodeParser = function(handlers, modecmdhandlers) {
       // These take no arguments
       {
         G17: function() {
-          console.log("SETTING XY PLANE");
+//          console.log("SETTING XY PLANE");
+          cofg.arcPlane = "G17";
         },
 
         G18: function() {
-          console.log("SETTING XZ PLANE");
+//          console.log("SETTING XZ PLANE");
+          cofg.arcPlane = "G18";
         },
 
         G19: function() {
-          console.log("SETTING YZ PLANE");
+//          console.log("SETTING YZ PLANE");
+          cofg.arcPlane = "G19";
         },
 
         G20: function() {
-          // G21: Set Units to Inches
+          // G20: Set Units to Inches
           // We don't really have to do anything since 3d viewer is unit agnostic
           // However, we need to set a global property so the trinket decorations
           // like toolhead, axes, grid, and extent labels are scaled correctly
