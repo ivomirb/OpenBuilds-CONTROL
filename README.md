@@ -9,6 +9,7 @@ This is a fork by Ivo Beltchev. Notable changes:
 * Added an option to the Surfacing Wizard to extend the area by the tool radius
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
 * Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
+* Updated the 3D view to properly display arcs in the XZ and YZ planes
 * Added many useful macros in the [Useful Macros folder](UsefulMacros/UsefulMacros.md)
 
 Additionally, the ivobe/custom branch has a few more changes that I use in my own build:
