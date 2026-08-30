@@ -38,7 +38,9 @@ Requires this version of OpenBuilds, which adds the "reload" functionality.
 Allows macro buttons to be organized in groups, which makes large number of macros more manageable.
 The group tabs can be horizontal or vertical.
 
-It works best when set to autorun on startup.
+Also has the ability to back up all macros into a single file.
+
+This macro works best when set to autorun on startup.
 
 **Horizontal group tabs**
 ![Screenshot](screenshots/macros_h.png)

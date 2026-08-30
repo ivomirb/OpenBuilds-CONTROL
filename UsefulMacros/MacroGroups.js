@@ -45,6 +45,9 @@ function CleanupOldVersion()
 	{
 		document.getElementById('macros').removeEventListener('contextmenu', contextmenu);
 
+		var importAll = $('#macroBackgroundContextMenu').prop('ImportAll');
+		document.getElementById('macroImportAllFile').removeEventListener('change', importAll);
+
 		var observer = $('#macroBackgroundContextMenu').prop('Observer');
 		observer.disconnect();
 
@@ -280,35 +283,6 @@ function RebuildGroupUI()
 	RefreshButtonVisibility();
 }
 
-function MoveMacroButton(name, nameBefore)
-{
-	var buttonElement = document.getElementById(name);
-	var parentElement = buttonElement.parentElement;
-	var beforeElement;
-	if (nameBefore == "")
-	{
-		beforeElement = document.getElementById("macroBtn" + (buttonsarray.length - 1));
-		beforeElement = beforeElement.nextElementSibling;
-	}
-	else
-	{
-		beforeElement = document.getElementById(nameBefore);
-	}
-	parentElement.removeChild(buttonElement);
-	parentElement.insertBefore(buttonElement, beforeElement);
-	var element = parentElement.firstElementChild;
-	for (var i = 0; i < buttonsarray.length; i++)
-	{
-		element.id = "macroBtn" + i;
-		element.setAttribute("oncontextmenu", "macroContextMenu(" + i + ")");
-		if (element.getAttribute("onclick").startsWith("runJsMacro"))
-		{
-			element.setAttribute("onclick", "runJsMacro('" + i + "');");
-		}
-		element = element.nextElementSibling;
-	}
-}
-
 var g_bInOnMacrosChanged = false;
 
 function OnMacrosChanged()
@@ -337,7 +311,7 @@ function OnMacrosChanged()
 							var button = buttonsarray[i];
 							buttonsarray.splice(i, 1);
 							buttonsarray.splice(j, 0, button);
-							MoveMacroButton("macroBtn" + i, "macroBtn" + j);
+							populateMacroButtons();
 							break;
 						}
 					}
@@ -354,7 +328,7 @@ function OnMacrosChanged()
 							var button = buttonsarray[i+1];
 							buttonsarray.splice(i+1, 1);
 							buttonsarray.splice(j, 0, button);
-							MoveMacroButton("macroBtn" + (i+1), j < buttonsarray.length - 1 ? "macroBtn" + (j+1) : "");
+							populateMacroButtons();
 							break;
 						}
 					}
@@ -418,8 +392,6 @@ window.SetMacroTabsVisibility = function(vis)
 		verticalTabs.parentElement.hidden = true;
 	}
 
-//	$('#macroBackgroundContextMenu').css({display: 'none'});
-//	$('#macroTabContextMenu').css({display: 'none'});
 	RefreshButtonVisibility();
 }
 
@@ -528,6 +500,67 @@ function MacroBackgroundContextMenu(event)
 	}
 }
 
+window.ExportAll = function()
+{
+	var blob = new Blob([JSON.stringify(buttonsarray)], {type: "plain/text"});
+	var date = new Date();
+	invokeSaveAsDialog(blob, 'macro-backup-' + date.yyyymmdd() + '.json');
+}
+
+function FileReadError(message)
+{
+	if (message == undefined)
+	{
+		message = "Unspecified Error";
+	}
+	Metro.dialog.create({
+		title: "File read error",
+		clsDialog: "dark",
+		width: 600,
+		content: escapeHTML(message),
+		dataToTop: true,
+		actions: [{
+				caption: "OK",
+				cls: "js-dialog-close alert",
+				onclick: function() {}
+			}
+		]
+	});
+}
+
+function ImportAll(e)
+{
+	var files = e.target.files || e.dataTransfer.files;
+	var file = files[0];
+	document.getElementById('macroImportAllFile').value = '';
+	if (file)
+	{
+		var r = new FileReader();
+		r.readAsText(file);
+		r.onload = function()
+		{
+			var newButtons = undefined;
+			try
+			{
+				newButtons = JSON.parse(this.result);
+			}
+			catch (error)
+			{
+				FileReadError(error.message);
+			}
+			if (newButtons != undefined)
+			{
+				buttonsarray = newButtons;
+				populateMacroButtons();
+			}
+		}
+		r.onerror = function()
+		{
+			FileReadError(r.error.message);
+		}
+	}
+}
+
 $(document).ready(function()
 {
 	CleanupOldVersion();
@@ -540,10 +573,15 @@ $(document).ready(function()
 	<li id="macroHorGroups"  onclick="SetMacroTabsVisibility(1)"><a href="#"><i class="fa fa-circle icon"></i> Horizontal Group Tabs</a></li>
 	<li id="macroVertGroups" onclick="SetMacroTabsVisibility(2)"><a href="#"><i class="fa fa-circle icon"></i> Vertical Group Tabs</a></li>
 	<li id="macroHideGroups" onclick="SetMacroTabsVisibility(0)"><a href="#"><i class="fa fa-circle icon"></i> Disable Groups</a></li>
+	<li class="divider"></li>
+	<li onclick="ExportAll()"><a href="#"><i class="fas fa-download icon"></i> Export All Macros</a></li>
+	<li class="btn-file" title=""><a href="#"><input class="btn-file" id="macroImportAllFile" type="file" accept=".json" /><i class="fas fa-upload icon"></i> Import All Macros</a></li>
 </ul>
 `;
 	document.body.appendChild(CreateFromHtml(backgroundMenu));
 	macrosElement.addEventListener('contextmenu', MacroBackgroundContextMenu);
+
+	document.getElementById('macroImportAllFile').addEventListener('change', ImportAll, false);
 
 	// for some reason without this divider, closing the first menu opens the second
 	document.body.appendChild(CreateFromHtml(`<div id="macroMenuDivider"/>`));
@@ -610,6 +648,7 @@ $(document).ready(function()
 
 	// store some objects in props to be cleaned up later
 	$('#macroBackgroundContextMenu').prop('MacroBackgroundContextMenu', () => { return MacroBackgroundContextMenu; });
+	$('#macroBackgroundContextMenu').prop('ImportAll', () => { return ImportAll; });
 	$('#macroBackgroundContextMenu').prop('Observer', () => { return observer; });
 
 	setTimeout(function()
