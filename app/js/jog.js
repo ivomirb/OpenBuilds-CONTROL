@@ -23,7 +23,7 @@ function jogOverride(newVal) {
 }
 
 function setADist(newADist) {
-  $("#distAAxislabel").html("A: " + newADist + " deg")
+  $("#distAAxislabel").html("A: " + newADist + "&deg;")
   jogdistA = newADist;
 }
 
