@@ -138,7 +138,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
     cone = new THREE.Mesh(coneGeo, new THREE.MeshLambertMaterial({
       color: 0x0000ff,
       specular: 0x0000ff,
-      shininess: 00
+      shininess: 0
     }));
 
     cone.overdraw = true;
