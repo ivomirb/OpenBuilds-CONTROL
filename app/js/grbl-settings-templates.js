@@ -76,7 +76,25 @@ var grblSettingsTemplate2 = {
         <span class="text-small">Reversed</span>
     </div>
 </div>
-
+<div class="4thaxis-active">
+    <div class="row">
+        <div class="cell">
+            <span class="text-small">A</span>
+        </div>
+        <div class="cell">
+            <span class="text-small">Normal</span>
+        </div>
+        <div class="cell pb-1">
+            <label class="toggle">
+                <input type="checkbox" id="adirinvert">
+                <div class="app-notification">app-notification</div>
+            </label>
+        </div>
+        <div class="cell">
+            <span class="text-small">Reversed</span>
+        </div>
+    </div>
+</div>
       `,
     utils: ``
   },
@@ -169,56 +187,75 @@ var grblSettingsTemplate2 = {
     title: `Homing direction invert, mask`,
     description: `By default, Grbl assumes your homing limit switches are in the positive direction, first moving the z-axis positive, then the x-y axes positive before trying to precisely locate machine zero by going back and forth slowly around the switch. If your machine has a limit switch in the negative direction, the homing direction mask can invert the axes' direction. It works just like the step port invert and direction port invert masks, where all you have to do is send the value in the table to indicate what axes you want to invert and search for in the opposite direction.`,
     template: `<input id="val-23-input" readonly type="hidden">
+<div class="row">
+    <div class="cell">
+        <span class="text-small">X</span>
+    </div>
+    <div class="cell">
+        <span class="text-small">Min</span>
+    </div>
+    <div class="cell pb-1">
+        <label class="toggle">
+            <input type="checkbox" id="xHomeDir">
+            <div class="app-notification">app-notification</div>
+        </label>
+    </div>
+    <div class="cell">
+        <span class="text-small">Max</span>
+    </div>
+</div>
+<div class="row">
+    <div class="cell">
+        <span class="text-small">Y</span>
+    </div>
+    <div class="cell">
+        <span class="text-small">Min</span>
+    </div>
+    <div class="cell pb-1">
+        <label class="toggle">
+            <input type="checkbox" id="yHomeDir">
+            <div class="app-notification">app-notification</div>
+         </label>
+    </div>
+    <div class="cell">
+        <span class="text-small">Max</span>
+    </div>
+</div>
+<div class="row">
+    <div class="cell">
+        <span class="text-small">Z</span>
+    </div>
+    <div class="cell">
+        <span class="text-small">Min</span>
+    </div>
+    <div class="cell pb-1">
+        <label class="toggle">
+            <input type="checkbox" id="zHomeDir">
+            <div class="app-notification">app-notification</div>
+        </label>
+    </div>
+    <div class="cell">
+        <span class="text-small">Max</span>
+    </div>
+</div>
+<div class="4thaxis-active">
     <div class="row">
-<div class="cell">
-  <span class="text-small">X</span>
-</div>
-<div class="cell">
-  <span class="text-small">Min</span>
-</div>
-<div class="cell pb-1">
-  <label class="toggle">
-      <input type="checkbox" id="xHomeDir">
-      <div class="app-notification">app-notification</div>
-  </label>
-</div>
-<div class="cell">
-  <span class="text-small">Max</span>
-</div>
-</div>
-<div class="row">
-<div class="cell">
-  <span class="text-small">Y</span>
-</div>
-<div class="cell">
-  <span class="text-small">Min</span>
-</div>
-<div class="cell pb-1">
-  <label class="toggle">
-      <input type="checkbox" id="yHomeDir">
-      <div class="app-notification">app-notification</div>
-  </label>
-</div>
-<div class="cell">
-  <span class="text-small">Max</span>
-</div>
-</div>
-<div class="row">
-<div class="cell">
-  <span class="text-small">Z</span>
-</div>
-<div class="cell">
-  <span class="text-small">Min</span>
-</div>
-<div class="cell pb-1">
-  <label class="toggle">
-      <input type="checkbox" id="zHomeDir">
-      <div class="app-notification">app-notification</div>
-  </label>
-</div>
-<div class="cell">
-  <span class="text-small">Max</span>
-</div>
+        <div class="cell">
+            <span class="text-small">A</span>
+        </div>
+        <div class="cell">
+            <span class="text-small">Min</span>
+        </div>
+        <div class="cell pb-1">
+            <label class="toggle">
+                <input type="checkbox" id="aHomeDir">
+                <div class="app-notification">app-notification</div>
+            </label>
+        </div>
+        <div class="cell">
+            <span class="text-small">Max</span>
+        </div>
+    </div>
 </div>
 
 `,

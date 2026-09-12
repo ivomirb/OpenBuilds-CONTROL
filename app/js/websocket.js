@@ -999,6 +999,7 @@ function initSocket() {
           break;
       }
     }
+    clearMachineCoordinates();
   })
 
   socket.on("interfaceOutdated", function(status) {
