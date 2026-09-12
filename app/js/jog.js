@@ -452,23 +452,21 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "X-";
-        var distance = 1000;
-
+        var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
+        var minX = mcsX - 1000;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$130)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            minX = calcMaskFromDec(grblParams.$23).x ? 0 : -parseFloat(grblParams.$130);
+          else
+            minX = calcMaskFromDec(grblParams.$23).x ? 1-parseFloat(grblParams.$130) : -parseFloat(grblParams.$130);
+          if (minX >= mcsX) {
             toastJogWillHit("X-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateX + "\n");
+        if (minX < mcsX) {
+          socket.emit('runCommand', "$J=G53 G90 G21 X" + minX.toFixed(3) + " F" + jogRateX + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xM').click();
@@ -503,21 +501,20 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "X";
-        var distance = 1000;
+        var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
+        var maxX = mcsX + 1000;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$130)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            maxX = calcMaskFromDec(grblParams.$23).x ? parseFloat(grblParams.$130) : 0;
+          else
+            maxX = calcMaskFromDec(grblParams.$23).x ? 0 : -1;
+          if (maxX <= mcsX) {
             toastJogWillHit("X+");
           }
         }
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateX + "\n");
+        if (maxX > mcsX) {
+          socket.emit('runCommand', "$J=G53 G90 G21 X" + maxX.toFixed(3) + " F" + jogRateX + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xP').click();
@@ -552,23 +549,21 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Y-";
-        var distance = 1000;
-
+        var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
+        var minY = mcsY - 1000;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$131)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            minY = calcMaskFromDec(grblParams.$23).y ? 0 : -parseFloat(grblParams.$131);
+          else
+            minY = calcMaskFromDec(grblParams.$23).y ? 1-parseFloat(grblParams.$131) : -parseFloat(grblParams.$131);
+          if (minY >= mcsY) {
             toastJogWillHit("Y-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateY + "\n");
+        if (minY < mcsY) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Y" + minY.toFixed(3) + " F" + jogRateY + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.yM').click();
@@ -602,23 +597,20 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Y";
-        var distance = 1000;
-
+        var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
+        var maxY = mcsY + 1000;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$131)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            maxY = calcMaskFromDec(grblParams.$23).y ? parseFloat(grblParams.$131) : 0;
+          else
+            maxY = calcMaskFromDec(grblParams.$23).y ? 0 : -1;
+          if (maxY <= mcsY) {
             toastJogWillHit("Y+");
           }
         }
-
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateY + "\n");
+        if (maxY > mcsY) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Y" + maxY.toFixed(3) + " F" + jogRateY + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('#yP').click();
@@ -652,23 +644,21 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Z-";
-        var distance = 1000;
-
+        var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
+        var minZ = mcsZ - 1000;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$132)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            minZ = calcMaskFromDec(grblParams.$23).z ? 0 : -parseFloat(grblParams.$132);
+          else
+            minZ = calcMaskFromDec(grblParams.$23).z ? 1-parseFloat(grblParams.$132) : -parseFloat(grblParams.$132);
+          if (minZ >= mcsZ) {
             toastJogWillHit("Z-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateZ + "\n");
+        if (minZ < mcsZ) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Z" + minZ.toFixed(3) + " F" + jogRateZ + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zM').click();
@@ -702,23 +692,20 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Z";
-        var distance = 1000;
-
+        var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
+        var maxZ = mcsZ + 1000;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$132)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            maxZ = calcMaskFromDec(grblParams.$23).z ? parseFloat(grblParams.$132) : 0;
+          else
+            maxZ = calcMaskFromDec(grblParams.$23).z ? 0 : -1;
+          if (maxZ <= mcsZ) {
             toastJogWillHit("Z+");
           }
         }
-
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateZ + "\n");
+        if (maxZ > mcsZ) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Z" + maxZ.toFixed(3) + " F" + jogRateZ + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zP').click();
@@ -752,23 +739,22 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "A-";
-        var distance = 1000;
-
-        if (hasSoftLimits) {
+        var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
+        var minA = mcsA - 1000;
+        var travelA = parseFloat(grblParams.$133);
+        if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$133)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            minA = calcMaskFromDec(grblParams.$23).a ? 0 : -travelA;
+          else
+            minA = calcMaskFromDec(grblParams.$23).a ? 1-travelA : -travelA;
+          if (minA >= mcsA) {
             toastJogWillHit("A-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateA + "\n");
+        if (minA < mcsA) {
+          socket.emit('runCommand', "$J=G53 G90 G21 A" + minA.toFixed(3) + " F" + jogRateA + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aM').click();
@@ -802,23 +788,21 @@ $(document).ready(function() {
     }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "A";
-        var distance = 1000;
-
-        if (hasSoftLimits) {
+        var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
+        var maxA = mcsA + 1000;
+        var travelA = parseFloat(grblParams.$133);
+        if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$133)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          if (laststatus.machine.firmware.features.contains('Z'))
+            maxA = calcMaskFromDec(grblParams.$23).a ? travelA : 0;
+          else
+            maxA = calcMaskFromDec(grblParams.$23).a ? 0 : -1;
+          if (maxA <= mcsA) {
             toastJogWillHit("A+");
           }
         }
-
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateA + "\n");
+        if (maxA > mcsA) {
+          socket.emit('runCommand', "$J=G53 G90 G21 A" + maxA.toFixed(3) + " F" + jogRateA + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aP').click();
