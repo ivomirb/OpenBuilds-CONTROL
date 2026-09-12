@@ -76,7 +76,9 @@ function parseGcodeInWebWorker(gcode) {
   if (webgl) {
     if (!disable3Dgcodepreview) {
       simstop()
-      scene.remove(object)
+      if (object) {
+        disposeGeometryAndRemove(object);
+      }
       object = false;
 
       // var worker = new Worker('lib/3dview/workers/gcodeparser.js');
@@ -86,9 +88,9 @@ function parseGcodeInWebWorker(gcode) {
         if (e.data.progress != undefined) {
           $('#3dviewlabel').html(' 3D View (rendering, please wait... ' + e.data.progress + '% )')
         } else {
-          if (scene.getObjectByName('gcodeobject')) {
-            scene.remove(scene.getObjectByName('gcodeobject'))
-            object = false;
+          var gcObject = scene.getObjectByName('gcodeobject');
+          if (gcObject) {
+            disposeGeometryAndRemove(gcObject);
           }
           object = convertParsedDataToObject(e.data);
           //console.log(object)

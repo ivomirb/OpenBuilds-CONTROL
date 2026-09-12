@@ -15,7 +15,7 @@ let ThemeData = {
       GRID_STEP_10_OPACITY: 0.15,
       GRID_STEP_100_COLOR: 0x666666,
       GRID_STEP_100_OPACITY: 0.15,
-      RULER_COLOR: 0x888888,
+      RULER_COLOR: 0x000000,
       RULER_OPACITY: 0.15,
       X_RULER_NUMBER_COLOR: "#cc0000",
       X_RULER_LABEL_COLOR: "#ff0000",
@@ -195,9 +195,11 @@ let ThemeData = {
       pauseAnimation = true;
       $('#splash').show()
       while (scene.children.length > 0) {
-        scene.remove(scene.children[0])
+        disposeGeometryAndRemove(scene.children[0]);
       }
-      drawWorkspace(xmin, sizexmax, ymin, sizeymax);
+
+      cleanupWorkspace();
+      drawWorkspace(sizexmin, sizexmax, sizeymin, sizeymax);
       clearSceneFlag = true;
       pauseAnimation = false;
       if (themeId == "dark") {

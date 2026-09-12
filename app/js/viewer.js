@@ -10,6 +10,8 @@ var camera, controls, control, scene, renderer, gridsystem, helper;
 var clock = new THREE.Clock();
 
 var marker;
+var sizexmin;
+var sizeymin;
 var sizexmax;
 var sizeymax;
 var lineincrement = 50
@@ -43,6 +45,37 @@ var xmin = 0,
   ymax = 207
 
 var machineCoordinateSpace = false;
+
+function disposeGeometry(obj) {
+  if (obj.geometry) obj.geometry.dispose();
+  if (obj.material) {
+    if (obj.material.map) obj.material.map.dispose();
+    if (obj.material.normalMap) obj.material.normalMap.dispose();
+    if (obj.material.roughnessMap) obj.material.roughnessMap.dispose();
+    if (obj.material.displacementMap) obj.material.displacementMap.dispose();
+    obj.material.dispose();
+  }
+  obj.children.forEach((child) => { disposeGeometry(child); });
+}
+
+function disposeGeometryAndRemove(obj) {
+  disposeGeometry(obj);
+  obj.parent.remove(obj);
+}
+
+function cleanupWorkspace() {
+  var obj = workspace.getObjectByName("Scene Lights");
+  if (obj) disposeGeometryAndRemove(obj);
+
+  obj = workspace.getObjectByName("Skydome");
+  if (obj) disposeGeometryAndRemove(obj);
+
+  obj = workspace.getObjectByName("Simulation Marker");
+  if (obj) disposeGeometryAndRemove(obj);
+
+  obj = workspace.getObjectByName("Grid System");
+  if (obj) disposeGeometryAndRemove(obj);
+}
 
 function drawWorkspace(xmin, xmax, ymin, ymax) {
 
@@ -87,9 +120,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   hemiLight.visible = false;
   hemiLight.name = "hemiLight"
   sceneLights.add(hemiLight);
-  // if (helper) {
-  //     workspace.remove(helper);
-  // }
+
   sceneLights.name = "Scene Lights"
   workspace.add(sceneLights);
 
@@ -136,9 +167,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
     coneGeo.applyMatrix(new THREE.Matrix4().makeTranslation(0, -20, 0));
 
     cone = new THREE.Mesh(coneGeo, new THREE.MeshLambertMaterial({
-      color: 0x0000ff,
-      specular: 0x0000ff,
-      shininess: 0
+      color: 0x0000ff
     }));
 
     cone.overdraw = true;
@@ -181,6 +210,8 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   }
   // console.log(xmin, xmax, ymin, ymax, inches)
 
+  sizexmin = xmin;
+  sizeymin = ymin;
   sizexmax = xmax;
   sizeymax = ymax;
 
@@ -203,8 +234,8 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   } else {
     var unitsval = "mm"
     var offset = 5
-    var size = 5
   }
+  var size = 5
 
   // add axes labels
   var xlbl = this.makeSprite(this.scene, "webgl", {
@@ -285,7 +316,10 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   grid.add(helper);
   grid.name = "Grid"
 
-  gridsystem.children.length = 0
+  while (gridsystem.children.length > 0) {
+    disposeGeometryAndRemove(gridsystem.children[0]);
+  }
+
   if (inches) {
     var ruler = drawRulerInches(xmin, xmax, ymin, ymax, inches)
   } else {
@@ -355,7 +389,6 @@ function init3D() {
     }
 
 
-    //drawWorkspace(xmin, xmax, ymin, ymax)
     drawWorkspace(xmin, xmax, ymin, ymax);
 
     // Picking stuff
@@ -387,7 +420,7 @@ function animate() {
 
     if (clearSceneFlag) {
       while (scene.children.length > 1) {
-        scene.remove(scene.children[1])
+        disposeGeometryAndRemove(scene.children[1]);
       }
 
       if (object) {
@@ -581,9 +614,7 @@ function resetView(object) {
         var object = objectsInScene[i].clone();
         insceneGrp.add(object)
       }
-      // scene.add(insceneGrp)
       viewExtents(insceneGrp);
-      // scene.remove(insceneGrp)
     } else {
       viewExtents(helper);
     }
@@ -594,24 +625,38 @@ function resetView(object) {
   }
 }
 
+function clearMachineCoordinates() {
+  if (machineCoordinateSpace)
+    disposeGeometryAndRemove(machineCoordinateSpace);
+  machineCoordinateSpace = false;
+}
+
 function drawMachineCoordinates(status) {
 
-  if (laststatus != undefined && grblParams.$130 !== undefined && grblParams.$131 !== undefined && grblParams.$132 !== undefined) {
-    var machineCoordinatesBoxMaxX = status.machine.position.work.x - status.machine.position.offset.x
-    var machineCoordinatesBoxMaxY = status.machine.position.work.y - status.machine.position.offset.y
-    var machineCoordinatesBoxMaxZ = status.machine.position.work.z - status.machine.position.offset.z
+  if (status != undefined && grblParams.$130 !== undefined && grblParams.$131 !== undefined && grblParams.$132 !== undefined) {
+    var machineCoordinatesBoxMaxX = -status.machine.position.offset.x;
+    var machineCoordinatesBoxMaxY = -status.machine.position.offset.y;
+    var machineCoordinatesBoxMaxZ = -status.machine.position.offset.z;
 
-    var machineCoordinatesBoxMinX = machineCoordinatesBoxMaxX - grblParams.$130
-    var machineCoordinatesBoxMinY = machineCoordinatesBoxMaxY - grblParams.$131
-    var machineCoordinatesBoxMinZ = machineCoordinatesBoxMaxZ - grblParams.$132
+    if (grblParams.$23 != undefined && status.machine.firmware.features.contains('Z')) {
+      // homing force origin enabled
+      var homingDir = calcMaskFromDec(grblParams.$23);
+      if (homingDir.x) machineCoordinatesBoxMaxX += Number(grblParams.$130);
+      if (homingDir.y) machineCoordinatesBoxMaxY += Number(grblParams.$131);
+      if (homingDir.z) machineCoordinatesBoxMaxZ += Number(grblParams.$132);
+    }
+
+    var machineCoordinatesBoxMinX = machineCoordinatesBoxMaxX - Number(grblParams.$130)
+    var machineCoordinatesBoxMinY = machineCoordinatesBoxMaxY - Number(grblParams.$131)
+    var machineCoordinatesBoxMinZ = machineCoordinatesBoxMaxZ - Number(grblParams.$132)
 
     console.log("X", machineCoordinatesBoxMinX, machineCoordinatesBoxMaxX)
     console.log("Y", machineCoordinatesBoxMinY, machineCoordinatesBoxMaxY)
     console.log("Z", machineCoordinatesBoxMinZ, machineCoordinatesBoxMaxZ)
 
-
-    workspace.remove(machineCoordinateSpace);
+    clearMachineCoordinates();
     machineCoordinateSpace = new THREE.Group();
+    machineCoordinateSpace.name = "Machine Extents";
 
     var material = new THREE.LineBasicMaterial({
       color: 0x888888,
