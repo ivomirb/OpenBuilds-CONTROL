@@ -542,6 +542,7 @@ function checkifchanged() {
             $('#xdirinvert').parent().children('.check').addClass('bd-red');
             $('#ydirinvert').parent().children('.check').addClass('bd-red');
             $('#zdirinvert').parent().children('.check').addClass('bd-red');
+            $('#adirinvert').parent().children('.check').addClass('bd-red');
           }
         } else {
           if (!$("#val-" + j + "-input").parent().is('td')) {
@@ -552,6 +553,7 @@ function checkifchanged() {
             $('#xdirinvert').parent().children('.check').removeClass('bd-red');
             $('#ydirinvert').parent().children('.check').removeClass('bd-red');
             $('#zdirinvert').parent().children('.check').removeClass('bd-red');
+            $('#adirinvert').parent().children('.check').removeClass('bd-red');
           }
         }
       }
@@ -711,24 +713,20 @@ function refreshGrblSettings() {
 // Calc Grbl 1.1 Invert Masks
 // Call: calcDecFromMask(true, false, false)
 // Return: 1
-function calcDecFromMask(x, y, z) {
-  var string = "0000000" + (z ? "1" : "0") + (y ? "1" : "0") + (x ? "1" : "0");
-  // console.log(string)
-  return parseInt(string, 2);
+function calcDecFromMask(x, y, z, a) {
+  return (x?1:0) + (y?2:0) + (z?4:0) + (a?8:0);
 }
 
 // Calc Grbl 1.1 Invert Masks
 // Call: calcMaskFromDec("4")
-// Returns: {x: false, y: false, z: true}
+// Returns: {x: false, y: false, z: true, a:false}
 function calcMaskFromDec(dec) {
   var num = parseInt(dec)
-  num = num.toString(2)
-  num = ("000" + num).substr(-3, 3)
-  // console.log(num)
   var invertmask = {
-    x: (num.charAt(2) == 0 ? false : true),
-    y: (num.charAt(1) == 0 ? false : true),
-    z: (num.charAt(0) == 0 ? false : true)
+    x: (num&1) != 0,
+    y: (num&2) != 0,
+    z: (num&4) != 0,
+    a: (num&8) != 0,
   }
   return invertmask
 }
@@ -737,7 +735,8 @@ function changeProbeDirInvert() {
   var xticked = $('#xHomeDir').is(':checked');
   var yticked = $('#yHomeDir').is(':checked');
   var zticked = $('#zHomeDir').is(':checked');
-  var value = calcDecFromMask(!xticked, !yticked, !zticked)
+  var aticked = $('#aHomeDir').is(':checked');
+  var value = calcDecFromMask(!xticked, !yticked, !zticked, !aticked)
   console.log("Homing Dir $23=" + value)
   $("#val-23-input").val(value).trigger("change");
   checkifchanged();
@@ -748,6 +747,7 @@ function displayProbeDirInvert() {
   $('#xHomeDir:checkbox').prop('checked', !dir.x);
   $('#yHomeDir:checkbox').prop('checked', !dir.y);
   $('#zHomeDir:checkbox').prop('checked', !dir.z);
+  $('#aHomeDir:checkbox').prop('checked', !dir.a);
   checkifchanged();
 }
 
@@ -755,7 +755,8 @@ function changeDirInvert() {
   var xticked = $('#xdirinvert').is(':checked');
   var yticked = $('#ydirinvert').is(':checked');
   var zticked = $('#zdirinvert').is(':checked');
-  var value = calcDecFromMask(xticked, yticked, zticked)
+  var aticked = $('#adirinvert').is(':checked');
+  var value = calcDecFromMask(xticked, yticked, zticked, aticked)
   $("#val-3-input").val(value).trigger("change");
   checkifchanged();
 }
@@ -765,6 +766,7 @@ function displayDirInvert() {
   $('#xdirinvert:checkbox').prop('checked', dir.x);
   $('#ydirinvert:checkbox').prop('checked', dir.y);
   $('#zdirinvert:checkbox').prop('checked', dir.z);
+  $('#adirinvert:checkbox').prop('checked', dir.a);
   checkifchanged();
 }
 
@@ -905,6 +907,9 @@ function setup_settings_table() {
   $('#zdirinvert:checkbox').change(function() {
     changeDirInvert();
   });
+  $('#adirinvert:checkbox').change(function() {
+    changeDirInvert();
+  });
 
   $('#xHomeDir:checkbox').change(function() {
     changeProbeDirInvert();
@@ -913,6 +918,9 @@ function setup_settings_table() {
     changeProbeDirInvert();
   });
   $('#zHomeDir:checkbox').change(function() {
+    changeProbeDirInvert();
+  });
+  $('#aHomeDir:checkbox').change(function() {
     changeProbeDirInvert();
   });
 
