@@ -1,11 +1,12 @@
 var object;
 var simIdx, draw, line, timefactor = 1,
-  object, simRunning = false,
+  object, simRunning = false, simPaused = false,
   simSingleLine = -1;
 
 var loader = new THREE.ObjectLoader();
 
-
+var simTween = false;
+var simTweenTimeFactor;
 
 function convertParsedDataToObject(jsonData) {
 
@@ -159,10 +160,13 @@ function parseGcodeInWebWorker(gcode) {
   }
 };
 
-function simSpeed() {
-  timefactor = timefactor * 10;
-  if (timefactor > 1024) timefactor = 0.1;
+function simSpeed(speed) {
+  timefactor = speed;
   $('#simspeedval').text(timefactor);
+
+  if (simTween) {
+    simTween.timeScale(timefactor/simTweenTimeFactor);
+  }
 }
 
 function runSimFrom(startindex, singleLineOnly) {
@@ -170,14 +174,18 @@ function runSimFrom(startindex, singleLineOnly) {
     simSingleLine = startindex;
   }
   $('#gcodeviewertab').click()
-  if (startindex) {
-    for (i = 0; i < object.userData.lines.length; i++)
-      if (object.userData.lines[i].args.indx == startindex) {
-        simIdx = i + 1;
+  if (startindex > 1) {
+    for (i = 0; i < object.userData.linePoints.length; i++) {
+      if (object.userData.linePoints[i].src >= startindex-1) {
+        simIdx = i;
         sim();
+        simpause();
+        break;
       }
+    }
   } else {
     sim();
+    simpause();
   }
 }
 
@@ -203,6 +211,7 @@ function sim() {
       cone.position.x = posx;
       cone.position.y = posy;
       cone.position.z = posz;
+      cone.material.dispose();
       cone.material = new THREE.MeshPhongMaterial({
         color: 0x28a745,
         specular: 0x08701f,
@@ -223,10 +232,11 @@ function sim() {
 
 
     $('#runSimBtn').hide()
+    $('#pauseSimBtn').show()
     $('#stopSimBtn').show()
     clearSceneFlag = true;
     simRunning = true;
-    // timefactor = 1;
+    simPaused = false;
     $('#simspeedval').text(timefactor);
     $('#simstartbtn').attr('disabled', true);
     $('#simstopbtn').attr('disabled', false);
@@ -249,24 +259,26 @@ function runSim() {
 
   }
 
-
+  var srcLine = object.userData.linePoints[simIdx].src;
   // Disabled as of 1.0.271:  object.userData.linePoints[simIdx] doesn't line up with gcode line numbers anymore as comments, etc are not added to linePoints[]
-  //$("#conetext").html(`<span class="tally success drop-shadow">Line ` + simIdx + ": " + editor.session.getLine(simIdx) + `</span>`);
-
+  $("#conetext").html(`<span class="tally success drop-shadow">Line ` + (srcLine+1) + ": " + editor.session.getLine(srcLine) + `</span>`);
 
   var simTime = object.userData.linePoints[simIdx].timeMins / timefactor;
-  $('#gcodesent').html("Sim Line: " + parseInt(simIdx) - 1);
-
+  if (object.userData.linePoints[simIdx].g == 0 && grblParams.$110 != undefined) {
+    simTime *= 1000 / parseFloat(grblParams.$110); // adjust rapid speed if it is known
+  }
   var simTimeInSec = simTime * 60;
 
   if (!disable3Drealtimepos) {
     if (!object.userData.linePoints[simIdx].fake) {
-      TweenMax.to(cone.position, simTimeInSec, {
+      simTweenTimeFactor = timefactor;
+      simTween = TweenMax.to(cone.position, simTimeInSec, {
         ease: Linear.easeNone,
         x: posx,
         y: posy,
         z: posz,
         onComplete: function() {
+          simTween = false;
           if (simRunning == false) {
             //return
             simstop();
@@ -281,7 +293,9 @@ function runSim() {
             }
           }
         }
-      })
+      });
+      if (simPaused)
+        simTween.pause();
     } else {
       if (simRunning == false) {
         //return
@@ -300,27 +314,47 @@ function runSim() {
 
   }
 
-};
+}
 
+function simpause() {
+  simPaused = true;
+  $('#pauseSimBtn').hide();
+  $('#resumeSimBtn').show();
+  if (simTween)
+    simTween.pause();
+}
+
+function simresume() {
+  simPaused = false;
+  $('#pauseSimBtn').show();
+  $('#resumeSimBtn').hide();
+  if (simTween)
+    simTween.resume();
+}
 
 function simstop() {
+  if (simTween) {
+    simTween.kill();
+    simTween = false;
+  }
   simIdx = 0;
   simRunning = false;
+  simPaused = false;
   simSingleLine = -1;
-  $('#runSimBtn').show()
-  $('#stopSimBtn').hide()
-  // timefactor = 1;
+  $('#runSimBtn').show();
+  $('#pauseSimBtn').hide();
+  $('#resumeSimBtn').hide();
+  $('#stopSimBtn').hide();
+
   $('#simspeedval').text(timefactor);
   editor.gotoLine(0)
   $("#conetext").hide();
+  $('#gcodesent').html("&nbsp;");
   clearSceneFlag = true;
-  cone.material = new THREE.MeshPhongMaterial({
-    color: 0x0000ff,
-    specular: 0x0000ff,
-    shininess: 100,
-    opacity: 0.6,
-    transparent: true
-  })
+  cone.material.dispose();
+  cone.material = new THREE.MeshLambertMaterial({
+      color: 0x0000ff
+    });
 }
 
 function simAnimate() {
@@ -349,6 +383,7 @@ function simAnimate() {
         }
 
         $("#conetext").css('left', conepos.x + "px").css('top', conepos.y - 20 + "px");
+        $('#gcodesent').html("X:" + cone.position.x.toFixed(2) + "&nbsp;&nbsp;&nbsp;Y:" + cone.position.y.toFixed(2) + "&nbsp;&nbsp;&nbsp;Z:" + cone.position.z.toFixed(2));
       }
     }
   }
@@ -366,4 +401,4 @@ function toScreenPosition(obj, camera) {
     y: vector.y
   };
 
-};
+}
