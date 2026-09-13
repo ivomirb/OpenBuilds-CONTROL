@@ -495,7 +495,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
           }
           this.totalTime += timeMinutes;
           linePoints.push({
-            src: 607,
+            src: args.indx,
             x: threeObjArc.userData.points[i].x,
             y: threeObjArc.userData.points[i].y,
             z: threeObjArc.userData.points[i].z,
@@ -550,7 +550,9 @@ GCodeParser = function(handlers, modecmdhandlers) {
       var timeMinutes = 0;
       if (dist > 0) {
         var fr;
-        if (args.feedrate > 0) {
+        if (p2.g0) {
+          fr = 1000;
+        } else if (args.feedrate > 0) {
           fr = args.feedrate
         } else {
           fr = 100;
@@ -592,7 +594,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
         linePoints.push({
           timeMins: timeMinutes,
-          src: 628,
+          src: args.indx,
           x: p2.x,
           y: p2.y,
           z: p2.z,
@@ -621,13 +623,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
     }
 
     this.addFakeSegment = function(args) {
-      //line.args = args;
-      var arg2 = {
-        isFake: true,
-        text: args.text,
-        indx: args.indx
-      };
-      if (arg2.text.match(/^(;|\(|<)/)) arg2.isComment = true;
       if (lastLine.g0) {
         g = 0
       } else if (lastLine.g1) {
@@ -638,7 +633,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
         g = -1
       }
       linePoints.push({
-        src: 742,
+        src: args.indx,
         x: lastLine.x,
         y: lastLine.y,
         z: lastLine.z,

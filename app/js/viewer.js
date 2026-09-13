@@ -22,7 +22,7 @@ var clearSceneFlag = false;
 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 var canvas = !!window.CanvasRenderingContext2D;
 
-// pause Animation when we loose webgl context focus
+// pause Animation when we lose webgl context focus
 var pauseAnimation = false;
 
 var size = new THREE.Vector3();

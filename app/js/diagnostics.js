@@ -125,6 +125,11 @@ function initDiagnostics() {
     $('#disableAutoStartTick').prev().hide();
     $('#disableAutoStartTick').hide();
   }
+
+  if (disable3Drealtimepos || disable3Dgcodepreview)
+    $('#runSimBtn').parent().hide();
+  else
+    $('#runSimBtn').parent().show();
 };
 
 initDiagnostics();
