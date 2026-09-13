@@ -1,6 +1,7 @@
 var time = 10
 $(document).ready(function() {
-  checkUpdate()
+// Ivo: disable update checks because the app is no longer in development
+//  checkUpdate()
 });
 
 

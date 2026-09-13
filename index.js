@@ -219,7 +219,6 @@ if (isElectron()) {
   autoUpdater = require("electron-updater").autoUpdater
   var availversion = '0.0.0'
 
-	autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.on('checking-for-update', () => {
     var string = 'Starting update... Please wait';
     var output = {
@@ -3307,6 +3306,7 @@ if (isElectron()) {
         createApp();
       }
     });
+
     if (process.platform == 'win32') {
       // If the app was auto-started by Windows, create the tray icon and don't create the main window until the icon is clicked
       autoStart = process.argv.indexOf("--startup") > 0 ? true : undefined;
