@@ -539,10 +539,45 @@ function checkifchanged() {
           } else if ($("#val-" + j + "-input").is('select')) {
             $("#val-" + j + "-input").addClass('alert');
           } else if (j == 3) { // axes
-            $('#xdirinvert').parent().children('.check').addClass('bd-red');
-            $('#ydirinvert').parent().children('.check').addClass('bd-red');
-            $('#zdirinvert').parent().children('.check').addClass('bd-red');
-            $('#adirinvert').parent().children('.check').addClass('bd-red');
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#ydirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#adirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#yHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#aHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
           }
         } else {
           if (!$("#val-" + j + "-input").parent().is('td')) {
@@ -550,10 +585,15 @@ function checkifchanged() {
           } else if ($("#val-" + j + "-input").is('select')) {
             $("#val-" + j + "-input").removeClass('alert');
           } else if (j == 3) {
-            $('#xdirinvert').parent().children('.check').removeClass('bd-red');
-            $('#ydirinvert').parent().children('.check').removeClass('bd-red');
-            $('#zdirinvert').parent().children('.check').removeClass('bd-red');
-            $('#adirinvert').parent().children('.check').removeClass('bd-red');
+            $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
           }
         }
       }
