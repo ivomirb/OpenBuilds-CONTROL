@@ -193,7 +193,7 @@ function sim() {
   if (typeof(object) == 'undefined' || !scene.getObjectByName('gcodeobject')) {
     // console.log('No Gcode in Preview yet')
     var message = `No Gcode in Preview yet: Please load GCODE from the Open GCODE button first before running simulation`
-    Metro.toast.create(message, null, 10000, 'bg-red');
+    Metro.toast.create(message, null, 3000, 'bg-red');
     simstop()
   } else {
     if (!disable3Drealtimepos) {
