@@ -225,8 +225,8 @@ function sim(fromLine, paused) {
       $('#pauseSimBtn').hide();
       $('#resumeSimBtn').show();
     } else {
-      $('#pauseSimBtn').hide();
-      $('#resumeSimBtn').show();
+      $('#pauseSimBtn').show();
+      $('#resumeSimBtn').hide();
     }
 
     $('#stopSimBtn').show();
