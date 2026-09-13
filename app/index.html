@@ -40,7 +40,7 @@
           <span title="Minimize" class="btn-custom" onclick="socket.emit('minimize')"><i class="fas fa-window-minimize"></i></span>
           <span title="Maximize" class="btn-custom" onclick="socket.emit('maximize')"><i class="fas fa-window-maximize"></i></span>
           <span title="Toggle Fullscreen" class="btn-custom" onclick="socket.emit('fullscreen')"><i class="fas fa-desktop"></i></span>
-          <span title="Close to Tray" class="btn-custom" onclick="socket.emit('minimisetotray')"><i class="fas fa-window-close"></i></span>
+          <span title="Close to Tray" class="btn-custom" onclick="socket.emit(disableAutoStart?'quit':'minimisetotray')" id="mainCloseBtn"><i class="fas fa-window-close"></i></span>
         </div>
       </div>
       <div class="window-content" style="height: 100%; overflow: hidden  !important;">
@@ -598,10 +598,12 @@
                         Indicator</a></li>
                     <li onclick="disable3Dgcodepreview = !disable3Dgcodepreview; saveDiagnostics(); location.reload();" id="disable3DgcodepreviewTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer GCODE Preview</a></li>
                     <li class="divider"></li>
-                    <li onclick="disableSerialLog =! disableSerialLog; saveDiagnostics(); location.reload();" id="disableSerialLogTick"><a href="#"><i class="fas fa-fw fa-terminal"></i> Disable Serial Log</a></li>
+                    <li onclick="disableSerialLog = !disableSerialLog; saveDiagnostics(); location.reload();" id="disableSerialLogTick"><a href="#"><i class="fas fa-fw fa-terminal"></i> Disable Serial Log</a></li>
                     <li onclick="disableDROupdates = !disableDROupdates; saveDiagnostics(); location.reload();" id="disableDROupdatesTick"><a href="#"><i class="fas fa-fw fa-list-ol"></i> Disable DRO/Status Updates</a></li>
                     <li class="divider"></li>
-                    <li onclick="disableAggressiveHomeReset =! disableAggressiveHomeReset; saveDiagnostics(); location.reload();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
+                    <li onclick="disableAggressiveHomeReset = !disableAggressiveHomeReset; saveDiagnostics();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
+                    <li class="divider"></li>
+                    <li onclick="disableAutoStart = !disableAutoStart; saveDiagnostics();" id="disableAutoStartTick"><a href="#"><i class="fas fa-fw fa-running"></i> Disable Auto Start and Tray Icon</a></li>
                 </div>
                 <span class="title">Settings</span>
               </div>

@@ -1,5 +1,8 @@
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = '1';
 
+var autoStart = undefined;
+var foceShowGui = false;
+
 process.on('uncaughtException', function(err) {
   //showErrorDialog(err, attempts = 2) // make two attempts to show an uncaughtException in a dialog
   if (DEBUG) {
@@ -885,6 +888,26 @@ io.on("connection", function(socket) {
       } else {
         debug_log("autoUpdater not found")
       }
+    }
+  })
+
+  socket.on("autoStart", function(enabled) {
+    if (enabled != autoStart) {
+      if (enabled) {
+        electronApp.setLoginItemSettings({openAtLogin: true, args: ["--startup"]});
+        if (!appIcon)
+          createTrayIcon();
+        if (autoStart == undefined && !foceShowGui)
+          jogWindow.hide();
+      }
+      else {
+        electronApp.setLoginItemSettings({openAtLogin: false});
+        if (appIcon) {
+          appIcon.destroy();
+          appIcon = null;
+        }
+      }
+      autoStart = enabled;
     }
   })
 
@@ -2390,7 +2413,7 @@ function stopPort() {
   status.machine.firmware.version = ""; // get version
   status.machine.firmware.date = "";
   status.machine.firmware.buffer = "";
-	status.machine.modals.homedRecently = false;
+  status.machine.modals.homedRecently = false;
   gcodeQueue.length = 0;
   sentBuffer.length = 0; // dump bufferSizes
   // port.drain(port.close());
@@ -3028,7 +3051,8 @@ if (isElectron()) {
     // Module to create native browser window.
 
     function createApp() {
-      createTrayIcon();
+      if (process.platform != 'win32' || autoStart)
+        createTrayIcon();
       if (process.platform == 'darwin') {
         debug_log("Creating MacOS Menu");
         createMenu();
@@ -3043,7 +3067,8 @@ if (isElectron()) {
         status.driver.operatingsystem = 'windows';
       }
 
-      if (process.platform == 'darwin' || uploadedgcode.length > 1) {
+      foceShowGui = uploadedgcode.length > 1 || process.argv.indexOf("-showGui") > 0;
+      if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !autoStart)) {
         showJogWindow()
       }
 
@@ -3135,6 +3160,19 @@ if (isElectron()) {
               appIcon.destroy();
             }
             electronApp.exit(0);
+          }
+        }, {
+          type: 'separator'
+        }, {
+          label: 'Disable Auto Start and the Tray Icon',
+          click() {
+            showJogWindow();
+            io.sockets.emit("disableAutoStart");
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              buttons: ['OK'],
+              message: 'Auto Start and the tray icon have been disabled.\n\nThey can be restored from the Application Diagnostics menu in the Troubleshooting tab.'
+            });
           }
         }])
         if (appIcon) {
@@ -3269,12 +3307,9 @@ if (isElectron()) {
       }
     });
 
-    // Autostart on Login
     if (process.platform == 'win32') {
-      electronApp.setLoginItemSettings({
-        openAtLogin: true,
-        args: []
-      })
+      // If the app was auto-started by Windows, create the tray icon and don't create the main window until the icon is clicked
+      autoStart = process.argv.indexOf("--startup") > 0 ? true : undefined;
     }
   }
 } else { // if its not running under Electron, lets get Chrome up.

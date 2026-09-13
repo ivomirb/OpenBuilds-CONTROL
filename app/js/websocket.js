@@ -26,6 +26,11 @@ $(document).ready(function() {
   $("form").submit(function() {
     return false;
   });
+
+  if (process.platform == 'win32') {
+    $('#mainCloseBtn').attr( "title", disableAutoStart ? "Close" : "Close to Tray");
+    socket.emit('autoStart', !disableAutoStart);
+  }
 });
 
 function showGrbl(bool, firmware) {
@@ -988,6 +993,16 @@ function initSocket() {
 
   socket.on("interfaceOutdated", function(status) {
     console.log("interfaceOutdated", status)
+  })
+
+  socket.on("disableAutoStart", function() {
+    if (process.platform == 'win32' && !disableAutoStart) {
+      disableAutoStart = true;
+      localStorage.setItem('disableAutoStart', true);
+      $('#mainCloseBtn').attr( "title", "Close");
+      $('#disableAutoStartTick').addClass("checked");
+      socket.emit('autoStart', false);
+    }
   })
 
   $('#sendCommand').on('click', function() {
