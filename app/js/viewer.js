@@ -16,7 +16,6 @@ var sizexmax;
 var sizeymax;
 var lineincrement = 50
 var camvideo;
-var objectsInScene = []; //array that holds all objects we added to the scene.
 var clearSceneFlag = false;
 
 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -202,53 +201,50 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     xmax = Math.ceil(xmax * 25.4);
     ymin = Math.floor(ymin * 25.4);
     ymax = Math.ceil(ymax * 25.4);
-  } else {
-    xmin = Math.floor(xmin);
-    xmax = Math.ceil(xmax);
-    ymin = Math.floor(ymin);
-    ymax = Math.ceil(ymax);
   }
-  // console.log(xmin, xmax, ymin, ymax, inches)
 
   sizexmin = xmin;
-  sizeymin = ymin;
   sizexmax = xmax;
+  sizeymin = ymin;
   sizeymax = ymax;
 
-  if (!xmax) {
-    xmax = 200;
-  };
+  if (xmax - xmin < 110) {
+    const d = (110 - (xmax - xmin)) / 2;
+    xmin -= d;
+    xmax += d;
+  }
 
-  if (!ymax) {
-    ymax = 200;
-  };
+  if (ymax - ymin < 110) {
+    const d = (110 - (ymax - ymin)) / 2;
+    ymin -= d;
+    ymax += d;
+  }
+
+  while (gridsystem.children.length > 0) {
+    disposeGeometryAndRemove(gridsystem.children[0]);
+  }
 
   var grid = new THREE.Group();
+  grid.name = "Grid";
 
   var axesgrp = new THREE.Object3D();
   axesgrp.name = "Axes Markers"
 
-  if (inches) {
-    var unitsval = "in"
-    var offset = 5 * 2.54
-  } else {
-    var unitsval = "mm"
-    var offset = 5
-  }
+  var offset = 5
   var size = 5
 
   // add axes labels
-  var xlbl = this.makeSprite(this.scene, "webgl", {
-    x: parseInt(xmax) + offset,
+  var xlbl = this.makeSprite("webgl", {
+    x: xmax + offset,
     y: 0,
     z: 0,
     text: "X",
     color: Theme.X_RULER_LABEL_COLOR,
     size: size
   });
-  var ylbl = this.makeSprite(this.scene, "webgl", {
+  var ylbl = this.makeSprite("webgl", {
     x: 0,
-    y: parseInt(ymax) + offset,
+    y: ymax + offset,
     z: 0,
     text: "Y",
     color: Theme.Y_RULER_LABEL_COLOR,
@@ -270,13 +266,13 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var geometryX = new THREE.Geometry();
   geometryX.vertices.push(
     new THREE.Vector3(-0.1, 0, 0),
-    new THREE.Vector3(-0.1, (ymax), 0)
+    new THREE.Vector3(-0.1, ymax, 0)
   );
 
   var geometryY = new THREE.Geometry();
   geometryY.vertices.push(
     new THREE.Vector3(0, -0.1, 0),
-    new THREE.Vector3((xmax), -0.1, 0)
+    new THREE.Vector3(xmax, -0.1, 0)
   );
 
   var line1 = new THREE.Line(geometryX, materialY);
@@ -284,41 +280,63 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   axesgrp.add(line1);
   axesgrp.add(line2);
 
-  // if (inches) {
-  //   axesgrp.scale.multiplyScalar(2.5);
-  // }
-
   grid.add(axesgrp);
 
-  var step10 = 10;
-  var step100 = 100;
-  if (inches) {
-    step10 = 2.54;
-    step100 = 25.4;
-  }
-  helper = new THREE.GridHelper(xmin, xmax, ymin, ymax, step10, Theme.GRID_STEP_10_COLOR);
-  helper.position.y = 0;
-  helper.position.x = 0;
-  helper.position.z = 0;
-  helper.material.opacity = Theme.GRID_STEP_10_OPACITY;
-  helper.material.transparent = true;
-  helper.receiveShadow = false;
-  helper.name = "GridHelper10mm"
-  grid.add(helper);
-  helper = new THREE.GridHelper(xmin, xmax, ymin, ymax, step100, Theme.GRID_STEP_100_COLOR);
-  helper.position.y = 0;
-  helper.position.x = 0;
-  helper.position.z = 0;
-  helper.material.opacity = Theme.GRID_STEP_100_OPACITY;
-  helper.material.transparent = true;
-  helper.receiveShadow = false;
-  helper.name = "GridHelper50mm"
-  grid.add(helper);
-  grid.name = "Grid"
+  var vertices10 = [];
+  var vertices100 = [];
 
-  while (gridsystem.children.length > 0) {
-    disposeGeometryAndRemove(gridsystem.children[0]);
+  var scale = inches ? 25.4/8 : 10;
+  var major = inches ? 8 : 10;
+  var ixmin = Math.ceil(xmin / scale);
+  var ixmax = Math.floor(xmax / scale);
+  var iymin = Math.ceil(ymin / scale);
+  var iymax = Math.floor(ymax / scale);
+
+  for (var i = ixmin; i <= ixmax; i++) {
+    const x = i * scale;
+    if (i % major == 0) {
+      vertices100.push(x, ymin, 0, x, ymax, 0);
+    } else {
+      vertices10.push(x, ymin, 0, x, ymax, 0);
+    }
   }
+
+  for (var i = iymin; i <= iymax; i++) {
+    const y = i * scale;
+    if (i % major == 0) {
+      vertices100.push(xmin, y, 0, xmax, y, 0);
+    } else {
+      vertices10.push(xmin, y, 0, xmax, y, 0);
+    }
+  }
+
+  var material10 = new THREE.LineBasicMaterial({
+    color: Theme.GRID_STEP_10_COLOR,
+    opacity: Theme.GRID_STEP_10_OPACITY,
+    transparent: true
+  });
+
+  var geometry10 = new THREE.BufferGeometry();
+  geometry10.setAttribute('position', new THREE.Float32BufferAttribute( vertices10, 3));
+
+  var grid10 = new THREE.LineSegments(geometry10, material10);
+  grid10.receiveShadow = false;
+  grid10.name = "GridHelper10";
+  grid.add(grid10);
+
+  var material100 = new THREE.LineBasicMaterial({
+    color: Theme.GRID_STEP_100_COLOR,
+    opacity: Theme.GRID_STEP_100_OPACITY,
+    transparent: true
+  });
+
+  var geometry100 = new THREE.BufferGeometry();
+  geometry100.setAttribute('position', new THREE.Float32BufferAttribute( vertices100, 3));
+
+  var grid100 = new THREE.LineSegments(geometry100, material100);
+  grid100.receiveShadow = false;
+  grid100.name = "GridHelper100";
+  grid.add(grid100);
 
   if (inches) {
     var ruler = drawRulerInches(xmin, xmax, ymin, ymax, inches)
@@ -327,7 +345,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   }
   gridsystem.add(grid);
   gridsystem.add(ruler);
-
+  helper = gridsystem;
 }
 
 function setBullseyePosition(x, y, z) {
@@ -521,7 +539,7 @@ function viewExtents(objecttosee) {
   }
 };
 
-function makeSprite(scene, rendererType, vals) {
+function makeSprite(rendererType, vals) {
   var canvas = document.createElement('canvas'),
     context = canvas.getContext('2d'),
     metrics = null,
@@ -572,7 +590,6 @@ function makeSprite(scene, rendererType, vals) {
 
   textObject.add(sprite);
 
-  //scene.add(textObject);
   return textObject;
 }
 
@@ -608,16 +625,7 @@ $(window).on('resize', function() {
 function resetView(object) {
   // console.log(resetView.caller);
   if (!object) {
-    if (objectsInScene.length > 0) {
-      var insceneGrp = new THREE.Group()
-      for (i = 0; i < objectsInScene.length; i++) {
-        var object = objectsInScene[i].clone();
-        insceneGrp.add(object)
-      }
-      viewExtents(insceneGrp);
-    } else {
-      viewExtents(helper);
-    }
+    viewExtents(helper);
   } else {
     if (object.userData.linePoints.length > 1) {
       viewExtents(object);
@@ -714,7 +722,4 @@ function drawMachineCoordinates(status) {
 
     workspace.add(machineCoordinateSpace);
   }
-
-
-
 }
