@@ -1,4 +1,4 @@
-var grblSettingsTemplate2 = {
+var grblSettingsTemplate = {
   0: {
     key: `$0`,
     title: `Step pulse time, microseconds`,
@@ -100,7 +100,7 @@ var grblSettingsTemplate2 = {
   },
   4: {
     key: `$4`,
-    title: `Invert step enable pin, boolean`,
+    title: `Invert step enable pin, boolean (Grbl) / mask (GrblHAL)`,
     description: `If you have an xPro 2/3 or BlackBox 4X, set it to 1. for BlackBox X32 set to 0. By default, the stepper enable pin is high to disable and low to enable. If your setup needs the opposite, just invert the stepper enable pin by typing $4=1. Disable with $4=0. (May need a power cycle to load the change.)`,
     template: `<input id="val-4-input" data-role="input" data-clear-button="false"  data-append="mask/bool" type="text">`,
     utils: ``
@@ -179,7 +179,7 @@ var grblSettingsTemplate2 = {
     key: `$22`,
     title: `Homing cycle enable, boolean (Grbl) / mask (GrblHAL)`,
     description: `The homing cycle is used to accurately and precisely locate a known and consistent position on a machine every time you start up your Grbl between sessions. In other words, you know exactly where you are at any given time, every time. Say you start machining something or are about to start the next step in a job and the power goes out, you re-start Grbl and Grbl has no idea where it is due to steppers being open-loop control. You're left with the task of figuring out where you are. If you have homing, you always have the machine zero reference point to locate from, so all you have to do is run the homing cycle and resume where you left off. To set up the homing cycle for Grbl, you need to have limit switches in a fixed position that won't get bumped or moved, or else your reference point gets messed up. Usually they are setup in the farthest point in +x, +y, +z of each axes. Wire your limit switches in with the limit pins, add a recommended RC-filter to help reduce electrical noise, and enable homing. If you're curious, you can use your limit switches for both hard limits AND homing. They play nice with each other. Prior to trying the homing cycle for the first time, make sure you have setup everything correctly, otherwise homing may behave strangely. First, ensure your machine axes are moving in the correct directions per Cartesian coordinates (right-hand rule). If not, fix it with the $3 direction invert setting. Second, ensure your limit switch pins are not showing as 'triggered' in Grbl's status reports. If are, check your wiring and settings. Finally, ensure your $13x max travel settings are somewhat accurate (within 20%), because Grbl uses these values to determine how far it should search for the homing switches. By default, Grbl's homing cycle moves the Z-axis positive first to clear the workspace and then moves both the X and Y-axes at the same time in the positive direction. To set up how your homing cycle behaves, there are more Grbl settings down the page describing what they do (and compile-time options as well.). Also, one more thing to note, when homing is enabled. Grbl will lock out all G-code commands until you perform a homing cycle. Meaning no axes motions, unless the lock is disabled ($X) but more on that later. Most, if not all CNC controllers, do something similar, as it is mostly a safety feature to prevent users from making a positioning mistake, which is very easy to do and be saddened when a mistake ruins a part. If you find this annoying or find any weird bugs, please let us know and we'll try to work on it so everyone is happy. :)  NOTE: Check out config.h for more homing options for advanced users. You can disable the homing lockout at startup, configure which axes move first during a homing cycle and in what order, and more.`,
-    template: `<input id="val-22-input" data-role="input" data-clear-button="false" data-append="mask" type="text">`,
+    template: `<input id="val-22-input" data-role="input" data-clear-button="false" data-append="mask/bool" type="text">`,
     utils: ``
   },
   23: {
@@ -503,7 +503,7 @@ var grblSettingsTemplate2 = {
   28: {
     key: `$28`,
     title: `G73 retract distance, in mm`,
-    description: ``,
+    description: `G73 retract distance (for chip breaking drilling)`,
     template: `<input id="val-28-input" data-role="input" data-clear-button="false" data-append="mm" type="text" >`,
     utils: ``
   },
@@ -526,27 +526,27 @@ var grblSettingsTemplate2 = {
     key: `$34`,
     title: `Spindle off Value`,
     description: ``,
-    template: `<input id="val-34-input" data-role="input" data-clear-button="false" data-append="S" type="text" >`,
+    template: `<input id="val-34-input" data-role="input" data-clear-button="false" data-append="%" type="text" >`,
     utils: ``
   },
   35: {
     key: `$35`,
     title: `Spindle min value`,
     description: ``,
-    template: `<input id="val-35-input" data-role="input" data-clear-button="false" data-append="S" type="text" >`,
+    template: `<input id="val-35-input" data-role="input" data-clear-button="false" data-append="%" type="text" >`,
     utils: ``
   },
   36: {
     key: `$36`,
     title: `Spindle max value`,
     description: ``,
-    template: `<input id="val-36-input" data-role="input" data-clear-button="false" data-append="S" type="text" >`,
+    template: `<input id="val-36-input" data-role="input" data-clear-button="false" data-append="%" type="text" >`,
     utils: ``
   },
   37: {
     key: `$37`,
-    title: `Stepper deenergize mask`,
-    description: ``,
+    title: `Steppers to keep enabled`,
+    description: `Specifies which steppers not to disable when stopped`,
     template: `<input id="val-37-input" data-role="input" data-clear-button="false" data-append="mask" type="text" >`,
     utils: ``
   },
@@ -581,43 +581,43 @@ var grblSettingsTemplate2 = {
   44: {
     key: `$44`,
     title: `Homing cycle 1`,
-    description: ``,
-    template: `<input id="val-44-input" data-role="input" data-clear-button="false" data-append="-" type="text" >`,
+    description: `Axis mask for the first homing cycle. Usually 4 for just the Z axis`,
+    template: `<input id="val-44-input" data-role="input" data-clear-button="false" data-append="mask" type="text" >`,
     utils: ``
   },
   45: {
     key: `$45`,
     title: `Homing cycle 2`,
-    description: ``,
-    template: `<input id="val-45-input" data-role="input" data-clear-button="false" data-append="-" type="text" >`,
+    description: `Axis mask for the second homing cycle. Usually 3 for both X and Y`,
+    template: `<input id="val-45-input" data-role="input" data-clear-button="false" data-append="mask" type="text" >`,
     utils: ``
   },
   46: {
     key: `$46`,
     title: `Homing cycle 3`,
-    description: ``,
-    template: `<input id="val-46-input" data-role="input" data-clear-button="false" data-append="-" type="text" >`,
+    description: `Axis mask for the third homing cycle`,
+    template: `<input id="val-46-input" data-role="input" data-clear-button="false" data-append="mask" type="text" >`,
     utils: ``
   },
   47: {
     key: `$47`,
     title: `Homing cycle 4`,
-    description: ``,
-    template: `<input id="val-47-input" data-role="input" data-clear-button="false" data-append="-" type="text" >`,
+    description: `Axis mask for the fourth homing cycle`,
+    template: `<input id="val-47-input" data-role="input" data-clear-button="false" data-append="mask" type="text" >`,
     utils: ``
   },
   48: {
     key: `$48`,
     title: `Homing cycle 5`,
-    description: ``,
-    template: `<input id="val-48-input" data-role="input" data-clear-button="false" data-append="-" type="text" >`,
+    description: `Axis mask for the fifth homing cycle`,
+    template: `<input id="val-48-input" data-role="input" data-clear-button="false" data-append="mask" type="text" >`,
     utils: ``
   },
   49: {
     key: `$49`,
     title: `Homing cycle 6`,
-    description: ``,
-    template: `<input id="val-49-input" data-role="input" data-clear-button="false" data-append="-" type="text" >`,
+    description: `Axis mask for the sixth homing cycle`,
+    template: `<input id="val-49-input" data-role="input" data-clear-button="false" data-append="mask" type="text" >`,
     utils: ``
   },
   62: {
@@ -709,26 +709,28 @@ var grblSettingsTemplate2 = {
     title: `Wifi network SSID`,
     description: ``,
     template: `<input id="val-74-input" data-role="input" data-clear-button="false" data-append="ssid" type="text" >`,
-    utils: ``
+    utils: ``,
+    type: "text"
   },
   75: {
     key: `$75`,
     title: `Wifi network PSK`,
     description: ``,
     template: `<input id="val-75-input" data-role="input" data-clear-button="false" data-append="psk" type="text" >`,
-    utils: ``
+    utils: ``,
+    type: "text"
   },
   65: {
     key: `$65`,
-    title: `Require homing sequence to be executed at startup`,
-    description: `Require homing sequence to be executed at startup(?). Replaces #define HOMING_INIT_LOCK.`,
+    title: `Probing options`,
+    description: `Allow feed override during probing and/or limit probing commands to machine workspace for homed axes`,
     template: `<input id="val-65-input" data-role="input" data-clear-button="false" data-append="" type="number" >`,
     utils: ``
   },
   8: {
     key: `$8`,
     title: `Ganged axes direction invert as bitfield`,
-    description: `Ganged axes direction invert as bitfield`,
+    description: `Inverts the direction signals for the second motor used for ganged axes`,
     template: `<input id="val-8-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
     utils: ``
   },
@@ -744,34 +746,38 @@ var grblSettingsTemplate2 = {
     title: `Hostname, max: 64`,
     description: `Hostname, max: 64`,
     template: `<input id="val-320-input" data-role="input" data-clear-button="false" data-append="text" type="text" >`,
-    utils: ``
+    utils: ``,
+    type: "text"
   },
   322: {
     key: `$322`,
     title: `IP Address`,
     description: `IP Address`,
     template: `<input id="val-322-input" data-role="input" data-clear-button="false" data-append="ip" type="text" >`,
-    utils: ``
+    utils: ``,
+    type: "text"
   },
   323: {
     key: `$323`,
     title: `Gateway`,
     description: `Gateway as IP address, reboot required`,
     template: `<input id="val-323-input" data-role="input" data-clear-button="false" data-append="ip" type="text" >`,
-    utils: ``
+    utils: ``,
+    type: "text"
   },
   324: {
     key: `$324`,
     title: `Netmask`,
     description: `Netmask as IP address, reboot required`,
-    template: `<input id="val-324-input" data-role="input" data-clear-button="false" data-append="bitfield" type="text" >`,
-    utils: ``
+    template: `<input id="val-324-input" data-role="input" data-clear-button="false" data-append="netmask" type="text" >`,
+    utils: ``,
+    type: "text"
   },
   325: {
     key: `$325`,
     title: `Telnet port`,
     description: `Telnet port, range: 1 - 65535 reboot required`,
-    template: `<input id="val-325-input" data-role="input" data-clear-button="false" data-append="netmask" type="number" >`,
+    template: `<input id="val-325-input" data-role="input" data-clear-button="false" data-append="port" type="number" >`,
     utils: ``
   },
   326: {
@@ -790,9 +796,9 @@ var grblSettingsTemplate2 = {
   },
   346: {
     key: `$346`,
-    title: `Restore position after M6 as boolean`,
-    description: `Restore position after M6 as boolean`,
-    template: `<input id="val-346-input" data-role="input" data-clear-button="false" data-append="bool" type="number" >`,
+    title: `Tool change options`,
+    description: `Restore position after M6,Change tool at G30,Fast probe pull off`,
+    template: `<input id="val-346-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
     utils: ``
   },
   396: {
@@ -826,8 +832,8 @@ var grblSettingsTemplate2 = {
   376: {
     key: `$376`,
     title: `Rotational axes as bitfield`,
-    description: `Autoreport interval in ms, range: 100 - 1000, reboot required`,
-    template: `<input id="val-376-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
+    description: `Designates axes as rotary`,
+    template: `<input id="val-376-input" data-role="input" data-clear-button="false" data-append="mask" type="number" >`,
     utils: ``
   },
   41: {
@@ -840,8 +846,8 @@ var grblSettingsTemplate2 = {
   42: {
     key: `$42`,
     title: `Parking axis`,
-    description: `Parking axis: X=1, Y=2, Z=4`,
-    template: `<input id="val-42-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
+    description: `Parking axis: X=0, Y=1, Z=2`,
+    template: `<input id="val-42-input" data-role="input" data-clear-button="false" data-append="axis" type="number" >`,
     utils: ``
   },
   56: {
@@ -888,15 +894,15 @@ var grblSettingsTemplate2 = {
   },
   392: {
     key: `$392`,
-    title: `Spindle on delay in s`,
-    description: `Spindle on delay in s`,
+    title: `Door spindle on delay in s`,
+    description: `Delay to allow spindle to spin up after safety door is closed or on resume from park`,
     template: `<input id="val-392-input" data-role="input" data-clear-button="false" data-append="sec" type="number" >`,
     utils: ``
   },
   393: {
     key: `$393`,
-    title: `Coolant on delay in s`,
-    description: `Coolant on delay in s`,
+    title: `Door coolant on delay in s`,
+    description: `Delay to allow coolant to restart after safety door is closed or on resume from park`,
     template: `<input id="val-393-input" data-role="input" data-clear-button="false" data-append="sec" type="number" >`,
     utils: ``
   },
@@ -907,12 +913,13 @@ var grblSettingsTemplate2 = {
     title: `WiFi Access Point (AP) BSSID`,
     description: `Optional WiFi Access Point BSSID (MAC) to connect to, colon delimited values. NOTE: A hard reset of the controller is required after changing this setting.`,
     template: `<input id="val-337-input" data-role="input" data-clear-button="false" data-append="MAC" type="text" >`,
-    utils: ``
+    utils: ``,
+    type: "text"
   },
   394: {
     key: `$394`,
-    title: `Spindle on delay in s, range: 0.5 - 20`,
-    description: `Delay to allow spindle to restart after feed hold is canceled.`,
+    title: `Spindle on delay in s`,
+    description: `Delay to allow spindle to spin up. 0 or 0.5 - 20s`,
     template: `<input id="val-394-input" data-role="input" data-clear-button="false" data-append="sec" type="number" >`,
     utils: ``
   },
@@ -925,7 +932,7 @@ var grblSettingsTemplate2 = {
   },
   484: {
     key: `$484`,
-    title: `Unlock required after E-Stop as boolean`,
+    title: `Unlock required after E-Stop`,
     description: `If set unlock (by sending $X) is required after resetting a cleared E-Stop condition.`,
     template: `<input id="val-484-input" data-role="input" data-clear-button="false" data-append="bool" type="number" >`,
     utils: ``
@@ -992,6 +999,54 @@ var grblSettingsTemplate2 = {
     description: `WS2812B LED strip length, max: 255`,
     template: `<input id="val-536-input" data-role="input" data-clear-button="false" data-append="LEDs" type="number" >`,
     utils: ``
-  }
-
+  },
+  485: {
+    key: `$485`,
+    title: `Enable tool persistence`,
+    description: `Keep tool number over reboot`,
+    template: `<input id="val-485-input" data-role="input" data-clear-button="false" data-append="bool" type="number" >`,
+    utils: ``
+  },
+  538: {
+    key: `$538`,
+    title: `Fast rotary go to G28`,
+    description: `Perform fast move to angle stored in G28 position`,
+    template: `<input id="val-538-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
+    utils: ``
+  },
+  539: {
+    key: `$539`,
+    title: `Spindle off delay`,
+    description: `Delay to allow spindle to spin down. 0 or 0.5 - 20s`,
+    template: `<input id="val-539-input" data-role="input" data-clear-button="false" data-append="sec" type="number" >`,
+    utils: ``
+  },
+  676: {
+    key: `$676`,
+    title: `Reset actions`,
+    description: `Controls actions taken on a soft reset`,
+    template: `<input id="val-676-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
+    utils: ``
+  },
+  680: {
+    key: `$680`,
+    title: `Stepper enable delay`,
+    description: `Delay from stepper enable to first step output. The driver typically adds ~2ms to this`,
+    template: `<input id="val-680-input" data-role="input" data-clear-button="false" data-append="ms" type="number" >`,
+    utils: ``
+  },
+  700: {
+    key: `$700`,
+    title: `Subroutine options`,
+    description: `Enable prescan for internal M98 subroutines`,
+    template: `<input id="val-700-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
+    utils: ``
+  },
+  701: {
+    key: `$701`,
+    title: `Rotary options`,
+    description: ``,
+    template: `<input id="val-701-input" data-role="input" data-clear-button="false" data-append="bitfield" type="number" >`,
+    utils: ``
+  },
 }

@@ -1,3 +1,5 @@
+var settingsUIConstructed = false;
+
 $(document).ready(function() {
   var backupFileOpen = document.getElementById('grblBackupFile');
   if (backupFileOpen) {
@@ -16,26 +18,28 @@ function loadGrblBackupFile(f) {
   if (f) {
     // Filereader
     var r = new FileReader();
-    // if (f.name.match(/.gcode$/i)) {
+
     r.readAsText(f);
     r.onload = function(event) {
-      //var grblsettingsfile = this.result
       //console.log(this.result)
       var data = this.result.split("\n");
       for (i = 0; i < data.length; i++) {
+        var parts = data[i].split('=');
         if (data[i].indexOf("$I=") == 0) {
-          setMachineButton(data[i].split('=')[1])
+          setMachineButton(parts[1])
         } else {
-          var key = data[i].split('=')[0];
-          var param = data[i].split('=')[1]
-          $("#val-" + key.substring(1) + "-input").val(parseFloat(param))
-          fixGrblHALSettings(key.substring(1)); // Fix GrblHAL Defaults
+          var key = parts[0].substring(1);
+          var value = parts[1];
+          if (grblSettingsTemplate[key] == undefined || grblSettingsTemplate[key].type == "text")
+            $("#val-" + key + "-input").val(value); // treat unknown properties like strings
+          else
+            $("#val-" + key + "-input").val(parseFloat(value));
         }
       };
 
       checkifchanged();
-      enableLimits(); // Enable or Disable
       displayDirInvert();
+      displayProbeDirInvert();
       $("#grblSettingsAdvTab").click();
     }
   }
@@ -87,31 +91,31 @@ function restoreAutoBackup(index) {
   for (const key in grblParamsBackup) {
     if (grblParamsBackup.hasOwnProperty(key)) {
       const paramValue = grblParamsBackup[key];
-      const parsedValue = parseFloat(paramValue);
-
-      // Check if the parsed value is a valid number
-      if (!isNaN(parsedValue)) {
-        // Update the input field based on the parameter using jQuery
-        const inputElement = $("#val-" + key.substring(1) + "-input");
-
-        if (inputElement.length) {
-          inputElement.val(parsedValue); // Apply the value to the input field
-        }
+      var key2 = key.substr(1);
+      const inputElement = $("#val-" + key2 + "-input");
+      if (grblSettingsTemplate[key2] == undefined || grblSettingsTemplate[key2].type == "text") {
+        inputElement.val(paramValue);
       } else {
-        console.warn(`Invalid value for ${key}: ${paramValue}`);
+        const parsedValue = parseFloat(paramValue);
+
+        // Check if the parsed value is a valid number
+        if (!isNaN(parsedValue)) {
+          // Update the input field based on the parameter using jQuery
+
+          if (inputElement.length) {
+            inputElement.val(parsedValue); // Apply the value to the input field
+          }
+        } else {
+          console.warn(`Invalid value for ${key}: ${paramValue}`);
+        }
       }
-
-      // Optionally, fix or apply any GrblHAL-specific settings
-      fixGrblHALSettings(key.substring(1)); // Adjust as needed
-
-      // Optionally, other functions you might call for updating the machine state
-      // Example: checkifchanged(); enableLimits(); displayDirInvert();
     }
   }
+
   // Call any post-restoration functions you need (e.g., re-enable limits, etc.)
   checkifchanged();
-  enableLimits();
   displayDirInvert();
+  displayProbeDirInvert();
   $("#grblSettingsAdvTab").click();
 }
 
@@ -120,14 +124,14 @@ function backupGrblSettings() {
   autoBackup("Manual Backup")
   var grblBackup = ""
   for (key in grblParams) {
-    var key2 = key.split('=')[0].substr(1);
+    var key2 = key.substr(1);
 
-    if (grblSettingsTemplate2[key2] !== undefined) {
-      var descr = grblSettingsTemplate2[key2].title
+    var template = grblSettingsTemplate[key2];
+    if (template !== undefined && template.type != "text") {
+      grblBackup += key + "=" + grblParams[key] + "  ;  " + template.title + "\n";
     } else {
-      var descr = "unknown"
+        grblBackup += key + "=" + grblParams[key] + "\n";
     }
-    grblBackup += key + "=" + grblParams[key] + "  ;  " + descr + "\n"
   }
   if (laststatus.machine.name.length > 0) {
     grblBackup += "$I=" + laststatus.machine.name
@@ -152,10 +156,7 @@ function grblSettings(data) {
     var param = grblconfig[i].split(/[= ;(]/)[1]
     grblParams[key] = param
   }
-  // $('#grblconfig').show();
-  // grblPopulate();
-  // $('#grblSaveBtn').removeAttr('disabled');
-  // $('#grblFirmwareBtn').removeAttr('disabled');
+
   $('#grblSettings').show()
 
   if (laststatus.machine.firmware.platform == "grblHAL") {
@@ -380,16 +381,13 @@ function grblPopulate() {
             <tbody>`
 
     for (key in grblParams) {
-      var key2 = key.split('=')[0].substr(1);
-      //console.log(key2)
-      if (grblSettingsTemplate2[key2] !== undefined) {
-        //template += grblSettingsTemplate2[key2].template;
-        template += `<tr id="grblSettingsRow` + key2 + `"
-                title="` + grblSettingsTemplate2[key2].description + `">
-                <td>` + grblSettingsTemplate2[key2].key + `</td>
-                <td>` + grblSettingsTemplate2[key2].title + `</td>
-                <td>` + grblSettingsTemplate2[key2].template + `</td>
-                <td>` + grblSettingsTemplate2[key2].utils + `</td>
+      var key2 = key.substr(1);
+      if (grblSettingsTemplate[key2] !== undefined) {
+        template += `<tr>
+                <td>` + grblSettingsTemplate[key2].key + `</td>
+                <td>` + grblSettingsTemplate[key2].title + `</td>
+                <td>` + grblSettingsTemplate[key2].template + `</td>
+                <td>` + grblSettingsTemplate[key2].utils + `</td>
               </tr>`
       } else {
         template += `
@@ -414,7 +412,8 @@ function grblPopulate() {
     </nav>
   </form>
       `
-    $('#grblconfig').append(template)
+    $('#grblconfig').append(template);
+    settingsUIConstructed = false;
 
     $('#grblSettingsTable').on('keyup paste click change', 'input, select', function() {
       checkifchanged()
@@ -513,6 +512,8 @@ function grblPopulate() {
 // }
 
 function checkifchanged() {
+  if (!settingsUIConstructed) return;
+
   var hasChanged = false;
 
   for (var key in grblParams) {
@@ -539,10 +540,45 @@ function checkifchanged() {
           } else if ($("#val-" + j + "-input").is('select')) {
             $("#val-" + j + "-input").addClass('alert');
           } else if (j == 3) { // axes
-            $('#xdirinvert').parent().children('.check').addClass('bd-red');
-            $('#ydirinvert').parent().children('.check').addClass('bd-red');
-            $('#zdirinvert').parent().children('.check').addClass('bd-red');
-            $('#adirinvert').parent().children('.check').addClass('bd-red');
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#ydirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#adirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#yHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#aHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
           }
         } else {
           if (!$("#val-" + j + "-input").parent().is('td')) {
@@ -550,10 +586,15 @@ function checkifchanged() {
           } else if ($("#val-" + j + "-input").is('select')) {
             $("#val-" + j + "-input").removeClass('alert');
           } else if (j == 3) {
-            $('#xdirinvert').parent().children('.check').removeClass('bd-red');
-            $('#ydirinvert').parent().children('.check').removeClass('bd-red');
-            $('#zdirinvert').parent().children('.check').removeClass('bd-red');
-            $('#adirinvert').parent().children('.check').removeClass('bd-red');
+            $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
           }
         }
       }
@@ -634,8 +675,8 @@ function grblSaveSettings() {
       //console.log(counter, toSaveCommands[counter]);
       var newParam = toSaveCommands[counter].split("=")[0];
       var newParamKey = newParam.substr(1);
-      if (grblSettingsTemplate2[newParamKey] !== undefined) {
-        var newParamName = grblSettingsTemplate2[newParamKey].title
+      if (grblSettingsTemplate[newParamKey] !== undefined) {
+        var newParamName = grblSettingsTemplate[newParamKey].title
       } else {
         var newParamName = "unknown"
       }
@@ -855,9 +896,15 @@ function updateToolOnSValues() {
 function setup_settings_table() {
 
   for (key in grblParams) {
-    var key2 = key.split('=')[0].substr(1);
-    $("#val-" + key2 + "-input").val(grblParams[key])
+    var key2 = key.substr(1);
+    input = $("#val-" + key2 + "-input");
+    input.val(grblParams[key])
+    var setting = grblSettingsTemplate[key2];
+    // Metro UI destroys the tooltips for td and tr elements - readding here
+    if (setting !== undefined && setting.description.length > 0)
+      input.closest('td').prev().attr('title', setting.description);
   }
+  settingsUIConstructed = true;
 
   setTimeout(function() {
     $("#val-32-input").val(parseInt(grblParams['$32'])).trigger("change");
@@ -871,7 +918,7 @@ function setup_settings_table() {
     $("#val-3-input").val(parseInt(grblParams['$3'])).trigger("change");
     $("#val-4-input").val(parseInt(grblParams['$4'])).trigger("change");
     $("#val-13-input").val(parseInt(grblParams['$13'])).trigger("change");
-  }, 100);;
+  }, 100);
 
   $('#limitsinstalled:checkbox').change(function() {
     enableLimits();
@@ -925,8 +972,8 @@ function setup_settings_table() {
   });
 
   // populare Direction Invert Checkboxes
-  displayDirInvert()
-  displayProbeDirInvert()
+  displayDirInvert();
+  displayProbeDirInvert();
 
   console.log("Updated")
 }
@@ -952,13 +999,7 @@ function enableLimits() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_lim[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
-  var elm = document.getElementById("grblSettingsLimits");
-  // elm.scrollIntoView(true);
 }
 
 var grblParams_scribe = {
@@ -978,10 +1019,6 @@ function enableScribe() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_scribe[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1006,10 +1043,6 @@ function enableLaser() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_laser[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1034,10 +1067,6 @@ function enableRouter() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_router[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1062,10 +1091,6 @@ function enablePlasma() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_plasma[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1090,10 +1115,6 @@ function enableVFD() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_vfd[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
