@@ -289,8 +289,8 @@ function initSocket() {
     if (data.response.indexOf('$') === 0) {
 
       var key = data.response.split('=')[0].substr(1);
-      if (grblSettingsTemplate2[key] !== undefined) {
-        var descr = grblSettingsTemplate2[key].title
+      if (grblSettingsTemplate[key] !== undefined) {
+        var descr = grblSettingsTemplate[key].title
       } else {
         var descr = "unknown"
       }

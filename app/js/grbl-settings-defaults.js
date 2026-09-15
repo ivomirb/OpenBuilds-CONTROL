@@ -1,5 +1,4 @@
 var lastSelectedMachine = '';
-var allowGrblSettingsViewScroll = true;
 
 function fixGrblHALSettings(j, type) {
   if (laststatus.machine.firmware.platform == "grblHAL") { //  Workaround for HAL profiles required changes, without creating entirely new profiles for GrblHAL
@@ -823,13 +822,9 @@ function selectMachine(type) {
     }
   }
 
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
-
   checkifchanged();
   displayDirInvert();
+  displayProbeDirInvert();
   setMachineButton(type);
 
   if (lastSelectedMachine != type) {
