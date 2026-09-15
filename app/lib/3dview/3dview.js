@@ -31,31 +31,27 @@ function convertParsedDataToObject(jsonData) {
   var positions = [];
   var colors = [];
 
+  const themeColors = Theme.lines;
+
+  var lastPoint = undefined; // {x:0, y:0, z:0, g:-5}; (possibly use a fake point to draw a line from 0,0,0)
   for (i = 0; i < parsedData.linePoints.length; i++) {
+    var point = parsedData.linePoints[i];
+    if (point.fake) continue;
 
-    var x = parsedData.linePoints[i].x;
-    var y = parsedData.linePoints[i].y;
-    var z = parsedData.linePoints[i].z;
-    positions.push(x, y, z);
-
-    if (parsedData.linePoints[i].g == 0) {
-      colors.push(Theme.lines[0].R);
-      colors.push(Theme.lines[0].G);
-      colors.push(Theme.lines[0].B);
-    } else if (parsedData.linePoints[i].g == 1) {
-      colors.push(Theme.lines[1].R);
-      colors.push(Theme.lines[1].G);
-      colors.push(Theme.lines[1].B);
-    } else if (parsedData.linePoints[i].g == 2) {
-      colors.push(Theme.lines[2].R);
-      colors.push(Theme.lines[2].G);
-      colors.push(Theme.lines[2].B);
+    if (point.g == 0 || point.g == 1 || point.g == 2) {
+      var color = themeColors[point.g];
     } else {
-      colors.push(Theme.lines[3].R);
-      colors.push(Theme.lines[3].G);
-      colors.push(Theme.lines[3].B);
+      var color = themeColors[3];
     }
 
+    if (lastPoint != undefined && lastPoint.g != point.g) {
+      // if switching colors, repeat the last point with the new color
+      colors.push(color.R, color.G, color.B);
+      positions.push(lastPoint.x, lastPoint.y, lastPoint.z);
+    }
+    positions.push(point.x, point.y, point.z);
+    colors.push(color.R, color.G, color.B);
+    lastPoint = point;
   }
 
   geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -66,7 +62,6 @@ function convertParsedDataToObject(jsonData) {
   var line = new THREE.Line(geometry, material);
   line.geometry.computeBoundingBox();
   var box = line.geometry.boundingBox.clone();
-  // line.userData.lines = parsedData.lines
   line.userData.linePoints = parsedData.linePoints;
   line.userData.bbbox2 = box;
   line.userData.inch = parsedData.inch;
@@ -249,15 +244,20 @@ function runSim() {
   simTweenTimeFactor = timefactor;
   var simTimeInSec = 0;
   var resetCone = false;
+
   for (;simIdx < object.userData.linePoints.length; simIdx++) {
-    var line = object.userData.linePoints[simIdx];
-    if (!line.fake) {
-      var simTimeMins = object.userData.linePoints[simIdx].timeMins / timefactor;
-      if (object.userData.linePoints[simIdx].g == 0 && grblParams.$110 != undefined)
+    var point = object.userData.linePoints[simIdx];
+    if (!point.fake) {
+      var simTimeMins = point.timeMins / timefactor;
+      if (point.g == 0 && grblParams.$110 != undefined)
         simTimeMins *= 1000 / parseFloat(grblParams.$110); // adjust rapid speed if it is known
       simTimeInSec += simTimeMins * 60;
-      if (simPaused || simTimeInSec > 0.03) // if the sim is not paused, make sure we accumulate enough moves for 30ms
+      if (simPaused) {
+        simTimeInSec = Math.max(simTimeInSec, 0.01); // to prevent the paused tween from completing
         break;
+      } else if (simTimeInSec > 0.03) { // if the sim is not paused, make sure we accumulate enough moves for 30ms
+        break;
+      }
       resetCone = true;
     }
   }
@@ -363,12 +363,13 @@ function simStepBack() {
 
 function simStepForward() {
   var newIdx = undefined;
-  var line = object.userData.linePoints[simIdx].src;
+  const line = object.userData.linePoints[simIdx].src;
   // find the next non-fake line
   for (var i = simIdx + 1; i < object.userData.linePoints.length; i++)
-    if (!object.userData.linePoints[i].fake && object.userData.linePoints[i].src > line) {
+    if (!object.userData.linePoints[i].fake && object.userData.linePoints[i].src >= line) {
       newIdx = i;
-      break;
+      if (object.userData.linePoints[i].src > line)
+        break;
     }
 
   if (newIdx != undefined) {
@@ -379,7 +380,9 @@ function simStepForward() {
     }
     resetConePosition();
     runSim();
-  } else { // this is the last non-fake line, just advance the tween progress to the end
+    if (object.userData.linePoints[newIdx].src == line && simTween)
+      simTween.progress(0.999);
+  } else {
     if (simTween)
       simTween.progress(0.999);
   }
