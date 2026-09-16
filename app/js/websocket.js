@@ -27,7 +27,7 @@ $(document).ready(function() {
     return false;
   });
 
-  if (process.platform == 'win32') {
+  if (typeof process !== "undefined" && process.platform == 'win32') {
     $('#mainCloseBtn').attr( "title", disableAutoStart ? "Close" : "Close to Tray");
     socket.emit('autoStart', !disableAutoStart);
   }
@@ -1012,7 +1012,7 @@ function initSocket() {
   })
 
   socket.on("disableAutoStart", function() {
-    if (process.platform == 'win32' && !disableAutoStart) {
+    if (typeof process !== "undefined" && process.platform == 'win32' && !disableAutoStart) {
       disableAutoStart = true;
       localStorage.setItem('disableAutoStart', true);
       $('#mainCloseBtn').attr( "title", "Close");
