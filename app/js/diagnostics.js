@@ -111,7 +111,7 @@ function initDiagnostics() {
     disableAggressiveHomeReset = false;
   }
 
-  if (process.platform == 'win32') {
+  if (typeof process !== "undefined" && process.platform == 'win32') {
     if (localStorage.getItem('disableAutoStart')) {
       if (JSON.parse(localStorage.getItem('disableAutoStart')) == true) {
         disableAutoStart = true;
