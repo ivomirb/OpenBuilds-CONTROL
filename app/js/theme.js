@@ -14,7 +14,7 @@ let ThemeData = {
       GRID_STEP_10_COLOR: 0x888888,
       GRID_STEP_10_OPACITY: 0.15,
       GRID_STEP_100_COLOR: 0x666666,
-      GRID_STEP_100_OPACITY: 0.15,
+      GRID_STEP_100_OPACITY: 0.3,
       RULER_COLOR: 0x000000,
       RULER_OPACITY: 0.15,
       X_RULER_NUMBER_COLOR: "#cc0000",
@@ -25,23 +25,23 @@ let ThemeData = {
       Y_AXIS_LINE_COLOR: 0x00cc00,
       LINE_COLOURS: [{
           'R': 0,
-          'G': 200,
+          'G': 1,
           'B': 0
         },
         {
-          'R': 200,
+          'R': 1,
           'G': 0,
           'B': 0
         },
         {
           'R': 0,
           'G': 0,
-          'B': 200
+          'B': 1
         },
         {
-          'R': 200,
+          'R': 1,
           'G': 0,
-          'B': 200
+          'B': 1
         }
       ]
     },
@@ -70,23 +70,23 @@ let ThemeData = {
       Y_AXIS_LINE_COLOR: 0x00cc00,
       LINE_COLOURS: [{
           'R': 0,
-          'G': 200,
+          'G': 1,
           'B': 0
         },
         {
-          'R': 200,
+          'R': 1,
           'G': 0,
           'B': 0
         },
         {
           'R': 0,
           'G': 0,
-          'B': 200
+          'B': 1
         },
         {
-          'R': 200,
+          'R': 1,
           'G': 0,
-          'B': 200
+          'B': 1
         }
       ]
     }

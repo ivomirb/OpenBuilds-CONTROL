@@ -142,11 +142,7 @@ function setControlBar(val, status) {
     $('#toolBtn').hide().attr('disabled', true);
     $('#toolBtn2').hide().attr('disabled', true);
 
-    if (grblParams['$22'] == 1) {
-      $('#homeBtn').hide().attr('disabled', true);
-    } else {
-      $('#homeBtn').hide().attr('disabled', true);
-    }
+    $('#homeBtn').hide().attr('disabled', grblParams['$22'] == 0);
 
     $('.estop').hide()
     $('#controlBtnGrp').hide();
@@ -196,11 +192,7 @@ function setControlBar(val, status) {
     $('#stopBtn').show().attr('disabled', true);
     $('#toolBtn').show().attr('disabled', false);
     $('#toolBtn2').show().attr('disabled', false);
-    if (grblParams['$22'] == 1) {
-      $('#homeBtn').show().attr('disabled', false);
-    } else {
-      $('#homeBtn').show().attr('disabled', true);
-    }
+    $('#homeBtn').show().attr('disabled', grblParams['$22'] == 0);
     $('.estop').show()
     $('#controlBtnGrp').show();
   } else if (val == 3) { // Busy Streaming GCODE
@@ -219,11 +211,7 @@ function setControlBar(val, status) {
     $('#stopBtn').show().attr('disabled', false);
     $('#toolBtn').show().attr('disabled', false);
     $('#toolBtn2').show().attr('disabled', false);
-    if (grblParams['$22'] == 1) {
-      $('#homeBtn').show().attr('disabled', true);
-    } else {
-      $('#homeBtn').show().attr('disabled', true);
-    }
+    $('#homeBtn').show().attr('disabled', true);
     $('.estop').show()
     $('#controlBtnGrp').show();
   } else if (val == 4) { // Paused
@@ -248,11 +236,7 @@ function setControlBar(val, status) {
     $('#stopBtn').show().attr('disabled', false);
     $('#toolBtn').show().attr('disabled', false);
     $('#toolBtn2').show().attr('disabled', false);
-    if (grblParams['$22'] == 1) {
-      $('#homeBtn').show().attr('disabled', true);
-    } else {
-      $('#homeBtn').show().attr('disabled', true);
-    }
+    $('#homeBtn').show().attr('disabled', true);
     $('.estop').show()
     $('#controlBtnGrp').show();
   } else if (val == 5) { // Alarm State
@@ -272,11 +256,7 @@ function setControlBar(val, status) {
     $('#stopBtn').show().attr('disabled', true);
     $('#toolBtn').show().attr('disabled', true);
     $('#toolBtn2').show().attr('disabled', true);
-    if (grblParams['$22'] == 1) {
-      $('#homeBtn').show().attr('disabled', false);
-    } else {
-      $('#homeBtn').show().attr('disabled', true);
-    }
+    $('#homeBtn').show().attr('disabled', grblParams['$22'] == 0);
     $('.estop').show()
     $('#controlBtnGrp').show();
   } else if (val == 6) { // Firmware Upgrade State
@@ -295,11 +275,7 @@ function setControlBar(val, status) {
     $('#stopBtn').hide().attr('disabled', true);
     $('#toolBtn').hide().attr('disabled', true);
     $('#toolBtn2').hide().attr('disabled', true);
-    if (grblParams['$22'] == 1) {
-      $('#homeBtn').hide().attr('disabled', true);
-    } else {
-      $('#homeBtn').show().attr('disabled', true);
-    }
+    $('#homeBtn').hide().attr('disabled', grblParams['$22'] == 0);
     $('.estop').hide()
     $('#controlBtnGrp').hide();
   }

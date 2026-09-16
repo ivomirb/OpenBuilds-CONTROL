@@ -270,7 +270,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
     // G2/G3 moves are their own child of lots of lines so
     // that even the simulator can follow along better
     var linePoints = [];
-    var totalDist = 0;
     this.arcPlane = "G17";
 
     this.drawArc = function(aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
@@ -456,51 +455,42 @@ GCodeParser = function(handlers, modecmdhandlers) {
         p2.g2 = true;
         p2.threeObjArc = threeObjArc;
         // end of if p2.arc
-        // console.log( p2.threeObjArc.userData.points)
 
-        // console.log(JSON.stringify(threeObjArc.userData))
-
-        var a = new THREE.Vector3(p1.x, p1.y, p1.z);
-        var b = new THREE.Vector3(p2.x, p2.y, p2.z);
-
-        if (dist > 0) {
-          this.totalDist += dist;
-        }
-
-        // calc distance of one segment of the arc
-        dist = a.distanceTo(b) / threeObjArc.userData.points.length;
-
-        // time to execute this move
+        // calc time to execute this move
         // if this move is 10mm and we are moving at 100mm/min then
         // this move will take 10/100 = 0.1 minutes or 6 seconds
+        var timeMinutes = 0;
 
-
-
-        for (i = 0; i < threeObjArc.userData.points.length; i++) {
-          var timeMinutes = 0;
-          if (dist > 0) {
-            var fr;
-            if (args.feedrate > 0) {
-              fr = args.feedrate
-            } else {
-              fr = 1000;
-            }
-            timeMinutes = dist / fr;
-
-            // adjust for acceleration, meaning estimate
-            // this will run longer than estimated from the math
-            // above because we don't start moving at full feedrate
-            // obviously, we have to slowly accelerate in and out
-            timeMinutes = timeMinutes * 1.32;
+        // calc length of one segment of the arc
+        var a = new THREE.Vector3(threeObjArc.userData.points[0].x, threeObjArc.userData.points[0].y, threeObjArc.userData.points[0].z);
+        var b = new THREE.Vector3(threeObjArc.userData.points[1].x, threeObjArc.userData.points[1].y, threeObjArc.userData.points[1].z);
+        const segLength = a.distanceTo(b);
+        if (segLength > 0) {
+          var fr;
+          if (args.feedrate > 0) {
+            fr = args.feedrate
+          } else {
+            fr = 1000;
           }
+          timeMinutes = segLength / fr;
+
+          // adjust for acceleration, meaning estimate
+          // this will run longer than estimated from the math
+          // above because we don't start moving at full feedrate
+          // obviously, we have to slowly accelerate in and out
+          timeMinutes = timeMinutes * 1.32;
+        }
+
+        // the first point of the arc matches the starting position and takes no time
+        for (i = 0; i < threeObjArc.userData.points.length; i++) {
           this.totalTime += timeMinutes;
           linePoints.push({
-            src: 607,
+            src: args.indx,
             x: threeObjArc.userData.points[i].x,
             y: threeObjArc.userData.points[i].y,
             z: threeObjArc.userData.points[i].z,
             g: 2,
-            timeMins: timeMinutes
+            timeMins: i > 0 ? timeMinutes : 0, // the first point is the start of the arc and takes no time
           });
         }
 
@@ -540,17 +530,15 @@ GCodeParser = function(handlers, modecmdhandlers) {
         dist = a.distanceTo(b);
       }
 
-      if (dist > 0) {
-        this.totalDist += dist;
-      }
-
       // time to execute this move
       // if this move is 10mm and we are moving at 100mm/min then
       // this move will take 10/100 = 0.1 minutes or 6 seconds
       var timeMinutes = 0;
       if (dist > 0) {
         var fr;
-        if (args.feedrate > 0) {
+        if (p2.g0) {
+          fr = 1000;
+        } else if (args.feedrate > 0) {
           fr = args.feedrate
         } else {
           fr = 100;
@@ -567,11 +555,8 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
       p2.feedrate = args.feedrate;
       p2.dist = dist;
-      p2.distSum = this.totalDist;
       p2.timeMins = timeMinutes;
       p2.timeMinsSum = this.totalTime;
-
-      //  console.log("calculating distance. dist:", dist, "totalDist:", this.totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", this.totalTime, "p1:", p1, "p2:", p2, "args:", args);
 
       if (!p2.arc) { // not an arc
 
@@ -592,7 +577,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
         linePoints.push({
           timeMins: timeMinutes,
-          src: 628,
+          src: args.indx,
           x: p2.x,
           y: p2.y,
           z: p2.z,
@@ -602,7 +587,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
     }
 
-    this.totalDist = 0;
     this.totalTime = 0;
 
     var relative = false;
@@ -621,13 +605,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
     }
 
     this.addFakeSegment = function(args) {
-      //line.args = args;
-      var arg2 = {
-        isFake: true,
-        text: args.text,
-        indx: args.indx
-      };
-      if (arg2.text.match(/^(;|\(|<)/)) arg2.isComment = true;
       if (lastLine.g0) {
         g = 0
       } else if (lastLine.g1) {
@@ -638,7 +615,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
         g = -1
       }
       linePoints.push({
-        src: 742,
+        src: args.indx,
         x: lastLine.x,
         y: lastLine.y,
         z: lastLine.z,
@@ -908,9 +885,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
     parser.parse(gcode);
     var data = {
       linePoints: linePoints,
-      //lines: lines,
       inch: false,
-      totalDist: this.totalDist,
       totalTime: this.totalTime,
     }
 

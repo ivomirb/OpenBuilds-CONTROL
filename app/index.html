@@ -362,7 +362,6 @@
 
                   </ul>
                 </div>
-
                 <span class="title">File</span>
               </div>
 
@@ -1035,7 +1034,6 @@
                             </span>
                           </button>
                           <ul class="d-menu context drop-shadow drop-bottom" data-role="dropdown">
-                            <li disabled><a href="#">Set A-Axis Increment</a></li>
                             <li><a href="#" onclick="setADist('0.1')">0.1&deg;</a></li>
                             <li><a href="#" onclick="setADist('1')">1&deg;</a></li>
                             <li><a href="#" onclick="setADist('10')">10&deg;</a></li>
@@ -1161,11 +1159,23 @@
                     <span style="position: absolute; top: 3px; right:3px; z-index: 1;" class="fas fa-cogs"></span> -->
                     </div>
                     <div class="fixed-bottom m-3 mb-9">
-                      <button class="button dark" onclick="simSpeed();"><span class="icon"><span class="fas fa-tachometer-alt"></span></span><span class="caption"><span id="simspeedval">1</span>x</span>
-                      </button>
-                      <button id="runSimBtn" title="Run simulation" class="button dark drop-shadow" onclick="sim(0)"><i class="fas fa-fighter-jet"></i> Simulate</button>&nbsp;
-                      <button id="stopSimBtn" style="display: none;" title="Stop Sim" class="button dark drop-shadow" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>&nbsp;
-                      <button id="resetViewBtn" title="Resets camera angle and zoom" class="button dark drop-shadow" onclick="resetView(object)"><i class="fas fa-stop"></i> Reset View</button>&nbsp;
+                      <div class="pos-relative" style="display:inline-block; margin-left:5px; margin-right:5px;">
+                        <button class="button dark drop-shadow" style=""><span class="icon"><span class="fas fa-tachometer-alt"></span></span> <span class="caption"><span id="simspeedval">1</span>x</span></button>
+                        <ul class="d-menu context drop-shadow drop-up" id="simSpeedMenu" data-role="dropdown" data-duration="100" style="margin-bottom:5px;">
+                          <li onclick="simSpeed(0.1)"><a href="#">0.1x</a></li>
+                          <li onclick="simSpeed(1)"><a href="#">1x</a></li>
+                          <li onclick="simSpeed(10)"><a href="#">10x</a></li>
+                          <li onclick="simSpeed(100)"><a href="#">100x</a></li>
+                          <li onclick="simSpeed(1000)"><a href="#">1000x</a></li>
+                        </ul>
+                      </div>
+                      <button id="runSimBtn" title="Run simulation" class="button dark drop-shadow" onclick="sim(0, false)" style="margin-left:5px; margin-right:5px;"><i class="fas fa-fighter-jet"></i> Simulate</button>
+                      <button id="simBackBtn" style="margin-left:5px; display:none;" disabled title="Previous Line" class="button dark drop-shadow" onclick="simStepBack()"><i class="fas fa-caret-square-left" data-fa-transform="grow-8"></i></button>
+                      <button id="pauseSimBtn" style="margin-left:5px; margin-right:5px; display:none;" title="Pause Sim" class="button dark drop-shadow" onclick="simpause()"><i class="fas fa-pause"></i></button>
+                      <button id="resumeSimBtn" style="margin-left:5px; margin-right:5px; display:none;" title="Resume Sim" class="button dark drop-shadow" onclick="simresume()"><i class="fas fa-play"></i></button>
+                      <button id="simForwardBtn" style="margin-right:5px; display:none;" disabled title="Next Line" class="button dark drop-shadow" onclick="simStepForward()"><i class="fas fa-caret-square-right" data-fa-transform="grow-8"></i></button>
+                      <button id="stopSimBtn" style="margin-right:5px; display:none;" title="Stop Sim" class="button dark drop-shadow" onclick="simstop()"><i class="fas fa-stop"></i></button>
+                      <button id="resetViewBtn" title="Resets camera angle and zoom" class="button dark drop-shadow" onclick="resetView(object)" style="margin-left:5px; margin-right:5px;"><i class="fas fa-stop"></i> Reset View</button>
                     </div>
                     <div id="conetext" style="position:absolute;top:0px;left:0px; padding: 0px; display:none; z-index:100;"></div>
 
@@ -1481,7 +1491,7 @@
       <span id="dropdowncontent">
         <li onclick="startFromHere(editor.getSelectionRange().start.row + 1);"><a href="#"><i class='fas fa-fw fa-route icon'></i> Recover job from Line: <span class="linenumber"></span></a></li>
         <li class="divider"></li>
-        <li onclick="runSimFrom(editor.getSelectionRange().start.row + 1, false);"><a href="#"><i class="fas fa-fighter-jet icon"></i> Simulate from line <span class="linenumber"></span></a></li>
+        <li onclick="runSimFrom(editor.getSelectionRange().start.row + 1);"><a href="#"><i class="fas fa-fighter-jet icon"></i> Simulate from line <span class="linenumber"></span></a></li>
       </span>
     </ul>
     <!--  -->
