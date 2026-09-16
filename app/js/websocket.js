@@ -749,10 +749,11 @@ function initSocket() {
     }
 
     if (safeToUpdateSliders) {
-      if ($('#fro').data('slider') && $('#tro').data('slider')) {
+      if ($('#fro').data('slider') && $('#fro').data('slider').val() != status.machine.overrides.feedOverride)
         $('#fro').data('slider').val(status.machine.overrides.feedOverride)
+
+      if ($('#tro').data('slider') && $('#tro').data('slider').val() != status.machine.overrides.spindleOverride)
         $('#tro').data('slider').val(status.machine.overrides.spindleOverride)
-      }
     }
 
     if (unit == "mm") {
