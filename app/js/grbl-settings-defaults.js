@@ -848,6 +848,7 @@ function selectMachine(type) {
 
 function setMachineButton(type) {
   var overlaytype = "custom";
+  var template;
   if (type == "sphinx55") {
     template = `<img src="img/mch/` + type + `.png"/>  OpenBuilds Sphinx 55`
     overlaytype = type;

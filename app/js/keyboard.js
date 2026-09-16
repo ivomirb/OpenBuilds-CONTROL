@@ -122,7 +122,7 @@ function bindKeys() {
   // Bind for Macro keys
 
   if (buttonsarray && buttonsarray.length > 0) {
-    for (i = 0; i < buttonsarray.length; i++) {
+    for (var i = 0; i < buttonsarray.length; i++) {
       if (buttonsarray[i].macrokeyboardshortcut && buttonsarray[i].macrokeyboardshortcut.length) {
         $(document).bind('keydown', buttonsarray[i].macrokeyboardshortcut, function(e) {
           e.preventDefault();
@@ -783,7 +783,7 @@ function keyInUse(newVal, forMacro) {
   }
 
   // Check currently assigned Macros
-  for (i = 0; i < buttonsarray.length; i++) {
+  for (var i = 0; i < buttonsarray.length; i++) {
     if (newVal == buttonsarray[i].macrokeyboardshortcut) {
       inUse = true;
       usedBy = "macro:" + buttonsarray[i].title;
@@ -802,7 +802,7 @@ function keyInUse(newVal, forMacro) {
   else {
   // Check currently edited in keys, not saved yet
     var inputs = $(".keyboardshortcutinput > input");
-    for (i = 0; i < inputs.length; i++) {
+    for (var i = 0; i < inputs.length; i++) {
       if (inputs[i].value == newVal) {
         inUse = true;
         usedBy = "keyboard:" + $("#" + inputs[i].id).parent().parent().siblings().html().trim();

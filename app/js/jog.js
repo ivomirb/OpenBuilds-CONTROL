@@ -46,20 +46,8 @@ function mmMode() {
   if (jogdistXYZ == 25.4) {
     jogdistXYZ = 100
   }
-  if (typeof object !== 'undefined') {
-    if (object.userData.inch) {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x * 25.4, object.userData.bbbox2.max.x * 25.4, object.userData.bbbox2.min.y * 25.4, object.userData.bbbox2.max.y * 25.4, false);
-      }
-    } else {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, false);
-      }
-    }
-  } else {
-    if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-      redrawGrid(xmin, xmax, ymin, ymax, false);
-    }
+  if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
+    redrawGrid(sizexmin, sizexmax, sizeymin, sizeymax, false);
   }
 }
 
@@ -83,20 +71,8 @@ function inMode() {
     jogdistXYZ = 25.4
   }
 
-  if (typeof object !== 'undefined') {
-    if (object.userData.inch) {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, true);
-      }
-    } else {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x / 25.4, object.userData.bbbox2.max.x / 25.4, object.userData.bbbox2.min.y / 25.4, object.userData.bbbox2.max.y / 25.4, true);
-      }
-    }
-  } else {
-    if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-      redrawGrid(xmin / 25.4, xmax / 25.4, ymin / 25.4, ymax / 25.4, true);
-    }
+  if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
+    redrawGrid(sizexmin / 25.4, sizexmax / 25.4, sizeymin / 25.4, sizeymax / 25.4, true);
   }
 
 }

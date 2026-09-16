@@ -17,13 +17,13 @@ function drawRuler(xmin, xmax, ymin, ymax) {
 
   var vertices = [];
   // x axis
-  for (i = xmin; i <= xmax; i++) {
+  for (var i = xmin; i <= xmax; i++) {
     var length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
     var geometry = new THREE.Geometry();
     vertices.push(i, -1, 0, i, -length, 0);
 
     if (i % 10 == 0) {
-      var sprite = this.makeSprite("webgl", {
+      var sprite = makeSprite("webgl", {
         x: i,
         y: spacing,
         z: 0,
@@ -36,13 +36,13 @@ function drawRuler(xmin, xmax, ymin, ymax) {
   }
 
   // y axis
-  for (i = ymin; i <= ymax; i++) {
+  for (var i = ymin; i <= ymax; i++) {
     var length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
     var geometry = new THREE.Geometry();
     vertices.push(-1, i, 0, -length, i, 0);
 
     if (i % 10 == 0) {
-      var sprite = this.makeSprite("webgl", {
+      var sprite = makeSprite("webgl", {
         x: spacing,
         y: i,
         z: 0,
@@ -89,13 +89,13 @@ function drawRulerInches(xmin, xmax, ymin, ymax) {
 
   var vertices = [];
   // x axis
-  for (i = xmin; i <= xmax; i++) {
+  for (var i = xmin; i <= xmax; i++) {
     var length = (i % 16 == 0) ? length16 : ((i % 4 == 0) ? length4 : length1);
     var geometry = new THREE.Geometry();
     vertices.push(i * scale, -1, 0, i * scale, -length, 0);
 
     if (i % 16 == 0) {
-      var sprite = this.makeSprite("webgl", {
+      var sprite = makeSprite("webgl", {
         x: i * scale,
         y: spacing,
         z: 0,
@@ -108,13 +108,13 @@ function drawRulerInches(xmin, xmax, ymin, ymax) {
   }
 
   // y axis
-  for (i = ymin; i <= ymax; i++) {
+  for (var i = ymin; i <= ymax; i++) {
     var length = (i % 16 == 0) ? length16 : ((i % 4 == 0) ? length4 : length1);
     var geometry = new THREE.Geometry();
     vertices.push(-1, i * scale, 0, -length, i * scale, 0);
 
     if (i % 16 == 0) {
-      var sprite = this.makeSprite("webgl", {
+      var sprite = makeSprite("webgl", {
         x: spacing,
         y: i * scale,
         z: 0,

@@ -482,7 +482,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
         }
 
         // the first point of the arc matches the starting position and takes no time
-        for (i = 0; i < threeObjArc.userData.points.length; i++) {
+        for (var i = 0; i < threeObjArc.userData.points.length; i++) {
           this.totalTime += timeMinutes;
           linePoints.push({
             src: args.indx,

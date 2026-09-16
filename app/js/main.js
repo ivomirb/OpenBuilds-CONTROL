@@ -40,7 +40,7 @@ function getReleaseStats() {
     console.log(data)
     var assets = data.assets;
     var downloadCount = 0
-    for (i = 0; i < assets.length; i++) {
+    for (var i = 0; i < assets.length; i++) {
       if (assets[i].name.indexOf("exe") != -1) {
         downloadCount = downloadCount + assets[i].download_count;
       }
