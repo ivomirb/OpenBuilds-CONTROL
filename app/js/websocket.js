@@ -1004,7 +1004,9 @@ function initSocket() {
           break;
       }
     }
-    clearMachineCoordinates();
+    if (!isJogWidget)
+      clearMachineCoordinates();
+    updateGotoLimits(data);
   })
 
   socket.on("interfaceOutdated", function(status) {

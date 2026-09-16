@@ -285,8 +285,8 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var vertices10 = [];
   var vertices100 = [];
 
-  var scale = inches ? 25.4/8 : 10;
-  var major = inches ? 8 : 10;
+  var scale = inches ? 25.4/4 : 10;
+  var major = inches ? 4 : 10;
   var ixmin = Math.ceil(xmin / scale);
   var ixmax = Math.floor(xmax / scale);
   var iymin = Math.ceil(ymin / scale);
@@ -642,21 +642,13 @@ function clearMachineCoordinates() {
 function drawMachineCoordinates(status) {
 
   if (status != undefined && grblParams.$130 !== undefined && grblParams.$131 !== undefined && grblParams.$132 !== undefined) {
-    var machineCoordinatesBoxMaxX = -status.machine.position.offset.x;
-    var machineCoordinatesBoxMaxY = -status.machine.position.offset.y;
-    var machineCoordinatesBoxMaxZ = -status.machine.position.offset.z;
-
-    if (grblParams.$23 != undefined && status.machine.firmware.features.contains('Z')) {
-      // homing force origin enabled
-      var homingDir = calcMaskFromDec(grblParams.$23);
-      if (homingDir.x) machineCoordinatesBoxMaxX += Number(grblParams.$130);
-      if (homingDir.y) machineCoordinatesBoxMaxY += Number(grblParams.$131);
-      if (homingDir.z) machineCoordinatesBoxMaxZ += Number(grblParams.$132);
-    }
-
-    var machineCoordinatesBoxMinX = machineCoordinatesBoxMaxX - Number(grblParams.$130)
-    var machineCoordinatesBoxMinY = machineCoordinatesBoxMaxY - Number(grblParams.$131)
-    var machineCoordinatesBoxMinZ = machineCoordinatesBoxMaxZ - Number(grblParams.$132)
+    const limits = computeMachineLimits(grblParams, status.machine.firmware.features, 0);
+    var machineCoordinatesBoxMinX = limits.minX - status.machine.position.offset.x;
+    var machineCoordinatesBoxMinY = limits.minY - status.machine.position.offset.y;
+    var machineCoordinatesBoxMinZ = limits.minZ - status.machine.position.offset.z;
+    var machineCoordinatesBoxMaxX = limits.maxX - status.machine.position.offset.x;
+    var machineCoordinatesBoxMaxY = limits.maxY - status.machine.position.offset.y;
+    var machineCoordinatesBoxMaxZ = limits.maxZ - status.machine.position.offset.z;
 
     console.log("X", machineCoordinatesBoxMinX, machineCoordinatesBoxMaxX)
     console.log("Y", machineCoordinatesBoxMinY, machineCoordinatesBoxMaxY)
