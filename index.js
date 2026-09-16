@@ -35,7 +35,7 @@ function showErrorDialog(err, attempts) {
 
 // To see console.log output run with `DEBUGCONTROL=true electron .` or set environment variable for DEBUGCONTROL=true
 // debug_log debug overhead
-DEBUG = false;
+var DEBUG = false;
 if (process.env.DEBUGCONTROL) {
   DEBUG = true;
   console.log("Console Debugging Enabled")
@@ -521,7 +521,7 @@ async function findPorts() {
   const ports = await SerialPort.list()
   // console.log(ports)
   status.comms.interfaces.ports = ports;
-  for (i = 0; i < status.comms.interfaces.ports.length; i++) {
+  for (var i = 0; i < status.comms.interfaces.ports.length; i++) {
     var data = friendlyPort(status.comms.interfaces.ports[i])
     status.comms.interfaces.ports[i].img = data.img;
     status.comms.interfaces.ports[i].note = data.note;

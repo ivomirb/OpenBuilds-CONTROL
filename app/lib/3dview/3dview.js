@@ -1,5 +1,5 @@
 var object;
-var simIdx, draw, line, timefactor = 1,
+var simIdx, timefactor = 1,
   object, simRunning = false, simPaused = false;
 
 var loader = new THREE.ObjectLoader();
@@ -12,7 +12,7 @@ var simTweenTimeFactor;
 var displayType = 1;
 
 function convertParsedDataToObject(jsonData) {
-
+  var parsedData;
   try {
     parsedData = JSON.parse(jsonData)
   } catch (e) {
@@ -34,7 +34,7 @@ function convertParsedDataToObject(jsonData) {
   const themeColors = Theme.lines;
 
   var lastPoint = undefined; // {x:0, y:0, z:0, g:-5}; (possibly use a fake point to draw a line from 0,0,0)
-  for (i = 0; i < parsedData.linePoints.length; i++) {
+  for (var i = 0; i < parsedData.linePoints.length; i++) {
     var point = parsedData.linePoints[i];
     if (point.fake) continue;
 
@@ -165,7 +165,7 @@ function simSpeed(speed) {
 function runSimFrom(startindex) {
   $('#gcodeviewertab').click()
   if (startindex > 1) {
-    for (i = 0; i < object.userData.linePoints.length; i++) {
+    for (var i = 0; i < object.userData.linePoints.length; i++) {
       if (object.userData.linePoints[i].src >= startindex-1) {
         sim(i, true);
         return;

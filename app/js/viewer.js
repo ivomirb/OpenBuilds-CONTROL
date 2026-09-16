@@ -1,47 +1,30 @@
 // Global Vars
 var scene = true;
 var camera, renderer;
-var projector, mouseVector, containerWidth, containerHeight;
-var raycaster = new THREE.Raycaster();
 var gridsystem = new THREE.Group();
+var cone;
 
 var container, stats;
-var camera, controls, control, scene, renderer, gridsystem, helper;
-var clock = new THREE.Clock();
+var controls;
 
-var marker;
 var sizexmin;
 var sizeymin;
 var sizexmax;
 var sizeymax;
-var lineincrement = 50
-var camvideo;
 var clearSceneFlag = false;
 
 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-var canvas = !!window.CanvasRenderingContext2D;
 
 // pause Animation when we lose webgl context focus
 var pauseAnimation = false;
 
-var size = new THREE.Vector3();
-
-var sky;
-
 var workspace = new THREE.Group();
 workspace.name = "Workspace"
 
-var ground;
-
-containerWidth = window.innerWidth;
-containerHeight = window.innerHeight;
-
-var animationLoopTimeout;
-
-var xmin = 0,
-  xmax = 307,
-  ymin = 0,
-  ymax = 207
+const defaultXmin = 0,
+  defaultXmax = 307,
+  defaultYmin = 0,
+  defaultYmax = 207
 
 var machineCoordinateSpace = false;
 
@@ -78,10 +61,10 @@ function cleanupWorkspace() {
 
 function drawWorkspace(xmin, xmax, ymin, ymax) {
 
-  if (!xmin) xmin = 0;
-  if (!ymin) ymin = 0;
-  if (!xmax) xmax = 307
-  if (!ymax) ymax = 207
+  if (!xmin) xmin = defaultXmin;
+  if (!ymin) ymin = defaultYmin;
+  if (!xmax) xmax = defaultXmax;
+  if (!ymax) ymax = defaultYmax;
 
   var sceneLights = new THREE.Group();
 
@@ -95,7 +78,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   light2.position.set(-500, -500, 1).normalize();
   sceneLights.add(light2);
 
-  dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  var dirLight = new THREE.DirectionalLight(0xffffff, 1);
   dirLight.color.setHSL(0.1, 1, 0.95);
   dirLight.position.set(-1, 1.75, 1);
   dirLight.position.multiplyScalar(30);
@@ -112,7 +95,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   dirLight.name = "dirLight;"
   sceneLights.add(dirLight);
 
-  hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+  var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
   hemiLight.color.setHSL(Theme.HEMI_LIGHT_COLOR.H, Theme.HEMI_LIGHT_COLOR.S, Theme.HEMI_LIGHT_COLOR.L);
   hemiLight.groundColor.setHSL(0.095, 1, 0.75);
   hemiLight.position.set(0, 50, 0);
@@ -156,7 +139,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
       side: THREE.DoubleSide
     });
 
-    sky = new THREE.Mesh(skyGeo, skyMat);
+    var sky = new THREE.Mesh(skyGeo, skyMat);
     sky.name = "Skydome"
     workspace.add(sky);
   }
@@ -195,7 +178,6 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
 }
 
 function redrawGrid(xmin, xmax, ymin, ymax, inches) {
-  // console.log(xmin, xmax, ymin, ymax, inches)
   if (inches) {
     xmin = Math.floor(xmin * 25.4);
     xmax = Math.ceil(xmax * 25.4);
@@ -234,7 +216,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var size = 5
 
   // add axes labels
-  var xlbl = this.makeSprite("webgl", {
+  var xlbl = makeSprite("webgl", {
     x: xmax + offset,
     y: 0,
     z: 0,
@@ -242,7 +224,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     color: Theme.X_RULER_LABEL_COLOR,
     size: size
   });
-  var ylbl = this.makeSprite("webgl", {
+  var ylbl = makeSprite("webgl", {
     x: 0,
     y: ymax + offset,
     z: 0,
@@ -345,7 +327,6 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   }
   gridsystem.add(grid);
   gridsystem.add(ruler);
-  helper = gridsystem;
 }
 
 function setBullseyePosition(x, y, z) {
@@ -382,8 +363,8 @@ function init3D() {
     // renderer.setSize(window.innerWidth - 10, window.innerHeight - 10);
     renderer.clear();
 
-    sceneWidth = document.getElementById("renderArea").offsetWidth,
-      sceneHeight = document.getElementById("renderArea").offsetHeight;
+    const sceneWidth = document.getElementById("renderArea").offsetWidth;
+    const sceneHeight = document.getElementById("renderArea").offsetHeight;
     camera.aspect = sceneWidth / sceneHeight;
     renderer.setSize(sceneWidth, sceneHeight)
     camera.updateProjectionMatrix();
@@ -406,13 +387,7 @@ function init3D() {
       controls.enableKeys = false; // Disable Keyboard on canvas
     }
 
-
-    drawWorkspace(xmin, xmax, ymin, ymax);
-
-    // Picking stuff
-    projector = new THREE.Projector();
-    mouseVector = new THREE.Vector3();
-    raycaster.linePrecision = 1
+    drawWorkspace(defaultXmin, defaultXmax, defaultYmin, defaultYmax);
 
     setTimeout(function() {
       resetView()
@@ -449,7 +424,7 @@ function animate() {
     } // end clearSceneFlag
 
     // Limited FPS https://stackoverflow.com/questions/11285065/limiting-framerate-in-three-js-to-increase-performance-requestanimationframe
-    animationLoopTimeout = setTimeout(function() {
+    setTimeout(function() {
       requestAnimationFrame(animate);
     }, 60);
 
@@ -598,8 +573,8 @@ function makeSprite(rendererType, vals) {
 function fixRenderSize() {
   if (renderer) {
     setTimeout(function() {
-      sceneWidth = document.getElementById("renderArea").offsetWidth;
-      sceneHeight = document.getElementById("renderArea").offsetHeight;
+      const sceneWidth = document.getElementById("renderArea").offsetWidth;
+      const sceneHeight = document.getElementById("renderArea").offsetHeight;
       renderer.setSize(sceneWidth, sceneHeight);
       camera.aspect = sceneWidth / sceneHeight;
       camera.updateProjectionMatrix();

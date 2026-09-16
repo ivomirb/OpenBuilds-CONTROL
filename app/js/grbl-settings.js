@@ -23,7 +23,7 @@ function loadGrblBackupFile(f) {
     r.onload = function(event) {
       //console.log(this.result)
       var data = this.result.split("\n");
-      for (i = 0; i < data.length; i++) {
+      for (var i = 0; i < data.length; i++) {
         var parts = data[i].split('=');
         if (data[i].indexOf("$I=") == 0) {
           setMachineButton(parts[1])
@@ -123,7 +123,7 @@ function restoreAutoBackup(index) {
 function backupGrblSettings() {
   autoBackup("Manual Backup")
   var grblBackup = ""
-  for (key in grblParams) {
+  for (var key in grblParams) {
     var key2 = key.substr(1);
 
     var template = grblSettingsTemplate[key2];
@@ -151,7 +151,7 @@ function grblSettings(data) {
   // console.log(data)
   var template = ``
   const grblconfig = data.split('\n')
-  for (i = 0; i < grblconfig.length; i++) {
+  for (var i = 0; i < grblconfig.length; i++) {
     var key = grblconfig[i].split('=')[0];
     var param = grblconfig[i].split(/[= ;(]/)[1]
     grblParams[key] = param
@@ -298,7 +298,7 @@ function computeMachineLimits(params, features, pulloff) {
 }
 
 function updateGotoLimits(features) {
-  limits = computeMachineLimits(grblParams, features);
+  var limits = computeMachineLimits(grblParams, features);
   $('#gotoXMinMpos > a > .coord').html(limits.minX.toFixed(0));
   $('#gotoXMaxMpos > a > .coord').html(limits.maxX.toFixed(0));
   $('#gotoYMinMpos > a > .coord').html(limits.minY.toFixed(0));
@@ -491,7 +491,7 @@ function grblPopulate() {
             </thead>
             <tbody>`
 
-    for (key in grblParams) {
+    for (var key in grblParams) {
       var key2 = key.substr(1);
       if (grblSettingsTemplate[key2] !== undefined) {
         template += `<tr>
@@ -959,9 +959,9 @@ function updateToolOnSValues() {
 
 function setup_settings_table() {
 
-  for (key in grblParams) {
+  for (var key in grblParams) {
     var key2 = key.substr(1);
-    input = $("#val-" + key2 + "-input");
+    var input = $("#val-" + key2 + "-input");
     input.val(grblParams[key])
     var setting = grblSettingsTemplate[key2];
     // Metro UI destroys the tooltips for td and tr elements - readding here
