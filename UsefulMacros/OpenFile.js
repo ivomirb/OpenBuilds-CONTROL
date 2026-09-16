@@ -6,25 +6,32 @@
 $('#splash').hide();
 $('#btnTheme > span.h6.badge.bg-green.fg-white').hide();
 
-var openFileButtons = `
-<button id="file" class="ribbon-button" onclick="socket.emit('openFile')">
-	<span class="icon">
-		<span class="fa-layers fa-fw">
-			<i class="fas fa-folder-open fg-amber"></i>
-		</span>
-	</span>
-	<span class="caption grblmode">Open<br>G-Code</span>
-</button>
-<button id="reloadFile" class="ribbon-button disabled" title="Reload last G-Code file" onclick="socket.emit('reopenFile');">
-	<span class="icon">
-		<span class="fas fa-undo-alt"></span>
-	</span>
-	<span class="caption">Reload<br>G-Code</span>
-</button>`
+if ($(".my-custom-buttons").length === 0) {
 
-$("#openGcodeBtn").attr('id', "old_openGcodeBtn");
-$("#openGcodeBtnElectron19").attr('id', "old_openGcodeBtnElectron19");
-$("#reloadFile").attr('id', "old_reloadFile");
-$("#old_openGcodeBtn").hide();
-$("#old_openGcodeBtnElectron19").parent().hide();
-$("#old_openGcodeBtnElectron19").parent().after(openFileButtons);
+    var openFileButtons = `
+     <button id="file" class="ribbon-button my-custom-buttons" onclick="socket.emit('openFile')">
+         <span class="icon">
+             <span class="fa-layers fa-fw">
+                 <i class="fas fa-folder-open fg-amber"></i>
+             </span>
+         </span>
+         <span class="caption grblmode">Open<br>G-Code</span>
+     </button>
+     <button id="reloadFile" class="ribbon-button disabled my-custom-buttons" title="Reload last G-Code file" onclick="socket.emit('reopenFile');">
+         <span class="icon">
+             <span class="fas fa-undo-alt"></span>
+         </span>
+         <span class="caption">Reload<br>G-Code</span>
+     </button>`;
+
+    if ($("#openGcodeBtn").length) {
+        $("#openGcodeBtn").attr('id', "old_openGcodeBtn").hide();
+    }
+    
+    if ($("#openGcodeBtnElectron19").length) {
+        var $parentMenu = $("#openGcodeBtnElectron19").attr('id', "old_openGcodeBtnElectron19").parent();
+        $parentMenu.hide();
+        
+        $parentMenu.after(openFileButtons);
+    }
+}
