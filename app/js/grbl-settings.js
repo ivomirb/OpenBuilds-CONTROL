@@ -150,7 +150,7 @@ function backupGrblSettings() {
 function grblSettings(data) {
   // console.log(data)
   var template = ``
-  grblconfig = data.split('\n')
+  const grblconfig = data.split('\n')
   for (i = 0; i < grblconfig.length; i++) {
     var key = grblconfig[i].split('=')[0];
     var param = grblconfig[i].split(/[= ;(]/)[1]
@@ -165,22 +165,33 @@ function grblSettings(data) {
     $("#grbl-settings-tab-title").html('Grbl');
   }
 
-
-
   if (grblParams['$22'] > 0) {
+    $('#gotozeroZmPosXYwPos').removeClass('disabled')
     $('#gotozeroMPos').removeClass('disabled')
     $('#homeBtn').attr('disabled', false)
-    $('#gotoXzeroMpos').removeClass('disabled')
-    $('#gotoYzeroMpos').removeClass('disabled')
-    $('#gotoZzeroMpos').removeClass('disabled')
-    $('.PullOffMPos').html("-" + grblParams['$27'])
+    $('#gotoXMinMpos').removeClass('disabled')
+    $('#gotoXMaxMpos').removeClass('disabled')
+    $('#gotoYMinMpos').removeClass('disabled')
+    $('#gotoYMaxMpos').removeClass('disabled')
+    $('#gotoZMinMpos').removeClass('disabled')
+    $('#gotoZMaxMpos').removeClass('disabled')
+    $('#gotoAMinMpos').removeClass('disabled')
+    $('#gotoAMaxMpos').removeClass('disabled')
   } else {
+    $('#gotozeroZmPosXYwPos').addClass('disabled')
     $('#gotozeroMPos').addClass('disabled')
     $('#homeBtn').attr('disabled', true)
-    $('#gotoXzeroMpos').addClass('disabled')
-    $('#gotoYzeroMpos').addClass('disabled')
-    $('#gotoZzeroMpos').addClass('disabled')
+    $('#gotoXMinMpos').addClass('disabled')
+    $('#gotoXMaxMpos').addClass('disabled')
+    $('#gotoYMinMpos').addClass('disabled')
+    $('#gotoYMaxMpos').addClass('disabled')
+    $('#gotoZMinMpos').addClass('disabled')
+    $('#gotoZMaxMpos').addClass('disabled')
+    $('#gotoAMinMpos').addClass('disabled')
+    $('#gotoAMaxMpos').addClass('disabled')
   }
+
+  updateGotoLimits(laststatus.machine.firmware.features);
 
   if (grblParams['$32'] == 1) {
     $('#enLaser').removeClass('alert').addClass('success').html('ON')
@@ -205,6 +216,106 @@ function grblSettings(data) {
   } else {
     jogOverride(100);
   }
+}
+
+// Compute the accurate machine dimensions. Takes into account:
+//   * homing enabled or disabled
+//   * the homing side for each axis (the homing side may need a pulloff offset)
+//      * the pulloff distance can be overriden for special use cases
+//   * the "home origin" feature 'Z' - if set, the pulloff is ignored
+//   * the manual homing flag (ignores pulloff for the manually homed axes)
+// Takes explicit "params" and "features", because they may not be readily available from global variables
+//
+// This should be the definitive source of the machine limits info
+function computeMachineLimits(params, features, pulloff) {
+  var limits = {
+    X0: 0,
+    Y0: 0,
+    Z0: 0,
+    minX: 0,
+    minY: 0,
+    minZ: 0,
+    minA: 0,
+    maxX: parseFloat(params.$130),
+    maxY: parseFloat(params.$131),
+    maxZ: parseFloat(params.$132),
+    maxA: parseFloat(params.$133),
+  };
+
+  if (params.$22 > 0) {
+    const homingMask = calcMaskFromDec(params.$23);
+    const sizeX = limits.maxX;
+    const sizeY = limits.maxY;
+    const sizeZ = limits.maxZ;
+    const sizeA = limits.maxA;
+    if (features.contains('Z')) {
+      limits.minX = homingMask.x ? 0 : -sizeX;
+      limits.maxX = homingMask.x ? sizeX : 0;
+      limits.minY = homingMask.y ? 0 : -sizeY;
+      limits.maxY = homingMask.y ? sizeY : 0;
+      limits.minZ = homingMask.z ? 0 : -sizeZ;
+      limits.maxZ = homingMask.z ? sizeZ : 0;
+      limits.minA = homingMask.a ? 0 : -sizeA;
+      limits.maxA = homingMask.a ? sizeA : 0;
+    } else {
+      if (pulloff == undefined)
+        pulloff = parseFloat(params.$27);
+      var pulloffMask = 15;
+      if (params.$22 & 32) {
+        pulloffMask = 0; // find which axes can be manually homed using settings $44 through $49
+        for (var i = 44; i <= 49; i++) {
+          var mask = params['$' + i];
+          if (mask == undefined)
+            break;
+          pulloffMask |= parseInt(mask);
+        }
+      }
+      pulloffMask = calcMaskFromDec(pulloffMask);
+
+      if (!homingMask.x && pulloffMask.x) limits.X0 = -pulloff;
+      if (!homingMask.y && pulloffMask.y) limits.Y0 = -pulloff;
+      if (!homingMask.z && pulloffMask.z) limits.Z0 = -pulloff;
+      limits.minX = (homingMask.x &&  pulloffMask.x) ? pulloff-sizeX : -sizeX;
+      limits.maxX = (homingMask.x || !pulloffMask.x) ? 0 : -pulloff;
+      limits.minY = (homingMask.y &&  pulloffMask.y) ? pulloff-sizeY : -sizeY;
+      limits.maxY = (homingMask.y || !pulloffMask.y) ? 0 : -pulloff;
+      limits.minZ = (homingMask.z &&  pulloffMask.z) ? pulloff-sizeZ : -sizeZ;
+      limits.maxZ = (homingMask.z || !pulloffMask.z) ? 0 : -pulloff;
+      limits.minA = -sizeA;
+      limits.maxA = 0;
+    }
+    if (isNaN(limits.minX)) limits.minX = 0;
+    if (isNaN(limits.maxX)) limits.maxX = 0;
+    if (isNaN(limits.minY)) limits.minY = 0;
+    if (isNaN(limits.maxY)) limits.maxY = 0;
+    if (isNaN(limits.minZ)) limits.minZ = 0;
+    if (isNaN(limits.maxZ)) limits.maxZ = 0;
+    if (isNaN(limits.minA)) limits.minA = 0;
+    if (isNaN(limits.maxA)) limits.maxA = 0;
+    limits.homingMask = homingMask;
+  }
+  return limits;
+}
+
+function updateGotoLimits(features) {
+  limits = computeMachineLimits(grblParams, features);
+  $('#gotoXMinMpos > a > .coord').html(limits.minX.toFixed(0));
+  $('#gotoXMaxMpos > a > .coord').html(limits.maxX.toFixed(0));
+  $('#gotoYMinMpos > a > .coord').html(limits.minY.toFixed(0));
+  $('#gotoYMaxMpos > a > .coord').html(limits.maxY.toFixed(0));
+  $('#gotoZMinMpos > a > .coord').html(limits.minZ.toFixed(0));
+  $('#gotoZMaxMpos > a > .coord').html(limits.maxZ.toFixed(0));
+  $('#gotoAMinMpos > a > .coord').html(limits.minA.toFixed(0));
+  $('#gotoAMaxMpos > a > .coord').html(limits.maxA.toFixed(0));
+
+  $('#gotozeroZmPosXYwPos > a > .oord').html(limits.maxZ.toFixed(0));
+  const command = isJogWidget ? "G53" : "G0 G53";
+  const commandXY = command + " X"+ limits.X0.toFixed(0) +" Y" + limits.Y0.toFixed(0);
+  const commandZ = command + " Z" + limits.Z0.toFixed(0);
+  if (limits.homingMask && limits.homingMask.z)
+    $('#gotozeroMPos > a > .gcode').html(commandXY + ", " + commandZ);
+  else
+    $('#gotozeroMPos > a > .gcode').html(commandZ + ", " + commandXY);
 }
 
 function showBasicSettings() {
@@ -427,16 +538,7 @@ function grblPopulate() {
 
 
     $('#grblSettingsBadge').hide();
-
-    if (grblParams['$21'] == 1 && grblParams['$22'] > 0) {
-      $('#limitsinstalled:checkbox').prop('checked', true);
-      $('#gotozeroMPos').removeClass('disabled')
-      $('#homeBtn').attr('disabled', false)
-    } else {
-      $('#limitsinstalled:checkbox').prop('checked', false);
-      $('#gotozeroMPos').addClass('disabled')
-      $('#homeBtn').attr('disabled', true)
-    }
+    $('#limitsinstalled:checkbox').prop('checked', grblParams['$21'] == 1 && grblParams['$22'] > 0);
 
     // if (grblParams['$33'] == 50 && grblParams['$34'] == 5 && grblParams['$35'] == 5 && grblParams['$36'] == 10) {
     //   setSelectedToolhead('scribe')
@@ -460,56 +562,7 @@ function grblPopulate() {
 
     populateRestoreMenu();
   }
-
 }
-
-// function checkifchanged() {
-//   var hasChanged = false;
-//   for (var key in grblParams) {
-//     if (grblParams.hasOwnProperty(key)) {
-//       var j = key.substring(1)
-//       var newVal = $("#val-" + j + "-input").val();
-//
-//       if (newVal !== undefined) {
-//         // Only send values that changed
-//         if (newVal != grblParams[key]) {
-//           hasChanged = true;
-//           console.log("changed: " + key)
-//           console.log("old: " + grblParams[key])
-//           console.log("new: " + newVal)
-//           if (!$("#val-" + j + "-input").parent().is('td')) {
-//             $("#val-" + j + "-input").parent().addClass('alert')
-//           } else if ($("#val-" + j + "-input").is('select')) {
-//             $("#val-" + j + "-input").addClass('alert')
-//           } else if (j == 3) { // axes
-//             $('#xdirinvert').parent().children('.check').addClass('bd-red')
-//             $('#ydirinvert').parent().children('.check').addClass('bd-red')
-//             $('#zdirinvert').parent().children('.check').addClass('bd-red')
-//           }
-//         } else {
-//           if (!$("#val-" + j + "-input").parent().is('td')) {
-//             $("#val-" + j + "-input").parent().removeClass('alert')
-//           } else if ($("#val-" + j + "-input").is('select')) {
-//             $("#val-" + j + "-input").removeClass('alert')
-//           } else if (j == 3) {
-//             $('#xdirinvert').parent().children('.check').removeClass('bd-red')
-//             $('#ydirinvert').parent().children('.check').removeClass('bd-red')
-//             $('#zdirinvert').parent().children('.check').removeClass('bd-red')
-//           }
-//         }
-//       }
-//     }
-//   }
-//   if (hasChanged) {
-//     $('#grblSettingsBadge').fadeIn('slow');
-//     $('#saveBtn').attr('disabled', false).removeClass('disabled');
-//     $('#saveBtnIcon').removeClass('fg-gray').addClass('fg-grayBlue');
-//   } else {
-//     $('#grblSettingsBadge').fadeOut('slow');
-//     $('#saveBtn').attr('disabled', true).addClass('disabled');
-//     $('#saveBtnIcon').removeClass('fg-grayBlue').addClass('fg-gray');
-//   }
-// }
 
 function checkifchanged() {
   if (!settingsUIConstructed) return;
@@ -643,9 +696,12 @@ function autoBackup(note) {
   console.log('Settings saved and backup created.');
 }
 
+const prioritySettings = ["$22"]; // change homing setting first because it can prevent soft limits from being set (grblHAL)
+
 function grblSaveSettings() {
   autoBackup("Updated Grbl Settings")
-  var toSaveCommands = [];
+  var toSaveCommandsFirst = [];
+  var toSaveCommandsSecond = [];
   var saveProgressBar = $("#grblSaveProgress").data("progress");
   for (var key in grblParams) {
     if (grblParams.hasOwnProperty(key)) {
@@ -655,11 +711,18 @@ function grblSaveSettings() {
       if (newVal !== undefined) {
         if (parseFloat(newVal) != parseFloat(grblParams[key]) && newVal != grblParams[key]) {
           // console.log(key + ' was ' + grblParams[key] + ' but now, its ' + newVal);
-          toSaveCommands.push(key + '=' + newVal);
+
+          if (prioritySettings.contains(key))
+            toSaveCommandsFirst.push(key + '=' + newVal);
+          else
+            toSaveCommandsSecond.push(key + '=' + newVal);
         }
       }
     }
   }
+
+  var toSaveCommands = [...toSaveCommandsFirst, ...toSaveCommandsSecond];
+
   if (toSaveCommands.length > 0) {
     //console.log("commands", toSaveCommands)
     let counter = 0;
@@ -771,6 +834,7 @@ function calcMaskFromDec(dec) {
   }
   return invertmask
 }
+
 
 function changeProbeDirInvert() {
   var xticked = $('#xHomeDir').is(':checked');
