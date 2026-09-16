@@ -461,7 +461,6 @@ function viewExtents(objecttosee) {
   if (!disable3Dcontrols) {
     // console.log("viewExtents. object:", objecttosee);
     // console.log("controls:", controls);
-    //wakeAnimate();
 
     // lets override the bounding box with a newly
     // generated one
@@ -602,15 +601,15 @@ function fixRenderSize() {
       sceneWidth = document.getElementById("renderArea").offsetWidth;
       sceneHeight = document.getElementById("renderArea").offsetHeight;
       renderer.setSize(sceneWidth, sceneHeight);
-      //renderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = sceneWidth / sceneHeight;
       camera.updateProjectionMatrix();
+/* prevent reset of the viewport on window resize or tab switch
       if (!disable3Dcontrols) {
         controls.reset();
       }
       setTimeout(function() {
         resetView();
-      }, 10);
+      }, 10);*/
     }, 10)
 
   }
@@ -623,13 +622,10 @@ $(window).on('resize', function() {
 });
 
 function resetView(object) {
-  // console.log(resetView.caller);
-  if (!object) {
-    viewExtents(helper);
+  if (object && object.userData.linePoints.length > 1) {
+    viewExtents(object);
   } else {
-    if (object.userData.linePoints.length > 1) {
-      viewExtents(object);
-    }
+    viewExtents(gridsystem);
   }
 }
 
