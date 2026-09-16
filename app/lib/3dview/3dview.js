@@ -121,7 +121,7 @@ function parseGcodeInWebWorker(gcode) {
               $('#gcodeviewertab').click();
             }
             clearSceneFlag = true;
-            resetView();
+            resetView(object);
             var timeremain = object.userData.totalTime;
 
             if (!isNaN(timeremain)) {
