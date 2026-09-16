@@ -13,8 +13,8 @@ function jogOverride(newVal) {
     jogRateX = (grblParams['$110'] * (newVal / 100)).toFixed(0);
     jogRateY = (grblParams['$111'] * (newVal / 100)).toFixed(0);
     jogRateZ = (grblParams['$112'] * (newVal / 100)).toFixed(0);
-
-    $('#jro').data('slider').val(newVal)
+    if ($('#jro').data('slider').val() != newVal)
+      $('#jro').data('slider').val(newVal)
   }
   if (grblParams.hasOwnProperty('$113')) {
     jogRateA = (grblParams['$113'] * (newVal / 100)).toFixed(0);
@@ -391,47 +391,79 @@ $(document).ready(function() {
     sendGcode('G0 Z0');
   });
 
-  $('#gotoXzeroMpos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 X-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 X0');
+  $('#gotoXMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minX = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minX;
+      sendGcode("G0 G53 G90 G21 X" + minX.toFixed(2));
     }
   });
 
-  $('#gotoYzeroMpos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Y-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 Y0');
+  $('#gotoXMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxX = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxX;
+      sendGcode("G0 G53 G90 G21 X" + maxX.toFixed(2));
     }
   });
 
-  $('#gotoZzeroMpos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Z-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 Z0');
+  $('#gotoYMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minY = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minY;
+      sendGcode("G0 G53 G90 G21 Y" + minY.toFixed(2));
+    }
+  });
+
+  $('#gotoYMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxY = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxY;
+      sendGcode("G0 G53 G90 G21 Y" + maxY.toFixed(2));
+    }
+  });
+
+  $('#gotoZMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minZ;
+      sendGcode("G0 G53 G90 G21 Z" + minZ.toFixed(2));
+    }
+  });
+
+  $('#gotoZMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxZ;
+      sendGcode("G0 G53 G90 G21 Z" + maxZ.toFixed(2));
+    }
+  });
+
+  $('#gotoAMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minA = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minA;
+      sendGcode("G0 G53 G90 G21 A" + minA.toFixed(2));
+    }
+  });
+
+  $('#gotoAMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxA = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxA;
+      sendGcode("G0 G53 G90 G21 A" + maxA.toFixed(2));
     }
   });
 
   $('#gotozeroZmPosXYwPos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Z-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 Z0');
-    }
+    const maxZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features)().maxZ;
+    sendGcode('G0 G53 G90 G21 Z' + maxZ.toFixed(2));
     sendGcode('G0 X0 Y0');
     sendGcode('G0 Z0');
   });
 
   $('#gotozeroMPos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Z-' + grblParams["$27"]);
-      sendGcode('G53 G0 X-' + grblParams["$27"] + ' Y-' + grblParams["$27"]);
+    const limits = computeMachineLimits(grblParams, laststatus.machine.firmware.features);
+    if (limits.homingMask && limits.homingMask.z) {
+      // Z0 at the bottom - first move XY, then Z
+      sendGcode('G0 G53 X' + limits.X0.toFixed(2) + ' Y' + limits.Y0.toFixed(2));
+      sendGcode('G0 G53 G90 G21 Z' + limits.Z0.toFixed(2));
     } else {
-      sendGcode('G53 G0 Z0');
-      sendGcode('G53 G0 X0 Y0');
+      // Z0 at the top - first move Z, then XY
+      sendGcode('G0 G53 G90 G21 Z' + limits.Z0.toFixed(2));
+      sendGcode('G0 G53 X' + limits.X0.toFixed(2) + ' Y' + limits.Y0.toFixed(2));
     }
   });
 
@@ -444,22 +476,14 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
         var minX = mcsX - 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            minX = calcMaskFromDec(grblParams.$23).x ? 0 : -parseFloat(grblParams.$130);
-          else
-            minX = calcMaskFromDec(grblParams.$23).x ? 1-parseFloat(grblParams.$130) : -parseFloat(grblParams.$130);
+          minX = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).minX;
           if (minX >= mcsX) {
             toastJogWillHit("X-");
           }
@@ -493,22 +517,15 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
         var maxX = mcsX + 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            maxX = calcMaskFromDec(grblParams.$23).x ? parseFloat(grblParams.$130) : 0;
-          else
-            maxX = calcMaskFromDec(grblParams.$23).x ? 0 : -1;
+          maxX = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).maxX;
           if (maxX <= mcsX) {
             toastJogWillHit("X+");
           }
@@ -541,22 +558,15 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
         var minY = mcsY - 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            minY = calcMaskFromDec(grblParams.$23).y ? 0 : -parseFloat(grblParams.$131);
-          else
-            minY = calcMaskFromDec(grblParams.$23).y ? 1-parseFloat(grblParams.$131) : -parseFloat(grblParams.$131);
+          minY = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).minY;
           if (minY >= mcsY) {
             toastJogWillHit("Y-");
           }
@@ -589,22 +599,15 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
         var maxY = mcsY + 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            maxY = calcMaskFromDec(grblParams.$23).y ? parseFloat(grblParams.$131) : 0;
-          else
-            maxY = calcMaskFromDec(grblParams.$23).y ? 0 : -1;
+          maxY = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).maxY;
           if (maxY <= mcsY) {
             toastJogWillHit("Y+");
           }
@@ -636,22 +639,15 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
         var minZ = mcsZ - 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            minZ = calcMaskFromDec(grblParams.$23).z ? 0 : -parseFloat(grblParams.$132);
-          else
-            minZ = calcMaskFromDec(grblParams.$23).z ? 1-parseFloat(grblParams.$132) : -parseFloat(grblParams.$132);
+          minZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).minZ;
           if (minZ >= mcsZ) {
             toastJogWillHit("Z-");
           }
@@ -684,22 +680,15 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
         var maxZ = mcsZ + 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            maxZ = calcMaskFromDec(grblParams.$23).z ? parseFloat(grblParams.$132) : 0;
-          else
-            maxZ = calcMaskFromDec(grblParams.$23).z ? 0 : -1;
+          maxZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).maxZ;
           if (maxZ <= mcsZ) {
             toastJogWillHit("Z+");
           }
@@ -731,23 +720,16 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
         var minA = mcsA - 1000;
         var travelA = parseFloat(grblParams.$133);
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            minA = calcMaskFromDec(grblParams.$23).a ? 0 : -travelA;
-          else
-            minA = calcMaskFromDec(grblParams.$23).a ? 1-travelA : -travelA;
+          minA = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 0).minA;
           if (minA >= mcsA) {
             toastJogWillHit("A-");
           }
@@ -780,23 +762,16 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
         var maxA = mcsA + 1000;
         var travelA = parseFloat(grblParams.$133);
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          if (laststatus.machine.firmware.features.contains('Z'))
-            maxA = calcMaskFromDec(grblParams.$23).a ? travelA : 0;
-          else
-            maxA = calcMaskFromDec(grblParams.$23).a ? 0 : -1;
+          maxA = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 0).maxA;
           if (maxA <= mcsA) {
             toastJogWillHit("A+");
           }
