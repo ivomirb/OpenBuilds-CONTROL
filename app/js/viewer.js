@@ -42,7 +42,8 @@ function disposeGeometry(obj) {
 
 function disposeGeometryAndRemove(obj) {
   disposeGeometry(obj);
-  obj.parent.remove(obj);
+  if (obj.parent != undefined)
+    obj.parent.remove(obj);
 }
 
 function cleanupWorkspace() {
