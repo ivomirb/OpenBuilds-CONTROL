@@ -268,8 +268,8 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var vertices10 = [];
   var vertices100 = [];
 
-  var scale = inches ? 25.4/4 : 10;
-  var major = inches ? 4 : 10;
+  var scale = inches ? 25.4/5	 : 10;
+  var major = inches ? 5 : 10;
   var ixmin = Math.ceil(xmin / scale);
   var ixmax = Math.floor(xmax / scale);
   var iymin = Math.ceil(ymin / scale);
@@ -321,26 +321,9 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   grid100.name = "GridHelper100";
   grid.add(grid100);
 
-  if (inches) {
-    var ruler = drawRulerInches(xmin, xmax, ymin, ymax, inches)
-  } else {
-    var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
-  }
+  var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
   gridsystem.add(grid);
   gridsystem.add(ruler);
-}
-
-function setBullseyePosition(x, y, z) {
-  //console.log('Set Position: ', x, y, z)
-  if (x) {
-    bullseye.position.x = parseInt(x, 10);
-  };
-  if (y) {
-    bullseye.position.y = parseInt(y, 10);
-  };
-  if (z) {
-    bullseye.position.z = (parseInt(z, 10) + 0.1);
-  };
 }
 
 function init3D() {
@@ -358,6 +341,7 @@ function init3D() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
     camera.position.z = 295;
+    camera.up = new THREE.Vector3(0, 0, 1);
 
     $('#renderArea').append(renderer.domElement);
     renderer.setClearColor(0xffffff, 1); // Background color of viewer = transparent
@@ -454,9 +438,6 @@ function viewExtents(objecttosee) {
       var minz = box3.min.z;
       var maxz = box3.max.z;
 
-
-      controls.reset();
-
       var lenx = maxx - minx;
       var leny = maxy - miny;
       var lenz = maxz - minz;
@@ -466,50 +447,17 @@ function viewExtents(objecttosee) {
 
       // console.log("lenx:", lenx, "leny:", leny, "lenz:", lenz);
       var maxlen = Math.max(lenx, leny, lenz);
-      var dist = 2 * maxlen;
-      // center camera on gcode objects center pos, but twice the maxlen
-      controls.object.position.x = centerx;
-      controls.object.position.y = centery;
-      controls.object.position.z = centerz + dist;
-      controls.target.x = centerx;
-      controls.target.y = centery;
-      controls.target.z = centerz;
-      // console.log("maxlen:", maxlen, "dist:", dist);
-      var fov = 2.2 * Math.atan(maxlen / (2 * dist)) * (180 / Math.PI);
-      // console.log("new fov:", fov, " old fov:", controls.object.fov);
-      if (isNaN(fov)) {
-        // console.log("giving up on viewing extents because fov could not be calculated");
-        return;
-      } else {
-        // console.log("fov: ", fov);
-        controls.object.fov = fov;
-        var L = dist;
-        var camera2 = controls.object;
-        var vector = controls.target.clone();
-        var l = (new THREE.Vector3()).subVectors(camera2.position, vector).length();
-        var up = camera.up.clone();
-        var quaternion = new THREE.Quaternion();
+      var target = new THREE.Vector3(centerx, centery, centerz);
 
-        // Zoom correction
-        camera2.translateZ(L - l);
-        // console.log("up:", up);
-        up.y = 1;
-        up.x = 0;
-        up.z = 0;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.position.applyQuaternion(quaternion);
-        up.y = 0;
-        up.x = 1;
-        up.z = 0;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.position.applyQuaternion(quaternion);
-        up.y = 0;
-        up.x = 0;
-        up.z = 1;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.lookAt(vector);
-        controls.object.updateProjectionMatrix();
-      }
+      // place the camera above the center, at twice the maxlen, looking straight down
+      camera.position.set(centerx, centery, centerz + 2 * maxlen);
+      camera.rotation.set(0, 0, 0);
+      camera.fov = 30; // degrees
+      camera.lookAt(target);
+      camera.updateProjectionMatrix();
+
+      controls.target = target;
+      controls.update();
     }
   }
 };
