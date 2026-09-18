@@ -12,6 +12,7 @@ var sizeymin;
 var sizexmax;
 var sizeymax;
 var clearSceneFlag = false;
+var viewSettings = {grid: true, ruler: true, toolpath: true, tool: true, machine: true};
 
 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
@@ -161,7 +162,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
     cone.material.opacity = 0.6;
     cone.material.transparent = true;
     cone.castShadow = false;
-    cone.visible = true;
+    cone.visible = viewSettings.tool;
     cone.name = "Simulation Marker"
     workspace.add(cone)
 
@@ -206,9 +207,6 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   while (gridsystem.children.length > 0) {
     disposeGeometryAndRemove(gridsystem.children[0]);
   }
-
-  var grid = new THREE.Group();
-  grid.name = "Grid";
 
   var axesgrp = new THREE.Object3D();
   axesgrp.name = "Axes Markers"
@@ -263,7 +261,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   axesgrp.add(line1);
   axesgrp.add(line2);
 
-  grid.add(axesgrp);
+  gridsystem.add(axesgrp);
 
   var vertices10 = [];
   var vertices100 = [];
@@ -305,7 +303,6 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var grid10 = new THREE.LineSegments(geometry10, material10);
   grid10.receiveShadow = false;
   grid10.name = "GridHelper10";
-  grid.add(grid10);
 
   var material100 = new THREE.LineBasicMaterial({
     color: Theme.GRID_STEP_100_COLOR,
@@ -319,10 +316,17 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var grid100 = new THREE.LineSegments(geometry100, material100);
   grid100.receiveShadow = false;
   grid100.name = "GridHelper100";
+
+  var grid = new THREE.Group();
+  grid.name = "Grid";
+  grid.visible = viewSettings.grid;
+  grid.add(grid10);
   grid.add(grid100);
+  gridsystem.add(grid);
 
   var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
-  gridsystem.add(grid);
+  ruler.name = "Ruler";
+  ruler.visible = viewSettings.ruler;
   gridsystem.add(ruler);
 }
 
@@ -373,6 +377,8 @@ function init3D() {
     }
 
     drawWorkspace(defaultXmin, defaultXmax, defaultYmin, defaultYmax);
+
+    readViewSettings();
 
     setTimeout(function() {
       resetView()
@@ -577,6 +583,7 @@ function drawMachineCoordinates(status) {
     clearMachineCoordinates();
     machineCoordinateSpace = new THREE.Group();
     machineCoordinateSpace.name = "Machine Extents";
+    machineCoordinateSpace.visible = viewSettings.machine;
 
     var material = new THREE.LineBasicMaterial({
       color: 0x888888,
@@ -633,5 +640,58 @@ function drawMachineCoordinates(status) {
     machineCoordinateSpace.add(new THREE.Line(geometry, material));
 
     workspace.add(machineCoordinateSpace);
+  }
+}
+
+function readViewSettings() {
+/* decided to make the settings non-persistent
+  if (localStorage.getItem('viewSettings')) {
+    var settings = JSON.parse(localStorage.getItem('viewSettings'));
+    if (settings != undefined) {
+      for (var prop in settings) {
+        if (prop in viewSettings && typeof(settings[prop]) == typeof(viewSettings[prop]))
+          viewSettings[prop] = settings[prop];
+      }
+    }
+  }
+*/
+  $('#viewGridSetting:checkbox').prop('checked', viewSettings.grid);
+  $('#viewRulerSetting:checkbox').prop('checked', viewSettings.ruler);
+  $('#viewToolpathSetting:checkbox').prop('checked', viewSettings.toolpath);
+  $('#viewToolSetting:checkbox').prop('checked', viewSettings.tool);
+  $('#viewMachineSetting:checkbox').prop('checked', viewSettings.machine);
+
+  updateViewSettings();
+}
+
+function saveViewSettings() {
+/* decided to make the settings non-persistent
+  localStorage.setItem('viewSettings', JSON.stringify(viewSettings));
+*/
+}
+
+function changeViewSettings() {
+  viewSettings.grid = $('#viewGridSetting').is(':checked');
+  viewSettings.ruler = $('#viewRulerSetting').is(':checked');
+  viewSettings.toolpath = $('#viewToolpathSetting').is(':checked');
+  viewSettings.tool = $('#viewToolSetting').is(':checked');
+  viewSettings.machine = $('#viewMachineSetting').is(':checked');
+  saveViewSettings();
+  updateViewSettings();
+}
+
+function updateViewSettings() {
+  if (scene) {
+    if (object) object.visible = viewSettings.toolpath;
+    if (cone) cone.visible = viewSettings.tool;
+
+    var grid = scene.getObjectByName("Grid");
+    if (grid) grid.visible = viewSettings.grid;
+
+    var ruler = scene.getObjectByName("Ruler");
+    if (ruler) ruler.visible = viewSettings.ruler;
+
+    var machine = scene.getObjectByName("Machine Extents");
+    if (machine) machine.visible = viewSettings.machine;
   }
 }

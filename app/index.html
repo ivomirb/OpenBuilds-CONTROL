@@ -1142,7 +1142,57 @@
                     </div>
                   </div>
                   <div class="section" id="tab-three">
-                    <div id="renderArea"></div>
+                    <div id="renderArea" onclick="$('#viewSettings').hide()"></div>
+
+
+                    <div style="position: absolute; top: 10px; right: 10px; z-index: 1; display:flex; flex-direction:column; align-items:flex-end;">
+                      <button title="3D View settings" class="button dark dropdown-toggle" onclick="$('#viewSettings').toggle()">
+                        <i class="fas fa-eye"></i> View
+                      </button>
+                      <table id="viewSettings" class="ribbon-dropdown" style="display: none; margin-top:4px; position:relative;">
+                        <tr>
+                          <td style="vertical-align:middle;">
+                            <label class="toggle"><input type="checkbox" id="viewGridSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <span class="text-small" style="padding: 6px; display:inline-block;">Grid</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="vertical-align:middle;">
+                            <label class="toggle"><input type="checkbox" id="viewRulerSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <span class="text-small" style="padding: 6px; display:inline-block;">Ruler</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="vertical-align:middle;">
+                            <label class="toggle"><input type="checkbox" id="viewToolpathSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <span class="text-small" style="padding: 6px; display:inline-block;">Toolpath</span>
+                          </td>
+                        </tr>
+                         <tr>
+                          <td style="vertical-align:middle;">
+                            <label class="toggle"><input type="checkbox" id="viewToolSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <span class="text-small" style="padding: 6px; display:inline-block;">Tool marker</span>
+                          </td>
+                        </tr>
+                         <tr>
+                          <td style="vertical-align:middle;">
+                            <label class="toggle"><input type="checkbox" id="viewMachineSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <span class="text-small" style="padding: 6px; display:inline-block;">Machine Extents</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+
                     <div style="position: absolute; top: 10px; right:10px; z-index: 1; max-width: 100px; max-width: 100px;" id="overlayimg">
                       <!-- <img src="img/mch/acro55.png" style="max-width:100%; max-height:100%;">
                     <span style="position: absolute; top: 3px; right:3px; z-index: 1;" class="fas fa-cogs"></span> -->

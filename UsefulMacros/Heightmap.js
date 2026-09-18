@@ -1300,8 +1300,13 @@ window.UpdateHeightmapMenu =function()
 	EnableMenuItem('#applyHeightmap', g_bHeightmapDataValid && laststatus.comms.connectionStatus != 3);
 	EnableMenuItem('#showHeightmap', g_bHeightmapDataValid);
 
-	EnableMenuItem('#heightmapShowToolpath', object);
-	CheckMenuItem('#heightmapShowToolpath', object && object.visible);
+	if (typeof viewSettings == 'object')
+		$('#heightmapShowToolpath').hide();
+	else
+	{
+		EnableMenuItem('#heightmapShowToolpath', object);
+		CheckMenuItem('#heightmapShowToolpath', object && object.visible);
+	}
 
 	EnableMenuItem('#revertGCode', editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1 && laststatus.comms.connectionStatus != 3);
 }

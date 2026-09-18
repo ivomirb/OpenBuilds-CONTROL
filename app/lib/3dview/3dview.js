@@ -7,9 +7,9 @@ var loader = new THREE.ObjectLoader();
 var simTween = false;
 var simTweenTimeFactor;
 
-// if displayType is 0, the current line moves with the cone and the XYZ values are at the bottom
-// if displayType is 1, the current line and the XYZ values are at the top left corner
-var displayType = 1;
+// if simDisplayType is 0, the current line moves with the cone and the XYZ values are at the bottom
+// if simDisplayType is 1, the current line and the XYZ values are at the top left corner
+var simDisplayType = 1;
 
 function convertParsedDataToObject(jsonData) {
   var parsedData;
@@ -19,7 +19,6 @@ function convertParsedDataToObject(jsonData) {
     console.log(e, jsonData); // error in the above string (in this case, yes)!
     return;
   }
-
 
   var geometry = new THREE.BufferGeometry();
 
@@ -89,6 +88,11 @@ function parseGcodeInWebWorker(gcode) {
           disposeGeometryAndRemove(gcObject);
         }
         object = convertParsedDataToObject(e.data);
+        if (!viewSettings.toolpath) {
+          viewSettings.toolpath = true; // // force-show on load
+          $('#viewToolpathSetting:checkbox').prop('checked', true);
+          saveViewSettings();
+        }
         //console.log(object)
         if (object && object.userData.linePoints.length > 1) {
           worker.terminate();
@@ -206,6 +210,12 @@ function sim(fromLine, paused) {
     $("#conetext").css('left', "0px").css('top', "0px");
     $("#conetext").show();
     resetConePosition();
+    if (!viewSettings.tool) { // force-show
+      viewSettings.tool = true;
+      cone.visible = true;
+      $('#viewToolSetting:checkbox').prop('checked', true);
+      saveViewSettings();
+    }
     cone.material.dispose();
     cone.material = new THREE.MeshPhongMaterial({
       color: 0x28a745,
@@ -267,7 +277,7 @@ function runSim() {
     return;
   }
 
-  if (displayType == 0) {
+  if (simDisplayType == 0) {
     var srcLine = object.userData.linePoints[simIdx].src;
     $("#conetext").html(`<span class="tally success drop-shadow">Line ` + (srcLine+1) + ": " + editor.session.getLine(srcLine) + `</span>`);
   }
@@ -416,7 +426,7 @@ function simstop() {
   $('#simspeedval').text(timefactor);
   editor.gotoLine(0)
   $("#conetext").hide();
-  if (displayType == 0)
+  if (simDisplayType == 0)
     $('#gcodesent').html("&nbsp;");
   clearSceneFlag = true;
   if (cone) {
@@ -438,7 +448,7 @@ function simAnimate() {
       posz /= 25.4;
     }
 
-    if (displayType == 0) {
+    if (simDisplayType == 0) {
       var conepos = toScreenPosition(cone, camera)
       var offset = $("#renderArea").offset()
       var farside = $("#renderArea").offset().left + $("#renderArea").outerWidth()
