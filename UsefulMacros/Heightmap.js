@@ -77,10 +77,30 @@ window.ShowHeightmap = function(show)
 	}
 }
 
+window.OnSettingChange = function()
+{
+	var start = {x: Number($('#heightmapX').val()), y: Number($('#heightmapY').val())};
+	var size = {x: Math.max(Number($('#heightmapW').val()), 1), y: Math.max(Number($('#heightmapL').val()), 1)};
+	var pointCount = {x: Math.max(parseInt($('#heightmapNX').val()), 2), y: Math.max(parseInt($('#heightmapNY').val()), 2)};
+	var anchor = {x: Number($('#heightmapAX').val()), y: $('#heightmapAY').val()};
+
+	if (Math.abs(start.x-g_HeightmapStart.x) > 0.01 || Math.abs(start.y-g_HeightmapStart.y) > 0.01 ||
+		Math.abs(size.x-g_HeightmapSize.x) > 0.01 || Math.abs(size.y-g_HeightmapSize.y) > 0.01 ||
+		pointCount.x != g_HeightmapPointCount.x || pointCount.y != g_HeightmapPointCount.y ||
+		Math.abs(anchor.x-g_HeightmapAnchor.x) > 0.01 || Math.abs(anchor.y-g_HeightmapAnchor.y) > 0.01)
+	{
+		$('#hightmapChangeWarning').css({color: "red"});
+	}
+	else
+	{
+		$('#hightmapChangeWarning').css({color: ""});
+	}
+}
+
 const g_HeightmapSettingsDlg = `
 <div class="row mb-2 pt-1 border-top bd-gray">
   <label class="cell-sm-3">Grid Dimensions</label>
-  <label class="cell-sm-9"><small class="dark"><i>Changing these settings will clear the current heightmap data</i></small></label>
+  <label class="cell-sm-9" id="hightmapChangeWarning" style="display:none;"><small class="dark"><i>Changing these settings will clear the current heightmap data</i></small></label>
 </div>
 
 <div class="row mb-2 pt-1">
@@ -91,10 +111,10 @@ const g_HeightmapSettingsDlg = `
 <div class="row mb-2">
   <label class="cell-sm-3 pt-1" title="Starting corner of the heightmap grid">Start</label>
   <div class="cell-sm-4">
-    <input id="heightmapX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="mm" data-clear-button="false" data-editable="true" onchange="OnSettingChange()"/>
   </div>
   <div class="cell-sm-4">
-    <input id="heightmapY" type="number" style="text-align:right;" data-role="input" data-prepend="Y" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapY" type="number" style="text-align:right;" data-role="input" data-prepend="Y" data-append="mm" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
 </div>
 
@@ -103,20 +123,20 @@ const g_HeightmapSettingsDlg = `
     id="HeightmapAutoSize" class="button" onclick="HeightmapAutoSize();" title="Updates the grid dimensions from the bounding box of the G-code" style="margin-left:50px; margin-bottom:-5px;">Auto Size</button>
   </label>
   <div class="cell-sm-4">
-    <input id="heightmapW" type="number" style="text-align:right;" data-role="input" data-prepend="X (Width)" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapW" type="number" style="text-align:right;" data-role="input" data-prepend="X (Width)" data-append="mm" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
   <div class="cell-sm-4">
-    <input id="heightmapL" type="number" style="text-align:right;" data-role="input" data-prepend="Y (Length)" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapL" type="number" style="text-align:right;" data-role="input" data-prepend="Y (Length)" data-append="mm" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
 </div>
 
 <div class="row mb-2">
   <label class="cell-sm-3 pt-1" title="Number of probe points along X and Y">Probe Point Count</label>
   <div class="cell-sm-4">
-    <input id="heightmapNX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="points" data-clear-button="false" data-editable="true" />
+    <input id="heightmapNX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="points" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
   <div class="cell-sm-4">
-    <input id="heightmapNY" type="number" style="text-align:right;" data-role="input" data-prepend="Y" data-append="points" data-clear-button="false" data-editable="true" />
+    <input id="heightmapNY" type="number" style="text-align:right;" data-role="input" data-prepend="Y" data-append="points" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
 </div>
 
@@ -124,10 +144,10 @@ const g_HeightmapSettingsDlg = `
   <label class="cell-sm-3 pt-1" title="The anchor point is the location where the initial Z0 measurement will be taken.
 It has to match the Z0 of the G-code.">Anchor point</label>
   <div class="cell-sm-4">
-    <input id="heightmapAX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapAX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="mm" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
   <div class="cell-sm-4">
-    <input id="heightmapAY" type="number" style="text-align:right;" data-role="input" data-prepend="Y" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapAY" type="number" style="text-align:right;" data-role="input" data-prepend="Y" data-append="mm" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
 </div>
 
@@ -156,8 +176,9 @@ This number should be smaller than the Seek distance.">Retract</label>
 </div>
 
 <div class="row mb-2 pt-1 border-top bd-gray">
-  <label class="cell-sm-12" title="The heightmap tool needs to subdivide the toolpaths into small linear segments to follow the surface.
+  <label class="cell-sm-3" title="The heightmap tool needs to subdivide the toolpaths into small linear segments to follow the surface.
 Smaller numbers will produce more accurate results, but will generate larger and slower G-code.">Toolpath Settings</label>
+  <label class="cell-sm-9" ><small class="dark"><i>These settings are global, independent of the current heightmap</i></small></label>
 </div>
 
 <div class="row mb-2 pt-1">
@@ -194,7 +215,7 @@ function ReadHeightmapSettings()
 	var start = {x: Number($('#heightmapX').val()), y: Number($('#heightmapY').val())};
 	var size = {x: Math.max(Number($('#heightmapW').val()), 1), y: Math.max(Number($('#heightmapL').val()), 1)};
 	var pointCount = {x: Math.max(parseInt($('#heightmapNX').val()), 2), y: Math.max(parseInt($('#heightmapNY').val()), 2)};
-	var anchor = {x: Number($('#heightmapAX').val()), y: $('#heightmapAY').val()};
+	var anchor = {x: Number($('#heightmapAX').val()), y: Number($('#heightmapAY').val())};
 
 	if (Math.abs(start.x-g_HeightmapStart.x) > 0.01 || Math.abs(start.y-g_HeightmapStart.y) > 0.01 ||
 		Math.abs(size.x-g_HeightmapSize.x) > 0.01 || Math.abs(size.y-g_HeightmapSize.y) > 0.01 ||
@@ -230,6 +251,7 @@ window.HeightmapAutoSize = function()
 		$('#heightmapY').val(bbox2.min.y.toFixed(2));
 		$('#heightmapW').val((bbox2.max.x - bbox2.min.x).toFixed(2));
 		$('#heightmapL').val((bbox2.max.y - bbox2.min.y).toFixed(2));
+		OnSettingChange();
 	}
 }
 
@@ -275,6 +297,10 @@ window.EditHeightmapSettings = function()
 	$('#HeightmapZThreshold').val(g_HeghtmapSettings.zThreshold);
 	$('#HeightmapArcThreshold').val(g_HeghtmapSettings.arcThreshold);
 	$('#HeightmapRaids').prop('checked', g_HeghtmapSettings.modifyRapids);
+
+	$('#HeightmapAutoSize').prop('disabled', !object);
+	if (g_bHeightmapDataValid)
+		$('#hightmapChangeWarning').show();
 }
 
 function CubicInterpolation(z0, z1, z2, z3, d)
