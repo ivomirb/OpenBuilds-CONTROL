@@ -369,69 +369,69 @@ $(document).ready(function() {
 
   $('#gotoXMinMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const minX = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minX;
+      const minX = computeMachineLimits().minX;
       sendGcode("G0 G53 G90 G21 X" + minX.toFixed(2));
     }
   });
 
   $('#gotoXMaxMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const maxX = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxX;
+      const maxX = computeMachineLimits().maxX;
       sendGcode("G0 G53 G90 G21 X" + maxX.toFixed(2));
     }
   });
 
   $('#gotoYMinMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const minY = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minY;
+      const minY = computeMachineLimits().minY;
       sendGcode("G0 G53 G90 G21 Y" + minY.toFixed(2));
     }
   });
 
   $('#gotoYMaxMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const maxY = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxY;
+      const maxY = computeMachineLimits().maxY;
       sendGcode("G0 G53 G90 G21 Y" + maxY.toFixed(2));
     }
   });
 
   $('#gotoZMinMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const minZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minZ;
+      const minZ = computeMachineLimits().minZ;
       sendGcode("G0 G53 G90 G21 Z" + minZ.toFixed(2));
     }
   });
 
   $('#gotoZMaxMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const maxZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxZ;
+      const maxZ = computeMachineLimits().maxZ;
       sendGcode("G0 G53 G90 G21 Z" + maxZ.toFixed(2));
     }
   });
 
   $('#gotoAMinMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const minA = computeMachineLimits(grblParams, laststatus.machine.firmware.features).minA;
+      const minA = computeMachineLimits().minA;
       sendGcode("G0 G53 G90 G21 A" + minA.toFixed(2));
     }
   });
 
   $('#gotoAMaxMpos').on('click', function(ev) {
     if (grblParams.$22 > 0) {
-      const maxA = computeMachineLimits(grblParams, laststatus.machine.firmware.features).maxA;
+      const maxA = computeMachineLimits().maxA;
       sendGcode("G0 G53 G90 G21 A" + maxA.toFixed(2));
     }
   });
 
   $('#gotozeroZmPosXYwPos').on('click', function(ev) {
-    const maxZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features)().maxZ;
+    const maxZ = computeMachineLimits()().maxZ;
     sendGcode('G0 G53 G90 G21 Z' + maxZ.toFixed(2));
     sendGcode('G0 X0 Y0');
     sendGcode('G0 Z0');
   });
 
   $('#gotozeroMPos').on('click', function(ev) {
-    const limits = computeMachineLimits(grblParams, laststatus.machine.firmware.features);
+    const limits = computeMachineLimits();
     if (limits.homingMask && limits.homingMask.z) {
       // Z0 at the bottom - first move XY, then Z
       sendGcode('G0 G53 X' + limits.X0.toFixed(2) + ' Y' + limits.Y0.toFixed(2));
@@ -459,7 +459,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          minX = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).minX;
+          minX = computeMachineLimits(1).minX;
           if (minX >= mcsX) {
             toastJogWillHit("X-");
           }
@@ -501,7 +501,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          maxX = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).maxX;
+          maxX = computeMachineLimits(1).maxX;
           if (maxX <= mcsX) {
             toastJogWillHit("X+");
           }
@@ -542,7 +542,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          minY = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).minY;
+          minY = computeMachineLimits(1).minY;
           if (minY >= mcsY) {
             toastJogWillHit("Y-");
           }
@@ -583,7 +583,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          maxY = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).maxY;
+          maxY = computeMachineLimits(1).maxY;
           if (maxY <= mcsY) {
             toastJogWillHit("Y+");
           }
@@ -623,7 +623,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          minZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).minZ;
+          minZ = computeMachineLimits(1).minZ;
           if (minZ >= mcsZ) {
             toastJogWillHit("Z-");
           }
@@ -664,7 +664,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          maxZ = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 1).maxZ;
+          maxZ = computeMachineLimits(1).maxZ;
           if (maxZ <= mcsZ) {
             toastJogWillHit("Z+");
           }
@@ -705,7 +705,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          minA = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 0).minA;
+          minA = computeMachineLimits(0).minA;
           if (minA >= mcsA) {
             toastJogWillHit("A-");
           }
@@ -747,7 +747,7 @@ $(document).ready(function() {
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          maxA = computeMachineLimits(grblParams, laststatus.machine.firmware.features, 0).maxA;
+          maxA = computeMachineLimits(0).maxA;
           if (maxA <= mcsA) {
             toastJogWillHit("A+");
           }

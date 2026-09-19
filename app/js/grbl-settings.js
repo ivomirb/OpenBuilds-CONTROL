@@ -191,7 +191,9 @@ function grblSettings(data) {
     $('#gotoAMaxMpos').addClass('disabled')
   }
 
-  updateGotoLimits(laststatus.machine.firmware.features);
+  updateGotoLimits();
+  if (!isJogWidget)
+    updateMachineCoordinates();
 
   if (grblParams['$32'] == 1) {
     $('#enLaser').removeClass('alert').addClass('success').html('ON')
@@ -224,10 +226,10 @@ function grblSettings(data) {
 //      * the pulloff distance can be overriden for special use cases
 //   * the "home origin" feature 'Z' - if set, the pulloff is ignored
 //   * the manual homing flag (ignores pulloff for the manually homed axes)
-// Takes explicit "params" and "features", because they may not be readily available from global variables
+// Expects that grblParams and laststatus.machine.firmware.features.contains are up to date
 //
 // This should be the definitive source of the machine limits info
-function computeMachineLimits(params, features, pulloff) {
+function computeMachineLimits(pulloffOverride) {
   var limits = {
     X0: 0,
     Y0: 0,
@@ -236,19 +238,19 @@ function computeMachineLimits(params, features, pulloff) {
     minY: 0,
     minZ: 0,
     minA: 0,
-    maxX: parseFloat(params.$130),
-    maxY: parseFloat(params.$131),
-    maxZ: parseFloat(params.$132),
-    maxA: parseFloat(params.$133),
+    maxX: parseFloat(grblParams.$130),
+    maxY: parseFloat(grblParams.$131),
+    maxZ: parseFloat(grblParams.$132),
+    maxA: parseFloat(grblParams.$133),
   };
 
-  if (params.$22 > 0) {
-    const homingMask = calcMaskFromDec(params.$23);
+  if (grblParams.$22 > 0) {
+    const homingMask = calcMaskFromDec(grblParams.$23);
     const sizeX = limits.maxX;
     const sizeY = limits.maxY;
     const sizeZ = limits.maxZ;
     const sizeA = limits.maxA;
-    if (features.contains('Z')) {
+    if (laststatus && laststatus.machine.firmware.features.contains('Z')) {
       limits.minX = homingMask.x ? 0 : -sizeX;
       limits.maxX = homingMask.x ? sizeX : 0;
       limits.minY = homingMask.y ? 0 : -sizeY;
@@ -258,13 +260,12 @@ function computeMachineLimits(params, features, pulloff) {
       limits.minA = homingMask.a ? 0 : -sizeA;
       limits.maxA = homingMask.a ? sizeA : 0;
     } else {
-      if (pulloff == undefined)
-        pulloff = parseFloat(params.$27);
+      const pulloff = pulloffOverride != undefined ? pulloffOverride : parseFloat(grblParams.$27);
       var pulloffMask = 15;
-      if (params.$22 & 32) {
+      if (grblParams.$22 & 32) {
         pulloffMask = 0; // find which axes can be manually homed using settings $44 through $49
         for (var i = 44; i <= 49; i++) {
-          var mask = params['$' + i];
+          var mask = grblParams['$' + i];
           if (mask == undefined)
             break;
           pulloffMask |= parseInt(mask);
@@ -297,8 +298,8 @@ function computeMachineLimits(params, features, pulloff) {
   return limits;
 }
 
-function updateGotoLimits(features) {
-  var limits = computeMachineLimits(grblParams, features);
+function updateGotoLimits() {
+  var limits = computeMachineLimits();
   $('#gotoXMinMpos > a > .coord').html(limits.minX.toFixed(0));
   $('#gotoXMaxMpos > a > .coord').html(limits.maxX.toFixed(0));
   $('#gotoYMinMpos > a > .coord').html(limits.minY.toFixed(0));

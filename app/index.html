@@ -693,7 +693,7 @@
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode( 'G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
+                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -753,7 +753,7 @@
                         <div class="pos-relative">
                           <button class="button light jogbtn" style="width: 42px;"><i class="fas fa-caret-down fg-openbuilds"></i></button>
                           <ul class="d-menu context drop-shadow drop-right" data-role="dropdown">
-                            <li><a href="#" onclick="sendGcode( 'G90\nG21\nG0 Y0')"><span class="fas fa-chart-line fg-green icon"></span>Goto Y0 (Work Coord) (G0 Y0)</a></li>
+                            <li><a href="#" onclick="sendGcode( 'G0 G90 G21 Y0')"><span class="fas fa-chart-line fg-green icon"></span>Goto Y0 (Work Coord) (G0 Y0)</a></li>
                             <li id="gotoYMinMpos"><a href="#"><span class="fas fa-chart-line fg-green icon"></span>Goto Machine Front (G0 G53 Y<span class="coord">0</span>)</a></li>
                             <li id="gotoYMaxMpos"><a href="#"><span class="fas fa-chart-line fg-green icon"></span>Goto Machine Rear (G0 G53 Y<span class="coord">0</span>)</a></li>
                             <li class="divider"></li>
@@ -765,7 +765,7 @@
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode( 'G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-blue" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Z</span>
@@ -826,7 +826,7 @@
                         <div class="pos-relative">
                           <button class="button light jogbtn" style="width: 42px;"><i class="fas fa-caret-down fg-openbuilds"></i></button>
                           <ul class="d-menu context drop-shadow drop-right" data-role="dropdown">
-                            <li><a href="#" onclick="sendGcode('G90\nG21\nG0 A0')"><span class="fas fa-chart-line fg-orange icon"></span>Goto A0 (Work Coord) (G0 A0)</a></li>
+                            <li><a href="#" onclick="sendGcode('G0 G90 G21 A0')"><span class="fas fa-chart-line fg-orange icon"></span>Goto A0 (Work Coord) (G0 A0)</a></li>
                             <li id="gotoAMinMpos"><a href="#"><span class="fas fa-chart-line fg-orange icon"></span>Goto CCW limit (G0 G53 A<span class="coord">0</span>)</a></li>
                             <li id="gotoAMaxMpos"><a href="#"><span class="fas fa-chart-line fg-orange icon"></span>Goto CW limit (G0 G53 A<span class="coord">0</span>)</a></li>
                         </div>
@@ -836,7 +836,7 @@
 
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode( 'G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
+                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-18"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-2" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -859,6 +859,8 @@
                             </span>
                           </button>
                           <ul class="d-menu context drop-shadow" data-role="dropdown">
+                            <li onclick="sendGcode('G0 G90 G21 X0 Y0')"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto XY Zero (Work Coord) (G0 X0 Y0)</a></li>
+                            <li class="divider fg-gray bg-gray bd-gray"></li>
                             <li class="disabled"><a href="#"><span style="font-size: 14px; font-weight: 800; color: orangered;">These commands can plunge down unsafely (use with caution)</span></a></li>
                             <li id="gotozeroWPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Work Coord) (G0 Z5, G0 X0 Y0, G0 Z0) (Retract Z to Work Coord Z5)</a></li>
                             <li id="gotozeroZmPosXYwPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Z Machine Coord, XY Work Coord) (G0 G53 Z<span class="coord">0</span>, G0 X0 Y0, G0 Z0) (Retract Z to Machine Coord)</a></li>
