@@ -48,6 +48,8 @@ function disposeGeometryAndRemove(obj) {
 }
 
 function cleanupWorkspace() {
+  simstop();
+
   var obj = workspace.getObjectByName("Scene Lights");
   if (obj) disposeGeometryAndRemove(obj);
 
