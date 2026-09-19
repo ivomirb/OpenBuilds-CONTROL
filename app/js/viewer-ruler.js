@@ -1,7 +1,7 @@
 function drawRuler(xmin, xmax, ymin, ymax, inches) {
   const unitsVal = inches ? '"' : '';
   const ticSpacing = inches ? 2.54 : 1;
-	const unitScale = inches ? 0.1 : 1; // convert tic index to text
+  const unitScale = inches ? 0.1 : 1; // convert tic index to text
 
   const length1 = 4;
   const length5 = 6;
