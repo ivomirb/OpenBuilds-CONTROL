@@ -1300,13 +1300,18 @@ window.UpdateHeightmapMenu =function()
 	EnableMenuItem('#applyHeightmap', g_bHeightmapDataValid && laststatus.comms.connectionStatus != 3);
 	EnableMenuItem('#showHeightmap', g_bHeightmapDataValid);
 
-	EnableMenuItem('#heightmapShowToolpath', object);
-	CheckMenuItem('#heightmapShowToolpath', object && object.visible);
+	if (typeof viewSettings == 'object')
+		$('#heightmapShowToolpath').hide(); // no need for this menu item if the view settings are already supporting it
+	else
+	{
+		EnableMenuItem('#heightmapShowToolpath', object);
+		CheckMenuItem('#heightmapShowToolpath', object && object.visible);
+	}
 
 	EnableMenuItem('#revertGCode', editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1 && laststatus.comms.connectionStatus != 3);
 }
 
-const heightmapBtnHtml = `<div class="pos-relative" style="display:inline-block; margin-left:9px; margin-right:5px;">
+const heightmapBtnHtml = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 5px 9px;">
 	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark drop-shadow"><i class="fas fa-layer-group"></i> Heightmap</button>
 	<ul class="ribbon-dropdown drop-up" id="heightmapMenu" data-role="dropdown" role="menu" style="margin-bottom:5px;">
 		<style>#heightmapMenu > li {text-align: left;}</style>
