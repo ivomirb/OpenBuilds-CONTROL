@@ -1,47 +1,31 @@
 // Global Vars
 var scene = true;
 var camera, renderer;
-var projector, mouseVector, containerWidth, containerHeight;
-var raycaster = new THREE.Raycaster();
 var gridsystem = new THREE.Group();
+var cone;
 
 var container, stats;
-var camera, controls, control, scene, renderer, gridsystem, helper;
-var clock = new THREE.Clock();
+var controls;
 
-var marker;
 var sizexmin;
 var sizeymin;
 var sizexmax;
 var sizeymax;
-var lineincrement = 50
-var camvideo;
 var clearSceneFlag = false;
+var viewSettings = {grid: true, ruler: true, toolpath: true, tool: true, machine: true};
 
 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-var canvas = !!window.CanvasRenderingContext2D;
 
 // pause Animation when we lose webgl context focus
 var pauseAnimation = false;
 
-var size = new THREE.Vector3();
-
-var sky;
-
 var workspace = new THREE.Group();
 workspace.name = "Workspace"
 
-var ground;
-
-containerWidth = window.innerWidth;
-containerHeight = window.innerHeight;
-
-var animationLoopTimeout;
-
-var xmin = 0,
-  xmax = 307,
-  ymin = 0,
-  ymax = 207
+const defaultXmin = 0,
+  defaultXmax = 307,
+  defaultYmin = 0,
+  defaultYmax = 207
 
 var machineCoordinateSpace = false;
 
@@ -59,10 +43,13 @@ function disposeGeometry(obj) {
 
 function disposeGeometryAndRemove(obj) {
   disposeGeometry(obj);
-  obj.parent.remove(obj);
+  if (obj.parent != undefined)
+    obj.parent.remove(obj);
 }
 
 function cleanupWorkspace() {
+  simstop();
+
   var obj = workspace.getObjectByName("Scene Lights");
   if (obj) disposeGeometryAndRemove(obj);
 
@@ -78,10 +65,10 @@ function cleanupWorkspace() {
 
 function drawWorkspace(xmin, xmax, ymin, ymax) {
 
-  if (!xmin) xmin = 0;
-  if (!ymin) ymin = 0;
-  if (!xmax) xmax = 307
-  if (!ymax) ymax = 207
+  if (!xmin) xmin = defaultXmin;
+  if (!ymin) ymin = defaultYmin;
+  if (!xmax) xmax = defaultXmax;
+  if (!ymax) ymax = defaultYmax;
 
   var sceneLights = new THREE.Group();
 
@@ -95,7 +82,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   light2.position.set(-500, -500, 1).normalize();
   sceneLights.add(light2);
 
-  dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  var dirLight = new THREE.DirectionalLight(0xffffff, 1);
   dirLight.color.setHSL(0.1, 1, 0.95);
   dirLight.position.set(-1, 1.75, 1);
   dirLight.position.multiplyScalar(30);
@@ -112,7 +99,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   dirLight.name = "dirLight;"
   sceneLights.add(dirLight);
 
-  hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+  var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
   hemiLight.color.setHSL(Theme.HEMI_LIGHT_COLOR.H, Theme.HEMI_LIGHT_COLOR.S, Theme.HEMI_LIGHT_COLOR.L);
   hemiLight.groundColor.setHSL(0.095, 1, 0.75);
   hemiLight.position.set(0, 50, 0);
@@ -156,7 +143,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
       side: THREE.DoubleSide
     });
 
-    sky = new THREE.Mesh(skyGeo, skyMat);
+    var sky = new THREE.Mesh(skyGeo, skyMat);
     sky.name = "Skydome"
     workspace.add(sky);
   }
@@ -177,7 +164,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
     cone.material.opacity = 0.6;
     cone.material.transparent = true;
     cone.castShadow = false;
-    cone.visible = true;
+    cone.visible = viewSettings.tool;
     cone.name = "Simulation Marker"
     workspace.add(cone)
 
@@ -195,7 +182,6 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
 }
 
 function redrawGrid(xmin, xmax, ymin, ymax, inches) {
-  // console.log(xmin, xmax, ymin, ymax, inches)
   if (inches) {
     xmin = Math.floor(xmin * 25.4);
     xmax = Math.ceil(xmax * 25.4);
@@ -224,9 +210,6 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     disposeGeometryAndRemove(gridsystem.children[0]);
   }
 
-  var grid = new THREE.Group();
-  grid.name = "Grid";
-
   var axesgrp = new THREE.Object3D();
   axesgrp.name = "Axes Markers"
 
@@ -234,7 +217,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var size = 5
 
   // add axes labels
-  var xlbl = this.makeSprite("webgl", {
+  var xlbl = makeSprite("webgl", {
     x: xmax + offset,
     y: 0,
     z: 0,
@@ -242,7 +225,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     color: Theme.X_RULER_LABEL_COLOR,
     size: size
   });
-  var ylbl = this.makeSprite("webgl", {
+  var ylbl = makeSprite("webgl", {
     x: 0,
     y: ymax + offset,
     z: 0,
@@ -280,13 +263,13 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   axesgrp.add(line1);
   axesgrp.add(line2);
 
-  grid.add(axesgrp);
+  gridsystem.add(axesgrp);
 
   var vertices10 = [];
   var vertices100 = [];
 
-  var scale = inches ? 25.4/4 : 10;
-  var major = inches ? 4 : 10;
+  var scale = inches ? 25.4/5	 : 10;
+  var major = inches ? 5 : 10;
   var ixmin = Math.ceil(xmin / scale);
   var ixmax = Math.floor(xmax / scale);
   var iymin = Math.ceil(ymin / scale);
@@ -322,7 +305,6 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var grid10 = new THREE.LineSegments(geometry10, material10);
   grid10.receiveShadow = false;
   grid10.name = "GridHelper10";
-  grid.add(grid10);
 
   var material100 = new THREE.LineBasicMaterial({
     color: Theme.GRID_STEP_100_COLOR,
@@ -336,29 +318,18 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var grid100 = new THREE.LineSegments(geometry100, material100);
   grid100.receiveShadow = false;
   grid100.name = "GridHelper100";
+
+  var grid = new THREE.Group();
+  grid.name = "Grid";
+  grid.visible = viewSettings.grid;
+  grid.add(grid10);
   grid.add(grid100);
-
-  if (inches) {
-    var ruler = drawRulerInches(xmin, xmax, ymin, ymax, inches)
-  } else {
-    var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
-  }
   gridsystem.add(grid);
-  gridsystem.add(ruler);
-  helper = gridsystem;
-}
 
-function setBullseyePosition(x, y, z) {
-  //console.log('Set Position: ', x, y, z)
-  if (x) {
-    bullseye.position.x = parseInt(x, 10);
-  };
-  if (y) {
-    bullseye.position.y = parseInt(y, 10);
-  };
-  if (z) {
-    bullseye.position.z = (parseInt(z, 10) + 0.1);
-  };
+  var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
+  ruler.name = "Ruler";
+  ruler.visible = viewSettings.ruler;
+  gridsystem.add(ruler);
 }
 
 function init3D() {
@@ -376,14 +347,15 @@ function init3D() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
     camera.position.z = 295;
+    camera.up = new THREE.Vector3(0, 0, 1);
 
     $('#renderArea').append(renderer.domElement);
     renderer.setClearColor(0xffffff, 1); // Background color of viewer = transparent
     // renderer.setSize(window.innerWidth - 10, window.innerHeight - 10);
     renderer.clear();
 
-    sceneWidth = document.getElementById("renderArea").offsetWidth,
-      sceneHeight = document.getElementById("renderArea").offsetHeight;
+    const sceneWidth = document.getElementById("renderArea").offsetWidth;
+    const sceneHeight = document.getElementById("renderArea").offsetHeight;
     camera.aspect = sceneWidth / sceneHeight;
     renderer.setSize(sceneWidth, sceneHeight)
     camera.updateProjectionMatrix();
@@ -406,13 +378,9 @@ function init3D() {
       controls.enableKeys = false; // Disable Keyboard on canvas
     }
 
+    drawWorkspace(defaultXmin, defaultXmax, defaultYmin, defaultYmax);
 
-    drawWorkspace(xmin, xmax, ymin, ymax);
-
-    // Picking stuff
-    projector = new THREE.Projector();
-    mouseVector = new THREE.Vector3();
-    raycaster.linePrecision = 1
+    readViewSettings();
 
     setTimeout(function() {
       resetView()
@@ -449,7 +417,7 @@ function animate() {
     } // end clearSceneFlag
 
     // Limited FPS https://stackoverflow.com/questions/11285065/limiting-framerate-in-three-js-to-increase-performance-requestanimationframe
-    animationLoopTimeout = setTimeout(function() {
+    setTimeout(function() {
       requestAnimationFrame(animate);
     }, 60);
 
@@ -461,7 +429,6 @@ function viewExtents(objecttosee) {
   if (!disable3Dcontrols) {
     // console.log("viewExtents. object:", objecttosee);
     // console.log("controls:", controls);
-    //wakeAnimate();
 
     // lets override the bounding box with a newly
     // generated one
@@ -479,9 +446,6 @@ function viewExtents(objecttosee) {
       var minz = box3.min.z;
       var maxz = box3.max.z;
 
-
-      controls.reset();
-
       var lenx = maxx - minx;
       var leny = maxy - miny;
       var lenz = maxz - minz;
@@ -491,50 +455,17 @@ function viewExtents(objecttosee) {
 
       // console.log("lenx:", lenx, "leny:", leny, "lenz:", lenz);
       var maxlen = Math.max(lenx, leny, lenz);
-      var dist = 2 * maxlen;
-      // center camera on gcode objects center pos, but twice the maxlen
-      controls.object.position.x = centerx;
-      controls.object.position.y = centery;
-      controls.object.position.z = centerz + dist;
-      controls.target.x = centerx;
-      controls.target.y = centery;
-      controls.target.z = centerz;
-      // console.log("maxlen:", maxlen, "dist:", dist);
-      var fov = 2.2 * Math.atan(maxlen / (2 * dist)) * (180 / Math.PI);
-      // console.log("new fov:", fov, " old fov:", controls.object.fov);
-      if (isNaN(fov)) {
-        // console.log("giving up on viewing extents because fov could not be calculated");
-        return;
-      } else {
-        // console.log("fov: ", fov);
-        controls.object.fov = fov;
-        var L = dist;
-        var camera2 = controls.object;
-        var vector = controls.target.clone();
-        var l = (new THREE.Vector3()).subVectors(camera2.position, vector).length();
-        var up = camera.up.clone();
-        var quaternion = new THREE.Quaternion();
+      var target = new THREE.Vector3(centerx, centery, centerz);
 
-        // Zoom correction
-        camera2.translateZ(L - l);
-        // console.log("up:", up);
-        up.y = 1;
-        up.x = 0;
-        up.z = 0;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.position.applyQuaternion(quaternion);
-        up.y = 0;
-        up.x = 1;
-        up.z = 0;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.position.applyQuaternion(quaternion);
-        up.y = 0;
-        up.x = 0;
-        up.z = 1;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.lookAt(vector);
-        controls.object.updateProjectionMatrix();
-      }
+      // place the camera above the center, at twice the maxlen, looking straight down
+      camera.position.set(centerx, centery, centerz + 2 * maxlen);
+      camera.rotation.set(0, 0, 0);
+      camera.fov = 30; // degrees
+      camera.lookAt(target);
+      camera.updateProjectionMatrix();
+
+      controls.target = target;
+      controls.update();
     }
   }
 };
@@ -599,18 +530,18 @@ function makeSprite(rendererType, vals) {
 function fixRenderSize() {
   if (renderer) {
     setTimeout(function() {
-      sceneWidth = document.getElementById("renderArea").offsetWidth;
-      sceneHeight = document.getElementById("renderArea").offsetHeight;
+      const sceneWidth = document.getElementById("renderArea").offsetWidth;
+      const sceneHeight = document.getElementById("renderArea").offsetHeight;
       renderer.setSize(sceneWidth, sceneHeight);
-      //renderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = sceneWidth / sceneHeight;
       camera.updateProjectionMatrix();
+/* prevent reset of the viewport on window resize or tab switch
       if (!disable3Dcontrols) {
         controls.reset();
       }
       setTimeout(function() {
         resetView();
-      }, 10);
+      }, 10);*/
     }, 10)
 
   }
@@ -623,13 +554,10 @@ $(window).on('resize', function() {
 });
 
 function resetView(object) {
-  // console.log(resetView.caller);
-  if (!object) {
-    viewExtents(helper);
+  if (object && object.userData.linePoints.length > 1) {
+    viewExtents(object);
   } else {
-    if (object.userData.linePoints.length > 1) {
-      viewExtents(object);
-    }
+    viewExtents(gridsystem);
   }
 }
 
@@ -657,6 +585,7 @@ function drawMachineCoordinates(status) {
     clearMachineCoordinates();
     machineCoordinateSpace = new THREE.Group();
     machineCoordinateSpace.name = "Machine Extents";
+    machineCoordinateSpace.visible = viewSettings.machine;
 
     var material = new THREE.LineBasicMaterial({
       color: 0x888888,
@@ -713,5 +642,58 @@ function drawMachineCoordinates(status) {
     machineCoordinateSpace.add(new THREE.Line(geometry, material));
 
     workspace.add(machineCoordinateSpace);
+  }
+}
+
+function readViewSettings() {
+/* decided to make the settings non-persistent
+  if (localStorage.getItem('viewSettings')) {
+    var settings = JSON.parse(localStorage.getItem('viewSettings'));
+    if (settings != undefined) {
+      for (var prop in settings) {
+        if (prop in viewSettings && typeof(settings[prop]) == typeof(viewSettings[prop]))
+          viewSettings[prop] = settings[prop];
+      }
+    }
+  }
+*/
+  $('#viewGridSetting:checkbox').prop('checked', viewSettings.grid);
+  $('#viewRulerSetting:checkbox').prop('checked', viewSettings.ruler);
+  $('#viewToolpathSetting:checkbox').prop('checked', viewSettings.toolpath);
+  $('#viewToolSetting:checkbox').prop('checked', viewSettings.tool);
+  $('#viewMachineSetting:checkbox').prop('checked', viewSettings.machine);
+
+  updateViewSettings();
+}
+
+function saveViewSettings() {
+/* decided to make the settings non-persistent
+  localStorage.setItem('viewSettings', JSON.stringify(viewSettings));
+*/
+}
+
+function changeViewSettings() {
+  viewSettings.grid = $('#viewGridSetting').is(':checked');
+  viewSettings.ruler = $('#viewRulerSetting').is(':checked');
+  viewSettings.toolpath = $('#viewToolpathSetting').is(':checked');
+  viewSettings.tool = $('#viewToolSetting').is(':checked');
+  viewSettings.machine = $('#viewMachineSetting').is(':checked');
+  saveViewSettings();
+  updateViewSettings();
+}
+
+function updateViewSettings() {
+  if (scene) {
+    if (object) object.visible = viewSettings.toolpath;
+    if (cone) cone.visible = viewSettings.tool;
+
+    var grid = scene.getObjectByName("Grid");
+    if (grid) grid.visible = viewSettings.grid;
+
+    var ruler = scene.getObjectByName("Ruler");
+    if (ruler) ruler.visible = viewSettings.ruler;
+
+    var machine = scene.getObjectByName("Machine Extents");
+    if (machine) machine.visible = viewSettings.machine;
   }
 }

@@ -5,7 +5,7 @@ var macroCodeType = "gcode"
 function populateMacroButtons(firstRun) {
 
   $("#macros").empty();
-  for (i = 0; i < buttonsarray.length; i++) {
+  for (var i = 0; i < buttonsarray.length; i++) {
     // Handle old created buttons that didnt have a tooltip
     if (!buttonsarray[i].tooltip) {
       buttonsarray[i].tooltip = ""

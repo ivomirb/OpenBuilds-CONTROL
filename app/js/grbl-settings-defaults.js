@@ -848,6 +848,7 @@ function selectMachine(type) {
 
 function setMachineButton(type) {
   var overlaytype = "custom";
+  var template;
   if (type == "sphinx55") {
     template = `<img src="img/mch/` + type + `.png"/>  OpenBuilds Sphinx 55`
     overlaytype = type;
@@ -910,5 +911,5 @@ function setMachineButton(type) {
     overlaytype = "custom"
   }
   $('#context_toggle2').html(template);
-  $('#overlayimg').html(`<img src="img/mch/` + overlaytype + `.png" style="max-width:100%; max-height:100%;"/><span onclick="$('#grblTab').click()" style="position: absolute; top: 3px; right:3px; z-index: 1;" class="fas fa-cogs machineicon" style="text-shadow: 2px 2px 4px #cccccc;"></span>`)
+//  $('#overlayimg').html(`<img src="img/mch/` + overlaytype + `.png" style="max-width:100%; max-height:100%;"/><span onclick="$('#grblTab').click()" style="position: absolute; top: 3px; right:3px; z-index: 1;" class="fas fa-cogs machineicon" style="text-shadow: 2px 2px 4px #cccccc;"></span>`)
 };

@@ -1,15 +1,12 @@
-var socket, laststatus;;
+var socket, laststatus;
 var server = ''; //192.168.14.100';
 var programBoard = {};
 var grblParams = {}
-var smoothieParams = {}
 var nostatusyet = true;
 var safeToUpdateSliders = false;
 var laststatus, lastsysinfo
-var simstopped = false;
 var bellstate = false;
-var toast = Metro.toast.create;
-var unit = "mm"
+var unit = "mm";
 var waitingForStatus = false;
 var openDialogs = [];
 
@@ -27,7 +24,7 @@ $(document).ready(function() {
     return false;
   });
 
-  if (process.platform == 'win32') {
+  if (typeof process !== "undefined" && process.platform == 'win32') {
     $('#mainCloseBtn').attr( "title", disableAutoStart ? "Close" : "Close to Tray");
     socket.emit('autoStart', !disableAutoStart);
   }
@@ -511,7 +508,7 @@ function initSocket() {
 
   socket.on("errorsCleared", function(data) {
     if (data) {
-      for (i = 0; i < openDialogs.length; i++) {
+      for (var i = 0; i < openDialogs.length; i++) {
         Metro.dialog.close(openDialogs[i]);
       }
       openDialogs.length = 0;
@@ -624,7 +621,7 @@ function initSocket() {
 
       if (!_.isEqual(status.comms.interfaces.ports, laststatus.comms.interfaces.ports)) {
         var string = "Detected a change in available ports: ";
-        for (i = 0; i < status.comms.interfaces.ports.length; i++) {
+        for (var i = 0; i < status.comms.interfaces.ports.length; i++) {
           string += "[" + status.comms.interfaces.ports[i].path + "]"
         }
 
@@ -642,7 +639,7 @@ function initSocket() {
 
       if (!_.isEqual(status.comms.interfaces.networkDevices, laststatus.comms.interfaces.networkDevices)) {
         var string = "Detected a change in IP devices: ";
-        for (i = 0; i < status.comms.interfaces.networkDevices.length; i++) {
+        for (var i = 0; i < status.comms.interfaces.networkDevices.length; i++) {
           string += "[" + status.comms.interfaces.networkDevices[i].ip + "]"
         }
 
@@ -749,10 +746,11 @@ function initSocket() {
     }
 
     if (safeToUpdateSliders) {
-      if ($('#fro').data('slider') && $('#tro').data('slider')) {
+      if ($('#fro').data('slider') && $('#fro').data('slider').val() != status.machine.overrides.feedOverride)
         $('#fro').data('slider').val(status.machine.overrides.feedOverride)
+
+      if ($('#tro').data('slider') && $('#tro').data('slider').val() != status.machine.overrides.spindleOverride)
         $('#tro').data('slider').val(status.machine.overrides.spindleOverride)
-      }
     }
 
     if (unit == "mm") {
@@ -796,7 +794,7 @@ function initSocket() {
     $('#resetpin').html('RST:OFF')
     $('#startpin').html('START:OFF')
     if (status.machine.inputs.length > 0) {
-      for (i = 0; i < status.machine.inputs.length; i++) {
+      for (var i = 0; i < status.machine.inputs.length; i++) {
         switch (status.machine.inputs[i]) {
           case 'X':
             // console.log('PIN: X-LIMIT');
@@ -933,7 +931,7 @@ function initSocket() {
 
   socket.on('features', function(data) {
     // console.log('FEATURES', data)
-    for (i = 0; i < data.length; i++) {
+    for (var i = 0; i < data.length; i++) {
       switch (data[i]) {
         case 'Q':
           // console.log('SPINDLE_IS_SERVO Enabled')
@@ -1014,7 +1012,7 @@ function initSocket() {
   })
 
   socket.on("disableAutoStart", function() {
-    if (process.platform == 'win32' && !disableAutoStart) {
+    if (typeof process !== "undefined" && process.platform == 'win32' && !disableAutoStart) {
       disableAutoStart = true;
       localStorage.setItem('disableAutoStart', true);
       $('#mainCloseBtn').attr( "title", "Close");
@@ -1202,7 +1200,7 @@ function populatePortsMenu() {
       response += `<option value="">No USB/Serial Ports</option>`
     } else {
       response += `<optgroup label="USB Ports">`
-      for (i = 0; i < laststatus.comms.interfaces.ports.length; i++) {
+      for (var i = 0; i < laststatus.comms.interfaces.ports.length; i++) {
         var lastUsedPort = localStorage.getItem('lastUsedPort');
         if (laststatus.comms.interfaces.ports[i].path == lastUsedPort) {
           response += `<option value="` + laststatus.comms.interfaces.ports[i].path + `" selected>` + laststatus.comms.interfaces.ports[i].path.replace("/dev/tty.", "") + " " + laststatus.comms.interfaces.ports[i].note + `</option>`;
@@ -1228,7 +1226,7 @@ function populatePortsMenu() {
       response += `<option value="">No Network Ports</option>`
     } else {
       response += `<optgroup label="Network Ports">`
-      for (i = 0; i < laststatus.comms.interfaces.networkDevices.length; i++) {
+      for (var i = 0; i < laststatus.comms.interfaces.networkDevices.length; i++) {
         var name = laststatus.comms.interfaces.networkDevices[i].ip;
         if (laststatus.comms.interfaces.networkDevices[i].type) {
           response += `<option value="` + name + `">` + name + " [ " + laststatus.comms.interfaces.networkDevices[i].type + ` ]</option>`;

@@ -1,18 +1,78 @@
-// Prevents accidental homing if the machine was recently homed
+// This macro prevents accidental homing if the machine was recently homed by asking for confirmation.
+// Also adds options to home single axis if the firmware supports it.
+// Set it to run on startup.
 
-$(document).ready(function() {
-	var homeButton = `
-	<button id="homeBtn" class="ribbon-button">
-		<span class="icon">
-			<i class="fas fa-home"></i>
-		</span>
-		<span class="caption grblmode">Home<br>All</span>
-	</button>`
+const ENABLE_SINGLE_AXIS_HOMING = true; // set to false to disable the feature
 
-	$("#homeBtn").attr('id', "oldHomeBtn");
-	$("#oldHomeBtn").after(homeButton);
-	$("#oldHomeBtn").remove();
+const homeSingleMenu = `
+<div style="display:none">
+  <button id="homeSingleMenu" class="ribbon-button dropdown-toggle" style="padding:10px;" title="Home single axis">
+  </button>
+  <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
+    <li onclick="sendGcode('$HX');"><a href="#"><span class="fg-red" style="font-weight:900;padding-right:5px;">X</span> Home X axis</a></li>
+    <li onclick="sendGcode('$HY');"><a href="#"><span class="fg-green" style="font-weight: 900; padding-right: 5px; ">Y</span> Home Y axis</a></li>
+    <li onclick="sendGcode('$HZ');"><a href="#"><span class="fg-blue" style="font-weight: 900; padding-right: 5px; ">Z</span> Home Z axis</a></li>
+    <li class="4thaxis-active" onclick="sendGcode('$HA');" style="display:none;"><a href="#"><span class="fg-orange" style="font-weight: 900; padding-right: 5px; ">A</span> Home A axis</a></li>
+  </ul>
+</div>`;
 
+var homeSingleDisabled = "unknown";
+
+function OnHomeDisabled(changes)
+{
+	var disabled = $("#homeBtn").attr('disabled');
+	if (disabled !== homeSingleDisabled)
+	{
+		homeSingleDisabled = disabled;
+		$("#homeSingleMenu").attr('disabled', !!disabled);
+	}
+}
+
+// Cleans up old instance of the plugin. useful when iterating on the code
+function CleanupOldVersion()
+{
+	var observer = $('#homeBtn').prop('Observer');
+	if (observer)
+		observer.disconnect();
+
+	var onFeatures = $('#homeBtn').prop('OnFeatures');
+	if (onFeatures)
+		socket.off('features', onFeatures);
+
+	$("#homeSingleMenu").parent().remove();
+}
+
+function OnFeatures(features)
+{
+	if (features.contains('H'))
+		$("#homeSingleMenu").parent().show();
+	else
+		$("#homeSingleMenu").parent().hide();
+}
+
+$(document).ready(function()
+{
+	CleanupOldVersion();
+
+	if (ENABLE_SINGLE_AXIS_HOMING)
+	{
+		var observer = new MutationObserver(OnHomeDisabled); // monitor the disabled attribute
+		observer.observe(document.getElementById('homeBtn'), { attributes: true, attributeFilter: ['disabled']});
+
+		$("#homeBtn").after(homeSingleMenu);
+
+		if (laststatus != undefined && laststatus.machine.firmware.features.contains('H'))
+		{
+			$("#homeSingleMenu").parent().show();
+		}
+
+		socket.on('features', OnFeatures);
+
+		$("#homeBtn").prop('Observer', () => { return observer; });
+		$("#homeBtn").prop('OnFeatures', () => { return OnFeatures; });
+	}
+
+	$("#homeBtn").off('click');
 	$("#homeBtn").on('click',function()
 	{
 		if (laststatus.machine.modals.homedRecently)

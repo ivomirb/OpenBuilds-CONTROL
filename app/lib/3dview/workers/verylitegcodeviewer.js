@@ -23,7 +23,7 @@ self.addEventListener('message', function(e) {
 var lastLine = {
   x: 0,
   y: 0,
-  z: 0,
+  z: NaN, // will be replaced at the end with the highest Z
   e: 0,
   f: 0,
   t: false,
@@ -226,7 +226,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
     lastLine = {
       x: 0,
       y: 0,
-      z: 0,
+      z: NaN,
       e: 0,
       f: 0,
       s: 0,
@@ -481,8 +481,8 @@ GCodeParser = function(handlers, modecmdhandlers) {
           timeMinutes = timeMinutes * 1.32;
         }
 
-        // the first point of the arc matches the starting position and takes no time
-        for (i = 0; i < threeObjArc.userData.points.length; i++) {
+        // the first point of the arc matches the starting position and should be skipped
+        for (var i = 1; i < threeObjArc.userData.points.length; i++) {
           this.totalTime += timeMinutes;
           linePoints.push({
             src: args.indx,
@@ -490,86 +490,46 @@ GCodeParser = function(handlers, modecmdhandlers) {
             y: threeObjArc.userData.points[i].y,
             z: threeObjArc.userData.points[i].z,
             g: 2,
-            timeMins: i > 0 ? timeMinutes : 0, // the first point is the start of the arc and takes no time
+            timeMins: timeMinutes,
           });
         }
 
-      }
-
-
-      // DISTANCE CALC
-      // add distance so we can calc estimated time to run
-      // see if arc
-      var dist = 0;
-      if (p2.arc) {
-        // calc dist of all lines
-        //console.log("this is an arc to calc dist for. p2.threeObjArc:", p2.threeObjArc, "p2:", p2);
-        var arcGeo = p2.threeObjArc.geometry;
-        //console.log("arcGeo:", arcGeo);
-
-        var tad2 = 0;
-        for (var arcLineCtr = 0; arcLineCtr < arcGeo.vertices.length - 1; arcLineCtr++) {
-          tad2 += arcGeo.vertices[arcLineCtr].distanceTo(arcGeo.vertices[arcLineCtr + 1]);
-        }
-        //console.log("tad2:", tad2);
-
-
-        // just do straight line calc
-        var a = new THREE.Vector3(p1.x, p1.y, p1.z);
-        var b = new THREE.Vector3(p2.x, p2.y, p2.z);
-        var straightDist = a.distanceTo(b);
-
-        //console.log("diff of straight line calc vs arc sum. straightDist:", straightDist);
-
-        dist = tad2;
-
       } else {
+        // not an arc
+
         // just do straight line calc
-        var a = new THREE.Vector3(p1.x, p1.y, p1.z);
+        var a = new THREE.Vector3(p1.x, p1.y, isNaN(p1.z) ? p2.z : p1.z);
         var b = new THREE.Vector3(p2.x, p2.y, p2.z);
-        dist = a.distanceTo(b);
-      }
+        var dist = a.distanceTo(b);
 
-      // time to execute this move
-      // if this move is 10mm and we are moving at 100mm/min then
-      // this move will take 10/100 = 0.1 minutes or 6 seconds
-      var timeMinutes = 0;
-      if (dist > 0) {
-        var fr;
-        if (p2.g0) {
-          fr = 1000;
-        } else if (args.feedrate > 0) {
-          fr = args.feedrate
-        } else {
-          fr = 100;
+        // time to execute this move
+        // if this move is 10mm and we are moving at 100mm/min then
+        // this move will take 10/100 = 0.1 minutes or 6 seconds
+        var timeMinutes = 0;
+        if (dist > 0) {
+          var fr;
+          if (p2.g0) {
+            fr = 1000;
+          } else if (args.feedrate > 0) {
+            fr = args.feedrate
+          } else {
+            fr = 100;
+          }
+          timeMinutes = dist / fr;
+
+          // adjust for acceleration, meaning estimate
+          // this will run longer than estimated from the math
+          // above because we don't start moving at full feedrate
+          // obviously, we have to slowly accelerate in and out
+          timeMinutes = timeMinutes * 1.32;
+          this.totalTime += timeMinutes;
         }
-        timeMinutes = dist / fr;
 
-        // adjust for acceleration, meaning estimate
-        // this will run longer than estimated from the math
-        // above because we don't start moving at full feedrate
-        // obviously, we have to slowly accelerate in and out
-        timeMinutes = timeMinutes * 1.32;
-      }
-      this.totalTime += timeMinutes;
-
-      p2.feedrate = args.feedrate;
-      p2.dist = dist;
-      p2.timeMins = timeMinutes;
-      p2.timeMinsSum = this.totalTime;
-
-      if (!p2.arc) { // not an arc
-
-
-
-
-        g = 0;
+        var g = 0;
         if (p2.g0) {
           g = 0
         } else if (p2.g1) {
           g = 1
-        } else if (p2.g2) {
-          g = 2
         } else {
           g = -1
         }
@@ -725,22 +685,11 @@ GCodeParser = function(handlers, modecmdhandlers) {
           // machine's X coordinate to 10, and the extrude coordinate to 90.
           // No physical motion will occur.
 
-          // TODO: Only support E0
-          var newLine = lastLine;
+          cofg.offsetG92.x = (args.x !== undefined ? (args.x === 0 ? lastLine.x : lastLine.x - args.x) : 0);
+          cofg.offsetG92.y = (args.y !== undefined ? (args.y === 0 ? lastLine.y : lastLine.y - args.y) : 0);
+          cofg.offsetG92.z = (args.z !== undefined && !isNaN(lastLine.z) ? (args.z === 0 ? lastLine.z : lastLine.z - args.z) : 0);
+          cofg.offsetG92.e = (args.e !== undefined ? (args.e === 0 ? lastLine.e : lastLine.e - args.e) : 0);
 
-          cofg.offsetG92.x = (args.x !== undefined ? (args.x === 0 ? newLine.x : newLine.x - args.x) : 0);
-          cofg.offsetG92.y = (args.y !== undefined ? (args.y === 0 ? newLine.y : newLine.y - args.y) : 0);
-          cofg.offsetG92.z = (args.z !== undefined ? (args.z === 0 ? newLine.z : newLine.z - args.z) : 0);
-          cofg.offsetG92.e = (args.e !== undefined ? (args.e === 0 ? newLine.e : newLine.e - args.e) : 0);
-
-          //newLine.x = args.x !== undefined ? args.x + newLine.x : newLine.x;
-          //newLine.y = args.y !== undefined ? args.y + newLine.y : newLine.y;
-          //newLine.z = args.z !== undefined ? args.z + newLine.z : newLine.z;
-          //newLine.e = args.e !== undefined ? args.e + newLine.e : newLine.e;
-
-          //console.log("G92", lastLine, newLine, args, cofg.offsetG92);
-
-          //lastLine = newLine;
           cofg.addFakeSegment(args);
         },
         M30: function(args) {
@@ -883,6 +832,20 @@ GCodeParser = function(handlers, modecmdhandlers) {
     // console.log("GCODE LENGTH " + gcode.length)
 
     parser.parse(gcode);
+
+    // replace Z=NaN with the highest Z in the object
+    var maxZ = undefined;
+    for (var i = 0; i < linePoints.length; i++) {
+      const z = linePoints[i].z;
+      if (!isNaN(z) && (maxZ == undefined || maxZ < z))
+        maxZ = z;
+    }
+
+    for (var i = 0; i < linePoints.length; i++) {
+      if (isNaN(linePoints[i].z))
+        linePoints[i].z = maxZ;
+    }
+
     var data = {
       linePoints: linePoints,
       inch: false,
