@@ -1074,23 +1074,20 @@
                 <div class="cell border-left bd-gray" id="jrocell">
                   <button class="button light mini mb-1" onclick="jogOverride(100);">reset</button>
                   <input id="jro" data-on-stop="jogOverride(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="true" data-size="180" data-min="1" data-max="100" data-value="100" data-hint="true" data-hint-always="true"
-                    data-hint-position="bottom" data-hint-mask="Jog: $1%" data-cls-hint="bg-light
-                        fg-dark shadow-1" data-cls-complete="bg-openbuilds">
-                  <span class="tally text-small bg-openbuilds fg-white" id="realJog"></span>
+                    data-hint-position="bottom" data-hint-mask="Jog: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realJog" style="display:none"></span>
                 </div>
 
                 <div class="cell border-left bd-gray" id="frocell">
                   <button class="button light mini mb-1" onclick="feedOverride(100);">reset</button>
                   <input id="fro" data-on-stop="feedOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
-                    data-hint-always="true" data-hint-position="bottom" data-hint-mask="Feed: $1%" data-cls-hint="bg-light
-                        fg-dark shadow-1" data-cls-complete="bg-openbuilds">
+                    data-hint-always="true" data-hint-position="bottom" data-hint-mask="Feed: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                   <span class="tally text-small bg-openbuilds fg-white" id="realFeed"></span>
                 </div>
                 <div class="cell border-left bd-gray" id="trocell">
                   <button class="button light mini  mb-1" onclick="spindleOverride(100);">reset</button>
                   <input id="tro" data-on-stop="spindleOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
-                    data-hint-always="true" data-hint-position="bottom" data-hint-mask="Tool: $1%" data-cls-hint="bg-light
-                        fg-dark shadow-1" data-cls-complete="bg-openbuilds">
+                    data-hint-always="true" data-hint-position="bottom" data-hint-mask="Tool: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                   <span class="tally text-small bg-openbuilds fg-white" id="realSpeed"></span>
                 </div>
               </div>
@@ -1197,8 +1194,10 @@
                       <!-- <img src="img/mch/acro55.png" style="max-width:100%; max-height:100%;">
                     <span style="position: absolute; top: 3px; right:3px; z-index: 1;" class="fas fa-cogs"></span> -->
                     </div>
-                    <div class="fixed-bottom m-3 mb-9" style="display:flex; flex-direction:row; align-items:flex-bottom; justify-content:center;">
+                    <div class="fixed-bottom m-3 mb-9" style="display:flex; flex-direction:row; align-items:self-end; justify-content:center;">
                       <div class="content-holder" id="simControls" style="display:none; height: auto; padding:5px; background-color2:darkgray; border: 1px solid;">
+                        <input id="simProgress" data-on-start="simDragStart()" data-on-stop="simDragStop()" data-on-change="if (typeof simSetProgress == 'function') simSetProgress(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-size="100%" data-min="0" data-max="100" data-value="0" data-hint="true"
+                         data-hint-position="top" data-hint-always="true" data-hint-mask="$1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                         <button id="simBackBtn" style="margin-right: 5px;" disabled title="Previous Line" class="button dark drop-shadow" onclick="simStepBack()"><i class="fas fa-caret-square-left" data-fa-transform="grow-8"></i></button>
                         <button id="pauseSimBtn" style="margin-right:5px;" title="Pause Sim" class="button dark drop-shadow" onclick="simpause()"><i class="fas fa-pause"></i></button>
                         <button id="resumeSimBtn" style="margin-right:5px;" title="Play Sim" class="button dark drop-shadow" onclick="simresume()"><i class="fas fa-play"></i></button>
