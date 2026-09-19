@@ -602,7 +602,6 @@ function initSocket() {
   socket.on('status', function(status) {
 
     if (nostatusyet) {
-      // $('#windowtitle').html("OpenBuilds CONTROL v" + status.driver.version)
       setWindowTitle(status)
       if (status.driver.operatingsystem == "rpi") {
         $('#windowtitlebar').hide();
@@ -610,14 +609,13 @@ function initSocket() {
     }
     nostatusyet = false;
 
-    // if (!_.isEqual(status, laststatus)) {
+    var featuresChanged = false;
+    var offsetChanged = false;
+
     if (laststatus !== undefined) {
 
-      if (!isJogWidget) {
-        if (!_.isEqual(status.machine.position.offset, laststatus.machine.position.offset) || machineCoordinateSpace == false) {
-          drawMachineCoordinates(status);
-        }
-      }
+      featuresChanged = !_.isEqual(status.machine.firmware.features, laststatus.machine.firmware.features);
+      offsetChanged = !_.isEqual(status.machine.position.offset, laststatus.machine.position.offset);
 
       if (!_.isEqual(status.comms.interfaces.ports, laststatus.comms.interfaces.ports)) {
         var string = "Detected a change in available ports: ";
@@ -630,7 +628,6 @@ function initSocket() {
         }
         var icon = ''
         var source = "usb ports"
-        //var string = string
         var printLogCls = "fg-dark"
         printLogModern(icon, source, string, printLogCls)
         laststatus.comms.interfaces.ports = status.comms.interfaces.ports;
@@ -654,7 +651,6 @@ function initSocket() {
         laststatus.comms.interfaces.networkDevices = status.comms.interfaces.networkDevices;
         populatePortsMenu();
       }
-
     }
 
     if (status.comms.runStatus.indexOf("Door") == 0) {
@@ -926,6 +922,12 @@ function initSocket() {
 
 
     laststatus = status;
+
+    if (!isJogWidget && (featuresChanged || offsetChanged))
+      updateMachineCoordinates();
+    if (featuresChanged)
+        updateGotoLimits();
+
     waitingForStatus = false;
   });
 
@@ -1002,9 +1004,6 @@ function initSocket() {
           break;
       }
     }
-    if (!isJogWidget)
-      clearMachineCoordinates();
-    updateGotoLimits(data);
   })
 
   socket.on("interfaceOutdated", function(status) {
