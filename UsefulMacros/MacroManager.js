@@ -144,15 +144,21 @@ function RenameGroup(groupIdx, newName)
 		SetCurrentGroup(newName.toLowerCase());
 	}
 
+	var saveRequired = false;
 	for (var i = 0; i < buttonsarray.length; i++)
 	{
 		var button = buttonsarray[i];
 		if (button.group != undefined && button.group.toLowerCase() == oldNameLower)
 		{
 			button.group = newName;
+			saveRequired = true;
 		}
 	}
 
+	if (saveRequired)
+	{
+		localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
+	}
 	RebuildGroupUI();
 }
 
@@ -275,6 +281,9 @@ function OnMacrosChanged()
 	if (g_bInOnMacrosChanged) return; // attempt to prevent reentrancy (may not be necessary)
 	g_bInOnMacrosChanged = true;
 
+	var populateRequired = false;
+	var saveRequired = false;
+
 	// Look for a swapped pair to detect move left/right. If a visible button was moved after
 	// a hidden button, move further until the order in the group actually changes.
 	if (g_TabVisibility != 0 && buttonsarray.length == g_ButtonsCopy.length)
@@ -296,7 +305,7 @@ function OnMacrosChanged()
 							var button = buttonsarray[i];
 							buttonsarray.splice(i, 1);
 							buttonsarray.splice(j, 0, button);
-							populateMacroButtons();
+							populateRequired = true;
 							break;
 						}
 					}
@@ -313,7 +322,7 @@ function OnMacrosChanged()
 							var button = buttonsarray[i+1];
 							buttonsarray.splice(i+1, 1);
 							buttonsarray.splice(j, 0, button);
-							populateMacroButtons();
+							populateRequired = true;
 							break;
 						}
 					}
@@ -335,9 +344,18 @@ function OnMacrosChanged()
 		{
 			var activeIdx = g_TabVisibility == 0 ? 0 : Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
 			button.group = g_Groups[activeIdx];
+			saveRequired = true;
 		}
 	}
 
+	if (populateRequired)
+	{
+		populateMacroButtons(); // also saves
+	}
+	else if (saveRequired)
+	{
+		localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
+	}
 	RebuildGroupUI();
 	g_bInOnMacrosChanged = false;
 }
@@ -380,10 +398,12 @@ window.SetMacroTabsVisibility = function(vis)
 
 function ApplyMoveMacro(buttonIdx)
 {
+	var saveRequired = false;
 	var groupIdx = Number($('#MacroGroup').val());
 	if (groupIdx != -1)
 	{
 		buttonsarray[buttonIdx].group = g_Groups[groupIdx];
+		saveRequired = true;
 	}
 	else
 	{
@@ -396,13 +416,19 @@ function ApplyMoveMacro(buttonIdx)
 			g_Groups.push(groupName);
 			g_GroupsLower.push(groupNameLower);
 			buttonsarray[buttonIdx].group = groupName;
+			saveRequired = true;
 		}
 		else
 		{
 			buttonsarray[buttonIdx].group = g_Groups[groupIdx];
+			saveRequired = true;
 		}
 	}
 
+	if (saveRequired)
+	{
+		localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
+	}
 	RebuildGroupUI();
 }
 
@@ -551,7 +577,7 @@ const contextMenusHtml = `
 	<li id="macroVertGroups" onclick="SetMacroTabsVisibility(2)"><a href="#"><i class="fa fa-circle icon"></i> Vertical Group Tabs</a></li>
 	<li id="macroHideGroups" onclick="SetMacroTabsVisibility(0)"><a href="#"><i class="fa fa-circle icon"></i> Disable Groups</a></li>
 	<li class="divider"></li>
-	<li onclick="ExportAll()"><a href="#"><i class="fas fa-download icon"></i> Export All Macros</a></li>
+	<li onclick="ExportAll()"><a href="#"><i class="fas fa-save icon"></i> Export All Macros</a></li>
 	<li class="btn-file" title=""><a href="#"><input class="btn-file" id="macroImportAllFile" type="file" accept=".json" /><i class="fas fa-upload icon"></i> Import All Macros</a></li>
 </ul>
 <div id="macroMenuDivider2"/>
