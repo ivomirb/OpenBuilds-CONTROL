@@ -1141,15 +1141,15 @@
                     </div>
                   </div>
                   <div class="section" id="tab-three">
-                    <div id="renderArea" onclick="$('#viewSettings').hide()"></div>
+                    <div id="renderArea"></div>
 
 
                     <div style="position: absolute; top: 10px; right: 10px; z-index: 1; display:flex; flex-direction:column; align-items:flex-end;">
-                      <button title="3D View settings" class="button dark dropdown-toggle" onclick="$('#viewSettings').toggle()">
+                      <button title="3D View settings" class="button dark dropdown-toggle">
                         <i class="fas fa-eye"></i> View
                       </button>
-                      <table id="viewSettings" class="ribbon-dropdown" style="display: none; margin-top:4px; position:relative;">
-                        <tr>
+                      <table id="viewSettings" class="ribbon-dropdown" data-role="dropdown" style="display: none; margin-top:4px; position:relative;">
+                        <tr onclick="event.stopPropagation()">
                           <td style="vertical-align:middle;">
                             <label class="toggle"><input type="checkbox" id="viewGridSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
                           </td>
@@ -1157,7 +1157,7 @@
                             <span class="text-small" style="padding: 6px; display:inline-block;">Grid</span>
                           </td>
                         </tr>
-                        <tr>
+                        <tr onclick="event.stopPropagation()">
                           <td style="vertical-align:middle;">
                             <label class="toggle"><input type="checkbox" id="viewRulerSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
                           </td>
@@ -1165,7 +1165,7 @@
                             <span class="text-small" style="padding: 6px; display:inline-block;">Ruler</span>
                           </td>
                         </tr>
-                        <tr>
+                        <tr onclick="event.stopPropagation()">
                           <td style="vertical-align:middle;">
                             <label class="toggle"><input type="checkbox" id="viewToolpathSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
                           </td>
@@ -1173,7 +1173,7 @@
                             <span class="text-small" style="padding: 6px; display:inline-block;">Toolpath</span>
                           </td>
                         </tr>
-                         <tr>
+                        <tr onclick="event.stopPropagation()">
                           <td style="vertical-align:middle;">
                             <label class="toggle"><input type="checkbox" id="viewToolSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
                           </td>
@@ -1181,12 +1181,18 @@
                             <span class="text-small" style="padding: 6px; display:inline-block;">Tool marker</span>
                           </td>
                         </tr>
-                         <tr>
+                        <tr onclick="event.stopPropagation()">
                           <td style="vertical-align:middle;">
                             <label class="toggle"><input type="checkbox" id="viewMachineSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
                           </td>
                           <td style="vertical-align:middle;">
                             <span class="text-small" style="padding: 6px; display:inline-block;">Machine Extents</span>
+                          </td>
+                        </tr>
+                         <tr>
+                          <td colspan="2">
+                            <button id="resetViewBtn" style="margin-left: 5px; margin-right: 5px; margin-top: 5px; margin-bottom: 5px; width: calc(100% - 10px);"
+                               title="Resets camera angle and zoom" class="button dark drop-shadow" onclick="resetView(object)"><i class="fas fa-undo"></i> Reset View</button>
                           </td>
                         </tr>
                       </table>
@@ -1196,9 +1202,9 @@
                       <!-- <img src="img/mch/acro55.png" style="max-width:100%; max-height:100%;">
                     <span style="position: absolute; top: 3px; right:3px; z-index: 1;" class="fas fa-cogs"></span> -->
                     </div>
-                    <div class="fixed-bottom m-3 mb-9" style="display:flex; flex-direction:row; align-items:self-end; justify-content:center;">
-                      <div class="content-holder" id="simControls" style="display:none; height: auto; padding:5px; background-color2:darkgray; border: 1px solid;">
-                        <input id="simProgress" data-on-start="simDragStart()" data-on-stop="simDragStop()" data-on-change="if (typeof simSetProgress == 'function') simSetProgress(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-size="100%" data-min="0" data-max="100" data-value="0" data-hint="true"
+                    <div class="fixed-bottom m-3 mb-9" style="display: flex; flex-direction: row; align-items: self-end; justify-content: flex-end; padding-right: 10px;">
+                      <div class="content-holder" id="simControls" style="display:none; height: auto; padding:5px;  margin-right:6px; border: 1px solid;">
+                        <input id="simProgress" class="thin cycle-marker" data-on-start="simDragStart()" data-on-stop="simDragStop()" data-on-change="if (typeof simSetProgress == 'function') simSetProgress(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-size="100%" data-min="0" data-max="100" data-value="0" data-hint="true"
                          data-hint-position="top" data-hint-always="true" data-hint-mask="$1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                         <button id="simBackBtn" style="margin-right: 5px;" disabled title="Previous Line" class="button dark drop-shadow" onclick="simStepBack()"><i class="fas fa-caret-square-left" data-fa-transform="grow-8"></i></button>
                         <button id="pauseSimBtn" style="margin-right:5px;" title="Pause Sim" class="button dark drop-shadow" onclick="simpause()"><i class="fas fa-pause"></i></button>
@@ -1216,10 +1222,9 @@
                         </div>
                         <button id="stopSimBtn" title="Stop Sim" class="button dark drop-shadow" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>
                       </div>
-                      <button id="runSimBtn" style="margin-right:5px; margin-top:5px; margin-bottom:5px;" title="Run simulation" class="button dark drop-shadow" onclick="sim(0, true)"><i class="fas fa-fighter-jet"></i> Simulate</button>
-                      <button id="resetViewBtn" style="margin-left:5px; margin-right:5px; margin-top:5px; margin-bottom:5px;" title="Resets camera angle and zoom" class="button dark drop-shadow" onclick="resetView(object)"><i class="fas fa-undo"></i> Reset View</button>
+                      <button id="runSimBtn" style="margin-right:11px; margin-bottom:6px;" title="Run simulation" class="button dark drop-shadow" onclick="sim(0, true)"><i class="fas fa-fighter-jet"></i> Simulate</button>
                     </div>
-                    <div id="conetext" style="position:absolute;top:0px;left:0px; padding: 0px; display:none; z-index:100;"></div>
+                    <div id="conetext" style="position:absolute;bottom:5px;left:0px; padding: 0px; display:none; z-index:100;"></div>
                   </div>
                   <div class="section" id="tab-four">
                     <div id="macros"></div>
