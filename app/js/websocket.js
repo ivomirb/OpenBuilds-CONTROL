@@ -354,8 +354,9 @@ function initSocket() {
 
     // With jobCompletedMsg Message
     if (data.jobCompletedMsg && data.jobCompletedMsg.length > 0) {
+      var runTime = undefined;
       if (data.jobStartTime && data.jobEndTime) {
-        var runTime = data.jobEndTime - data.jobStartTime;
+        runTime = data.jobEndTime - data.jobStartTime;
         $("#completeMsgDiv").html("Job completed in " + msToTime(runTime) + "<hr>" + data.jobCompletedMsg);
         $('#timeRemaining').html("DONE: " + msToTime(runTime));
       } else {
@@ -365,7 +366,7 @@ function initSocket() {
       Metro.dialog.open("#completeMsgModal");
       var icon = ''
       var source = "JOB COMPLETE"
-      var string = "Job completed in " + msToTime(runTime) + " / " + data.jobCompletedMsg
+      var string = (runTime != undefined ? "Job completed in " + msToTime(runTime) : "Job completed") + " / " + data.jobCompletedMsg
       var printLogCls = "fg-darkGreen"
       printLogModern(icon, source, string, printLogCls)
       $('#timeRemaining').html("DONE: " + msToTime(runTime));
