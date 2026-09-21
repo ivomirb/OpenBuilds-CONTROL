@@ -21,9 +21,9 @@ self.addEventListener('message', function(e) {
 // Updated by Ivo in 2026 - Fixed arc maths
 
 var lastLine = {
-  x: 0,
-  y: 0,
-  z: 0,
+  x: NaN, // will be replaced at the end with the first X
+  y: NaN, // will be replaced at the end with the first Y
+  z: NaN, // will be replaced at the end with the highest Z
   e: 0,
   f: 0,
   t: false,
@@ -224,9 +224,9 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
     // Reset Starting Point
     lastLine = {
-      x: 0,
-      y: 0,
-      z: 0,
+      x: NaN,
+      y: NaN,
+      z: NaN,
       e: 0,
       f: 0,
       s: 0,
@@ -270,7 +270,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
     // G2/G3 moves are their own child of lots of lines so
     // that even the simulator can follow along better
     var linePoints = [];
-    var totalDist = 0;
     this.arcPlane = "G17";
 
     this.drawArc = function(aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
@@ -372,12 +371,14 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
       // console.log(p1, p2, args)
 
+       // replace NaNs with default values
+       var vp2 = new THREE.Vector3(isNaN(p2.x) ? 0 : p2.x, isNaN(p2.y) ? 0 : p2.y, isNaN(p2.z) ? 0 : p2.z);
+       var vp1 = new THREE.Vector3(isNaN(p1.x) ? vp2.x : p1.x, isNaN(p1.y) ? vp2.y : p1.y, isNaN(p1.z) ? vp2.z : p1.z);
+
       if (p2.arc) {
         //console.log("");
-        //console.log("drawing arc. p1:", p1, ", p2:", p2);
+        //console.log("drawing arc. p1:", vp1, ", p2:", vp2);
 
-        var vp1 = new THREE.Vector3(p1.x, p1.y, p1.z);
-        var vp2 = new THREE.Vector3(p2.x, p2.y, p2.z);
         var vpArc;
 
         // if this is an R arc gcode command, we're given the radius, so we
@@ -390,14 +391,14 @@ GCodeParser = function(handlers, modecmdhandlers) {
           radius = parseFloat(args.r);
 
           // First, find the point halfway between your two points.  We'll call it p3
-          var x3 = (p1.x + p2.x) / 2;
-          var y3 = (p1.y + p2.y) / 2;
-          var z3 = (p1.z + p2.z) / 2;
+          var x3 = (vp1.x + vp2.x) / 2;
+          var y3 = (vp1.y + vp2.y) / 2;
+          var z3 = (vp1.z + vp2.z) / 2;
 
           // Second, find the vector from p1 to p3
-          var deltaX = x3 - p1.x;
-          var deltaY = y3 - p1.y;
-          var deltaZ = z3 - p1.z;
+          var deltaX = x3 - vp1.x;
+          var deltaY = y3 - vp1.y;
+          var deltaZ = z3 - vp1.z;
 
           switch (this.arcPlane) {
             case "G18": { // ZX
@@ -456,153 +457,90 @@ GCodeParser = function(handlers, modecmdhandlers) {
         p2.g2 = true;
         p2.threeObjArc = threeObjArc;
         // end of if p2.arc
-        // console.log( p2.threeObjArc.userData.points)
 
-        // console.log(JSON.stringify(threeObjArc.userData))
-
-        var a = new THREE.Vector3(p1.x, p1.y, p1.z);
-        var b = new THREE.Vector3(p2.x, p2.y, p2.z);
-
-        if (dist > 0) {
-          this.totalDist += dist;
-        }
-
-        // calc distance of one segment of the arc
-        dist = a.distanceTo(b) / threeObjArc.userData.points.length;
-
-        // time to execute this move
+        // calc time to execute this move
         // if this move is 10mm and we are moving at 100mm/min then
         // this move will take 10/100 = 0.1 minutes or 6 seconds
+        var timeMinutes = 0;
 
+        // calc length of one segment of the arc
+        var a = new THREE.Vector3(threeObjArc.userData.points[0].x, threeObjArc.userData.points[0].y, threeObjArc.userData.points[0].z);
+        var b = new THREE.Vector3(threeObjArc.userData.points[1].x, threeObjArc.userData.points[1].y, threeObjArc.userData.points[1].z);
+        const segLength = a.distanceTo(b);
+        if (segLength > 0) {
+          const fr = args.feedrate > 0 ? args.feedrate : 1000;
+          timeMinutes = segLength / fr;
 
+          // adjust for acceleration, meaning estimate
+          // this will run longer than estimated from the math
+          // above because we don't start moving at full feedrate
+          // obviously, we have to slowly accelerate in and out
+          timeMinutes = timeMinutes * 1.32;
+        }
 
-        for (i = 0; i < threeObjArc.userData.points.length; i++) {
-          var timeMinutes = 0;
-          if (dist > 0) {
-            var fr;
-            if (args.feedrate > 0) {
-              fr = args.feedrate
-            } else {
-              fr = 1000;
-            }
-            timeMinutes = dist / fr;
-
-            // adjust for acceleration, meaning estimate
-            // this will run longer than estimated from the math
-            // above because we don't start moving at full feedrate
-            // obviously, we have to slowly accelerate in and out
-            timeMinutes = timeMinutes * 1.32;
-          }
-          this.totalTime += timeMinutes;
+        // The first point of the arc matches the starting position and should normally be skipped.
+        // However if this is an edge case where the arc is the first command, add the first point with time 0
+        if (linePoints.length == 0) {
           linePoints.push({
-            src: 607,
+            src: args.indx,
+            x: threeObjArc.userData.points[0].x,
+            y: threeObjArc.userData.points[0].y,
+            z: threeObjArc.userData.points[0].z,
+            g: 2,
+            startTime: this.totalTime,
+            timeMins: 0,
+          });
+        }
+        for (var i = 1; i < threeObjArc.userData.points.length; i++) {
+          linePoints.push({
+            src: args.indx,
             x: threeObjArc.userData.points[i].x,
             y: threeObjArc.userData.points[i].y,
             z: threeObjArc.userData.points[i].z,
             g: 2,
-            timeMins: timeMinutes
+            startTime: this.totalTime,
+            timeMins: timeMinutes,
           });
+          this.totalTime += timeMinutes;
         }
-
-      }
-
-
-      // DISTANCE CALC
-      // add distance so we can calc estimated time to run
-      // see if arc
-      var dist = 0;
-      if (p2.arc) {
-        // calc dist of all lines
-        //console.log("this is an arc to calc dist for. p2.threeObjArc:", p2.threeObjArc, "p2:", p2);
-        var arcGeo = p2.threeObjArc.geometry;
-        //console.log("arcGeo:", arcGeo);
-
-        var tad2 = 0;
-        for (var arcLineCtr = 0; arcLineCtr < arcGeo.vertices.length - 1; arcLineCtr++) {
-          tad2 += arcGeo.vertices[arcLineCtr].distanceTo(arcGeo.vertices[arcLineCtr + 1]);
-        }
-        //console.log("tad2:", tad2);
-
-
-        // just do straight line calc
-        var a = new THREE.Vector3(p1.x, p1.y, p1.z);
-        var b = new THREE.Vector3(p2.x, p2.y, p2.z);
-        var straightDist = a.distanceTo(b);
-
-        //console.log("diff of straight line calc vs arc sum. straightDist:", straightDist);
-
-        dist = tad2;
 
       } else {
+        // not an arc
+
         // just do straight line calc
-        var a = new THREE.Vector3(p1.x, p1.y, p1.z);
-        var b = new THREE.Vector3(p2.x, p2.y, p2.z);
-        dist = a.distanceTo(b);
-      }
+        var dist = vp1.distanceTo(vp2);
 
-      if (dist > 0) {
-        this.totalDist += dist;
-      }
+        // time to execute this move
+        // if this move is 10mm and we are moving at 100mm/min then
+        // this move will take 10/100 = 0.1 minutes or 6 seconds
+        var timeMinutes = 0;
+        if (dist > 0) {
+          const fr = p2.g0 ? 1000 : (args.feedrate ? args.feedrate : 100);
+          timeMinutes = dist / fr;
 
-      // time to execute this move
-      // if this move is 10mm and we are moving at 100mm/min then
-      // this move will take 10/100 = 0.1 minutes or 6 seconds
-      var timeMinutes = 0;
-      if (dist > 0) {
-        var fr;
-        if (args.feedrate > 0) {
-          fr = args.feedrate
-        } else {
-          fr = 100;
+          // adjust for acceleration, meaning estimate
+          // this will run longer than estimated from the math
+          // above because we don't start moving at full feedrate
+          // obviously, we have to slowly accelerate in and out
+          timeMinutes = timeMinutes * 1.32;
         }
-        timeMinutes = dist / fr;
 
-        // adjust for acceleration, meaning estimate
-        // this will run longer than estimated from the math
-        // above because we don't start moving at full feedrate
-        // obviously, we have to slowly accelerate in and out
-        timeMinutes = timeMinutes * 1.32;
-      }
-      this.totalTime += timeMinutes;
-
-      p2.feedrate = args.feedrate;
-      p2.dist = dist;
-      p2.distSum = this.totalDist;
-      p2.timeMins = timeMinutes;
-      p2.timeMinsSum = this.totalTime;
-
-      //  console.log("calculating distance. dist:", dist, "totalDist:", this.totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", this.totalTime, "p1:", p1, "p2:", p2, "args:", args);
-
-      if (!p2.arc) { // not an arc
-
-
-
-
-        g = 0;
-        if (p2.g0) {
-          g = 0
-        } else if (p2.g1) {
-          g = 1
-        } else if (p2.g2) {
-          g = 2
-        } else {
-          g = -1
-        }
-        // console.log(timeMinutes);
+        const g = p2.g0 ? 0 : (p2.g1 ? 1 : -1);
 
         linePoints.push({
+          startTime: this.totalTime,
           timeMins: timeMinutes,
-          src: 628,
+          src: args.indx,
           x: p2.x,
           y: p2.y,
           z: p2.z,
           g: g
         });
+        this.totalTime += timeMinutes;
       }
 
     }
 
-    this.totalDist = 0;
     this.totalTime = 0;
 
     var relative = false;
@@ -621,14 +559,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
     }
 
     this.addFakeSegment = function(args) {
-      //line.args = args;
-      var arg2 = {
-        isFake: true,
-        text: args.text,
-        indx: args.indx
-      };
-      if (arg2.text.match(/^(;|\(|<)/)) arg2.isComment = true;
-      if (lastLine.g0) {
+/*      if (lastLine.g0) {
         g = 0
       } else if (lastLine.g1) {
         g = 1
@@ -638,13 +569,15 @@ GCodeParser = function(handlers, modecmdhandlers) {
         g = -1
       }
       linePoints.push({
-        src: 742,
+        startTime: this.totalTime,
+        timeMins: 0,
+        src: args.indx,
         x: lastLine.x,
         y: lastLine.y,
         z: lastLine.z,
         g: g,
         fake: true
-      });
+      });*/
     }
 
     var cofg = this;
@@ -654,7 +587,10 @@ GCodeParser = function(handlers, modecmdhandlers) {
         as fast as possible which means no milling or extruding is happening in G0.
         So, let's color it uniquely to indicate it's just a toolhead move. */
         G0: function(args, indx) {
-          //G1.apply(this, args, line, 0x00ff00);
+          if (args.x === undefined && args.y === undefined && args.z === undefined && args.a === undefined && args.b === undefined && args.c === undefined) {
+            cofg.addFakeSegment(args);
+            return;
+          }
           //console.log("G0", args);
           var newLine = {
             x: args.x !== undefined ? cofg.absolute(lastLine.x, args.x) + cofg.offsetG92.x : lastLine.x,
@@ -671,6 +607,10 @@ GCodeParser = function(handlers, modecmdhandlers) {
           lastLine = newLine;
         },
         G1: function(args, indx) {
+          if (args.x === undefined && args.y === undefined && args.z === undefined && args.a === undefined && args.b === undefined && args.c === undefined) {
+            cofg.addFakeSegment(args);
+            return;
+          }
           // Example: G1 Z1.0 F3000
           //          G1 X99.9948 Y80.0611 Z15.0 F1500.0 E981.64869
           //          G1 E104.25841 F1800.0
@@ -693,6 +633,10 @@ GCodeParser = function(handlers, modecmdhandlers) {
           lastLine = newLine;
         },
         G2: function(args, indx, gcp) {
+          if (args.x === undefined && args.y === undefined && args.z === undefined && args.a === undefined && args.b === undefined && args.c === undefined) {
+            cofg.addFakeSegment(args);
+            return;
+          }
           //console.log(args, indx, gcp)
           /* this is an arc move from lastLine's xy to the new xy. we'll
           show it as a light gray line, but we'll also sub-render the
@@ -748,22 +692,11 @@ GCodeParser = function(handlers, modecmdhandlers) {
           // machine's X coordinate to 10, and the extrude coordinate to 90.
           // No physical motion will occur.
 
-          // TODO: Only support E0
-          var newLine = lastLine;
+          cofg.offsetG92.x = (args.x !== undefined ? (args.x === 0 ? lastLine.x : lastLine.x - args.x) : 0);
+          cofg.offsetG92.y = (args.y !== undefined ? (args.y === 0 ? lastLine.y : lastLine.y - args.y) : 0);
+          cofg.offsetG92.z = (args.z !== undefined && !isNaN(lastLine.z) ? (args.z === 0 ? lastLine.z : lastLine.z - args.z) : 0);
+          cofg.offsetG92.e = (args.e !== undefined ? (args.e === 0 ? lastLine.e : lastLine.e - args.e) : 0);
 
-          cofg.offsetG92.x = (args.x !== undefined ? (args.x === 0 ? newLine.x : newLine.x - args.x) : 0);
-          cofg.offsetG92.y = (args.y !== undefined ? (args.y === 0 ? newLine.y : newLine.y - args.y) : 0);
-          cofg.offsetG92.z = (args.z !== undefined ? (args.z === 0 ? newLine.z : newLine.z - args.z) : 0);
-          cofg.offsetG92.e = (args.e !== undefined ? (args.e === 0 ? newLine.e : newLine.e - args.e) : 0);
-
-          //newLine.x = args.x !== undefined ? args.x + newLine.x : newLine.x;
-          //newLine.y = args.y !== undefined ? args.y + newLine.y : newLine.y;
-          //newLine.z = args.z !== undefined ? args.z + newLine.z : newLine.z;
-          //newLine.e = args.e !== undefined ? args.e + newLine.e : newLine.e;
-
-          //console.log("G92", lastLine, newLine, args, cofg.offsetG92);
-
-          //lastLine = newLine;
           cofg.addFakeSegment(args);
         },
         M30: function(args) {
@@ -906,11 +839,37 @@ GCodeParser = function(handlers, modecmdhandlers) {
     // console.log("GCODE LENGTH " + gcode.length)
 
     parser.parse(gcode);
+
+    // replace XY=NaN with the first known coordinates
+    // replace Z=NaN with the highest Z in the object
+    var firstX = undefined;
+    var firstY = undefined;
+    var maxZ = undefined;
+    for (var i = 0; i < linePoints.length; i++) {
+      const x = linePoints[i].x;
+      const y = linePoints[i].y;
+      const z = linePoints[i].z;
+
+      if (firstX == undefined && !isNaN(x))
+        firstX = x;
+      if (firstY == undefined && !isNaN(y))
+        firstY = y;
+      if (!isNaN(z) && (maxZ == undefined || maxZ < z))
+        maxZ = z;
+    }
+
+    for (var i = 0; i < linePoints.length; i++) {
+      if (isNaN(linePoints[i].x))
+        linePoints[i].x = firstX || 0;
+      if (isNaN(linePoints[i].y))
+        linePoints[i].y = firstY || 0;
+      if (isNaN(linePoints[i].z))
+        linePoints[i].z = maxZ || 0;
+    }
+
     var data = {
       linePoints: linePoints,
-      //lines: lines,
       inch: false,
-      totalDist: this.totalDist,
       totalTime: this.totalTime,
     }
 

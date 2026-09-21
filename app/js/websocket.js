@@ -1,15 +1,12 @@
-var socket, laststatus;;
+var socket, laststatus;
 var server = ''; //192.168.14.100';
 var programBoard = {};
 var grblParams = {}
-var smoothieParams = {}
 var nostatusyet = true;
 var safeToUpdateSliders = false;
 var laststatus, lastsysinfo
-var simstopped = false;
 var bellstate = false;
-var toast = Metro.toast.create;
-var unit = "mm"
+var unit = "mm";
 var waitingForStatus = false;
 var openDialogs = [];
 
@@ -26,6 +23,11 @@ $(document).ready(function() {
   $("form").submit(function() {
     return false;
   });
+
+  if (typeof process !== "undefined" && process.platform == 'win32') {
+    $('#mainCloseBtn').attr( "title", disableAutoStart ? "Close" : "Close to Tray");
+    socket.emit('autoStart', !disableAutoStart);
+  }
 });
 
 function showGrbl(bool, firmware) {
@@ -115,6 +117,18 @@ function printLog(string) {
     }
   }
 };
+
+// Round small negative values to 0 so they don't show up as -0
+function prettyCoord(val, dec) {
+  val = Number(val);
+  if (dec == 2 && val < 0 && val > -0.005) {
+    return 0;
+  }
+  if (dec == 3 && val < 0 && val > -0.0005) {
+    return 0;
+  }
+  return val;
+}
 
 function initSocket() {
   socket = io.connect(server, {
@@ -272,8 +286,8 @@ function initSocket() {
     if (data.response.indexOf('$') === 0) {
 
       var key = data.response.split('=')[0].substr(1);
-      if (grblSettingsTemplate2[key] !== undefined) {
-        var descr = grblSettingsTemplate2[key].title
+      if (grblSettingsTemplate[key] !== undefined) {
+        var descr = grblSettingsTemplate[key].title
       } else {
         var descr = "unknown"
       }
@@ -340,8 +354,9 @@ function initSocket() {
 
     // With jobCompletedMsg Message
     if (data.jobCompletedMsg && data.jobCompletedMsg.length > 0) {
+      var runTime = undefined;
       if (data.jobStartTime && data.jobEndTime) {
-        var runTime = data.jobEndTime - data.jobStartTime;
+        runTime = data.jobEndTime - data.jobStartTime;
         $("#completeMsgDiv").html("Job completed in " + msToTime(runTime) + "<hr>" + data.jobCompletedMsg);
         $('#timeRemaining').html("DONE: " + msToTime(runTime));
       } else {
@@ -351,7 +366,7 @@ function initSocket() {
       Metro.dialog.open("#completeMsgModal");
       var icon = ''
       var source = "JOB COMPLETE"
-      var string = "Job completed in " + msToTime(runTime) + " / " + data.jobCompletedMsg
+      var string = (runTime != undefined ? "Job completed in " + msToTime(runTime) : "Job completed") + " / " + data.jobCompletedMsg
       var printLogCls = "fg-darkGreen"
       printLogModern(icon, source, string, printLogCls)
       $('#timeRemaining').html("DONE: " + msToTime(runTime));
@@ -494,7 +509,7 @@ function initSocket() {
 
   socket.on("errorsCleared", function(data) {
     if (data) {
-      for (i = 0; i < openDialogs.length; i++) {
+      for (var i = 0; i < openDialogs.length; i++) {
         Metro.dialog.close(openDialogs[i]);
       }
       openDialogs.length = 0;
@@ -588,7 +603,6 @@ function initSocket() {
   socket.on('status', function(status) {
 
     if (nostatusyet) {
-      // $('#windowtitle').html("OpenBuilds CONTROL v" + status.driver.version)
       setWindowTitle(status)
       if (status.driver.operatingsystem == "rpi") {
         $('#windowtitlebar').hide();
@@ -596,18 +610,17 @@ function initSocket() {
     }
     nostatusyet = false;
 
-    // if (!_.isEqual(status, laststatus)) {
+    var featuresChanged = false;
+    var offsetChanged = false;
+
     if (laststatus !== undefined) {
 
-      if (!isJogWidget) {
-        if (!_.isEqual(status.machine.position.offset, laststatus.machine.position.offset) || machineCoordinateSpace == false) {
-          drawMachineCoordinates(status);
-        }
-      }
+      featuresChanged = !_.isEqual(status.machine.firmware.features, laststatus.machine.firmware.features);
+      offsetChanged = !_.isEqual(status.machine.position.offset, laststatus.machine.position.offset);
 
       if (!_.isEqual(status.comms.interfaces.ports, laststatus.comms.interfaces.ports)) {
         var string = "Detected a change in available ports: ";
-        for (i = 0; i < status.comms.interfaces.ports.length; i++) {
+        for (var i = 0; i < status.comms.interfaces.ports.length; i++) {
           string += "[" + status.comms.interfaces.ports[i].path + "]"
         }
 
@@ -616,7 +629,6 @@ function initSocket() {
         }
         var icon = ''
         var source = "usb ports"
-        //var string = string
         var printLogCls = "fg-dark"
         printLogModern(icon, source, string, printLogCls)
         laststatus.comms.interfaces.ports = status.comms.interfaces.ports;
@@ -625,7 +637,7 @@ function initSocket() {
 
       if (!_.isEqual(status.comms.interfaces.networkDevices, laststatus.comms.interfaces.networkDevices)) {
         var string = "Detected a change in IP devices: ";
-        for (i = 0; i < status.comms.interfaces.networkDevices.length; i++) {
+        for (var i = 0; i < status.comms.interfaces.networkDevices.length; i++) {
           string += "[" + status.comms.interfaces.networkDevices[i].ip + "]"
         }
 
@@ -640,7 +652,6 @@ function initSocket() {
         laststatus.comms.interfaces.networkDevices = status.comms.interfaces.networkDevices;
         populatePortsMenu();
       }
-
     }
 
     if (status.comms.runStatus.indexOf("Door") == 0) {
@@ -670,29 +681,33 @@ function initSocket() {
 
     if (!disableDROupdates) {
       if (unit == "mm") {
-        var xpos = status.machine.position.work.x.toFixed(3) + unit;
-        var ypos = status.machine.position.work.y.toFixed(3) + unit;
-        var zpos = status.machine.position.work.z.toFixed(3) + unit;
-        var apos = status.machine.position.work.a.toFixed(3) + "deg";
 
-        $(" #xPos ").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit + "/ X Work: " + xpos);
-        $(" #yPos ").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit + "/ Y Work: " + ypos);
-        $(" #zPos ").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit + "/ Z Work: " + zpos);
-        $(" #aPos ").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "deg" + "/ A Work: " + apos);
+        $(" #xPosDro").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit +
+          "\nX Work: " + status.machine.position.work.x.toFixed(3) + unit);
+        $(" #yPosDro").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit +
+          "\nY Work: " + status.machine.position.work.y.toFixed(3) + unit);
+        $(" #zPosDro").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit +
+          "\nZ Work: " + status.machine.position.work.z.toFixed(3) + unit);
 
+        var xpos = prettyCoord(status.machine.position.work.x, 2).toFixed(2) + unit;
+        var ypos = prettyCoord(status.machine.position.work.y, 2).toFixed(2) + unit;
+        var zpos = prettyCoord(status.machine.position.work.z, 2).toFixed(2) + unit;
       } else if (unit == "in") {
-        var xpos = (status.machine.position.work.x / 25.4).toFixed(3) + unit;
-        var ypos = (status.machine.position.work.y / 25.4).toFixed(3) + unit;
-        var zpos = (status.machine.position.work.z / 25.4).toFixed(3) + unit;
-        var apos = status.machine.position.work.a.toFixed(3) + "deg";
 
-        $(" #xPos ").attr('title', 'X Machine: ' + ((status.machine.position.work.x / 25.4) + (status.machine.position.offset.x / 25.4)).toFixed(3) + unit + "/ X Work: " + xpos);
-        $(" #yPos ").attr('title', 'Y Machine: ' + ((status.machine.position.work.y / 25.4) + (status.machine.position.offset.y / 25.4)).toFixed(3) + unit + "/ Y Work: " + ypos);
-        $(" #zPos ").attr('title', 'Z Machine: ' + ((status.machine.position.work.z / 25.4) + (status.machine.position.offset.z / 25.4)).toFixed(3) + unit + "/ Z Work: " + zpos);
-        $(" #aPos ").attr('title', 'A Machine: ' + ((status.machine.position.work.a) + (status.machine.position.offset.a)).toFixed(3) + "deg" + "/ A Work: " + apos);
-
-
+        $(" #xPosDro").attr('title', 'X Machine: ' + ((status.machine.position.work.x + status.machine.position.offset.x) / 25.4).toFixed(3) + unit +
+          "\nX Work: " + (status.machine.position.work.x / 25.4).toFixed(3) + unit);
+        $(" #yPosDro").attr('title', 'Y Machine: ' + ((status.machine.position.work.y + status.machine.position.offset.y) / 25.4).toFixed(3) + unit +
+          "\nY Work: " + (status.machine.position.work.y / 25.4).toFixed(3) + unit);
+        $(" #zPosDro").attr('title', 'Z Machine: ' + ((status.machine.position.work.z + status.machine.position.offset.z) / 25.4).toFixed(3) + unit +
+          "\nZ Work: " + (status.machine.position.work.z / 25.4).toFixed(3) + unit);
+        var xpos = prettyCoord(status.machine.position.work.x / 25.4, 3).toFixed(3) + unit;
+        var ypos = prettyCoord(status.machine.position.work.y / 25.4, 3).toFixed(3) + unit;
+        var zpos = prettyCoord(status.machine.position.work.z / 25.4, 3).toFixed(3) + unit;
       }
+
+      $(" #aPosDro").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "\u{00B0}" +
+        "\nA Work: " + status.machine.position.work.a.toFixed(3) + "\u{00B0}");
+      var apos = prettyCoord(status.machine.position.work.a, 2).toFixed(2) + "&deg;";
 
       if ($('#xPos').html() != xpos) {
         $('#xPos').html(xpos);
@@ -728,10 +743,11 @@ function initSocket() {
     }
 
     if (safeToUpdateSliders) {
-      if ($('#fro').data('slider') && $('#tro').data('slider')) {
+      if ($('#fro').data('slider') && $('#fro').data('slider').val() != status.machine.overrides.feedOverride)
         $('#fro').data('slider').val(status.machine.overrides.feedOverride)
+
+      if ($('#tro').data('slider') && $('#tro').data('slider').val() != status.machine.overrides.spindleOverride)
         $('#tro').data('slider').val(status.machine.overrides.spindleOverride)
-      }
     }
 
     if (unit == "mm") {
@@ -775,7 +791,7 @@ function initSocket() {
     $('#resetpin').html('RST:OFF')
     $('#startpin').html('START:OFF')
     if (status.machine.inputs.length > 0) {
-      for (i = 0; i < status.machine.inputs.length; i++) {
+      for (var i = 0; i < status.machine.inputs.length; i++) {
         switch (status.machine.inputs[i]) {
           case 'X':
             // console.log('PIN: X-LIMIT');
@@ -907,12 +923,18 @@ function initSocket() {
 
 
     laststatus = status;
+
+    if (!isJogWidget && (featuresChanged || offsetChanged))
+      updateMachineCoordinates();
+    if (featuresChanged)
+        updateGotoLimits();
+
     waitingForStatus = false;
   });
 
   socket.on('features', function(data) {
     // console.log('FEATURES', data)
-    for (i = 0; i < data.length; i++) {
+    for (var i = 0; i < data.length; i++) {
       switch (data[i]) {
         case 'Q':
           // console.log('SPINDLE_IS_SERVO Enabled')
@@ -983,11 +1005,20 @@ function initSocket() {
           break;
       }
     }
-    clearMachineCoordinates();
   })
 
   socket.on("interfaceOutdated", function(status) {
     console.log("interfaceOutdated", status)
+  })
+
+  socket.on("disableAutoStart", function() {
+    if (typeof process !== "undefined" && process.platform == 'win32' && !disableAutoStart) {
+      disableAutoStart = true;
+      localStorage.setItem('disableAutoStart', true);
+      $('#mainCloseBtn').attr( "title", "Close");
+      $('#disableAutoStartTick').addClass("checked");
+      socket.emit('autoStart', false);
+    }
   })
 
   $('#sendCommand').on('click', function() {
@@ -1169,7 +1200,7 @@ function populatePortsMenu() {
       response += `<option value="">No USB/Serial Ports</option>`
     } else {
       response += `<optgroup label="USB Ports">`
-      for (i = 0; i < laststatus.comms.interfaces.ports.length; i++) {
+      for (var i = 0; i < laststatus.comms.interfaces.ports.length; i++) {
         var lastUsedPort = localStorage.getItem('lastUsedPort');
         if (laststatus.comms.interfaces.ports[i].path == lastUsedPort) {
           response += `<option value="` + laststatus.comms.interfaces.ports[i].path + `" selected>` + laststatus.comms.interfaces.ports[i].path.replace("/dev/tty.", "") + " " + laststatus.comms.interfaces.ports[i].note + `</option>`;
@@ -1195,7 +1226,7 @@ function populatePortsMenu() {
       response += `<option value="">No Network Ports</option>`
     } else {
       response += `<optgroup label="Network Ports">`
-      for (i = 0; i < laststatus.comms.interfaces.networkDevices.length; i++) {
+      for (var i = 0; i < laststatus.comms.interfaces.networkDevices.length; i++) {
         var name = laststatus.comms.interfaces.networkDevices[i].ip;
         if (laststatus.comms.interfaces.networkDevices[i].type) {
           response += `<option value="` + name + `">` + name + " [ " + laststatus.comms.interfaces.networkDevices[i].type + ` ]</option>`;

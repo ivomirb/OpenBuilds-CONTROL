@@ -1,50 +1,33 @@
 // Global Vars
 var scene = true;
 var camera, renderer;
-var projector, mouseVector, containerWidth, containerHeight;
-var raycaster = new THREE.Raycaster();
 var gridsystem = new THREE.Group();
+var cone;
 
 var container, stats;
-var camera, controls, control, scene, renderer, gridsystem, helper;
-var clock = new THREE.Clock();
+var controls;
 
-var marker;
 var sizexmin;
 var sizeymin;
 var sizexmax;
 var sizeymax;
-var lineincrement = 50
-var camvideo;
-var objectsInScene = []; //array that holds all objects we added to the scene.
 var clearSceneFlag = false;
+var viewSettings = {grid: true, ruler: true, toolpath: true, tool: true, machine: true};
 
 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-var canvas = !!window.CanvasRenderingContext2D;
 
-// pause Animation when we loose webgl context focus
+// pause Animation when we lose webgl context focus
 var pauseAnimation = false;
-
-var size = new THREE.Vector3();
-
-var sky;
 
 var workspace = new THREE.Group();
 workspace.name = "Workspace"
 
-var ground;
+var machineCoordinateSpace;
 
-containerWidth = window.innerWidth;
-containerHeight = window.innerHeight;
-
-var animationLoopTimeout;
-
-var xmin = 0,
-  xmax = 307,
-  ymin = 0,
-  ymax = 207
-
-var machineCoordinateSpace = false;
+const defaultXmin = 0,
+  defaultXmax = 307,
+  defaultYmin = 0,
+  defaultYmax = 207
 
 function disposeGeometry(obj) {
   if (obj.geometry) obj.geometry.dispose();
@@ -60,10 +43,13 @@ function disposeGeometry(obj) {
 
 function disposeGeometryAndRemove(obj) {
   disposeGeometry(obj);
-  obj.parent.remove(obj);
+  if (obj.parent != undefined)
+    obj.parent.remove(obj);
 }
 
 function cleanupWorkspace() {
+  simstop();
+
   var obj = workspace.getObjectByName("Scene Lights");
   if (obj) disposeGeometryAndRemove(obj);
 
@@ -75,14 +61,17 @@ function cleanupWorkspace() {
 
   obj = workspace.getObjectByName("Grid System");
   if (obj) disposeGeometryAndRemove(obj);
+
+  obj = workspace.getObjectByName("Machine Extents");
+  if (obj) disposeGeometryAndRemove(obj);
 }
 
 function drawWorkspace(xmin, xmax, ymin, ymax) {
 
-  if (!xmin) xmin = 0;
-  if (!ymin) ymin = 0;
-  if (!xmax) xmax = 307
-  if (!ymax) ymax = 207
+  if (!xmin) xmin = defaultXmin;
+  if (!ymin) ymin = defaultYmin;
+  if (!xmax) xmax = defaultXmax;
+  if (!ymax) ymax = defaultYmax;
 
   var sceneLights = new THREE.Group();
 
@@ -96,7 +85,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   light2.position.set(-500, -500, 1).normalize();
   sceneLights.add(light2);
 
-  dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  var dirLight = new THREE.DirectionalLight(0xffffff, 1);
   dirLight.color.setHSL(0.1, 1, 0.95);
   dirLight.position.set(-1, 1.75, 1);
   dirLight.position.multiplyScalar(30);
@@ -113,7 +102,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   dirLight.name = "dirLight;"
   sceneLights.add(dirLight);
 
-  hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+  var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
   hemiLight.color.setHSL(Theme.HEMI_LIGHT_COLOR.H, Theme.HEMI_LIGHT_COLOR.S, Theme.HEMI_LIGHT_COLOR.L);
   hemiLight.groundColor.setHSL(0.095, 1, 0.75);
   hemiLight.position.set(0, 50, 0);
@@ -157,7 +146,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
       side: THREE.DoubleSide
     });
 
-    sky = new THREE.Mesh(skyGeo, skyMat);
+    var sky = new THREE.Mesh(skyGeo, skyMat);
     sky.name = "Skydome"
     workspace.add(sky);
   }
@@ -178,11 +167,11 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
     cone.material.opacity = 0.6;
     cone.material.transparent = true;
     cone.castShadow = false;
-    cone.visible = true;
+    cone.visible = viewSettings.tool;
     cone.name = "Simulation Marker"
     workspace.add(cone)
-
   }
+
   gridsystem.name = "Grid System"
   workspace.add(gridsystem)
   if (localStorage.getItem('unitsMode')) {
@@ -192,63 +181,86 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
       redrawGrid(xmin, xmax, ymin, ymax, false);
     }
   }
+
+  var machineBoxVerts = [ // unit cube
+    0, 0, 0, 0, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    0, 1, 1, 0, 1, 0,
+    0, 1, 0, 0, 0, 0,
+    0, 0, 0, 1, 0, 0,
+    0, 0, 1, 1, 0, 1,
+    0, 1, 1, 1, 1, 1,
+    0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1,
+    1, 0, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 0,
+    1, 1, 0, 1, 0, 0,
+  ];
+
+  var machineBoxMaterial = new THREE.LineBasicMaterial({
+    color: 0x888888,
+    transparent: true,
+    opacity: 0.3
+  });
+  var machineBoxGeo = new THREE.BufferGeometry();
+  machineBoxGeo.setAttribute('position', new THREE.Float32BufferAttribute( machineBoxVerts, 3));
+  machineCoordinateSpace = new THREE.LineSegments(machineBoxGeo, machineBoxMaterial);
+  machineCoordinateSpace.name = "Machine Extents";
+  machineCoordinateSpace.visible = viewSettings.machine;
+  machineCoordinateSpace.material.visible = false; // make the material invisible until the box size is computed
+  workspace.add(machineCoordinateSpace);
+  updateMachineCoordinates();
+
   scene.add(workspace)
 }
 
 function redrawGrid(xmin, xmax, ymin, ymax, inches) {
-  // console.log(xmin, xmax, ymin, ymax, inches)
   if (inches) {
     xmin = Math.floor(xmin * 25.4);
     xmax = Math.ceil(xmax * 25.4);
     ymin = Math.floor(ymin * 25.4);
     ymax = Math.ceil(ymax * 25.4);
-  } else {
-    xmin = Math.floor(xmin);
-    xmax = Math.ceil(xmax);
-    ymin = Math.floor(ymin);
-    ymax = Math.ceil(ymax);
   }
-  // console.log(xmin, xmax, ymin, ymax, inches)
 
   sizexmin = xmin;
-  sizeymin = ymin;
   sizexmax = xmax;
+  sizeymin = ymin;
   sizeymax = ymax;
 
-  if (!xmax) {
-    xmax = 200;
-  };
+  if (xmax - xmin < 110) {
+    const d = (110 - (xmax - xmin)) / 2;
+    xmin -= d;
+    xmax += d;
+  }
 
-  if (!ymax) {
-    ymax = 200;
-  };
+  if (ymax - ymin < 110) {
+    const d = (110 - (ymax - ymin)) / 2;
+    ymin -= d;
+    ymax += d;
+  }
 
-  var grid = new THREE.Group();
+  while (gridsystem.children.length > 0) {
+    disposeGeometryAndRemove(gridsystem.children[0]);
+  }
 
   var axesgrp = new THREE.Object3D();
   axesgrp.name = "Axes Markers"
 
-  if (inches) {
-    var unitsval = "in"
-    var offset = 5 * 2.54
-  } else {
-    var unitsval = "mm"
-    var offset = 5
-  }
+  var offset = 5
   var size = 5
 
   // add axes labels
-  var xlbl = this.makeSprite(this.scene, "webgl", {
-    x: parseInt(xmax) + offset,
+  var xlbl = makeSprite("webgl", {
+    x: xmax + offset,
     y: 0,
     z: 0,
     text: "X",
     color: Theme.X_RULER_LABEL_COLOR,
     size: size
   });
-  var ylbl = this.makeSprite(this.scene, "webgl", {
+  var ylbl = makeSprite("webgl", {
     x: 0,
-    y: parseInt(ymax) + offset,
+    y: ymax + offset,
     z: 0,
     text: "Y",
     color: Theme.Y_RULER_LABEL_COLOR,
@@ -270,13 +282,13 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   var geometryX = new THREE.Geometry();
   geometryX.vertices.push(
     new THREE.Vector3(-0.1, 0, 0),
-    new THREE.Vector3(-0.1, (ymax), 0)
+    new THREE.Vector3(-0.1, ymax, 0)
   );
 
   var geometryY = new THREE.Geometry();
   geometryY.vertices.push(
     new THREE.Vector3(0, -0.1, 0),
-    new THREE.Vector3((xmax), -0.1, 0)
+    new THREE.Vector3(xmax, -0.1, 0)
   );
 
   var line1 = new THREE.Line(geometryX, materialY);
@@ -284,63 +296,73 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   axesgrp.add(line1);
   axesgrp.add(line2);
 
-  // if (inches) {
-  //   axesgrp.scale.multiplyScalar(2.5);
-  // }
+  gridsystem.add(axesgrp);
 
-  grid.add(axesgrp);
+  var vertices10 = [];
+  var vertices100 = [];
 
-  var step10 = 10;
-  var step100 = 100;
-  if (inches) {
-    step10 = 2.54;
-    step100 = 25.4;
-  }
-  helper = new THREE.GridHelper(xmin, xmax, ymin, ymax, step10, Theme.GRID_STEP_10_COLOR);
-  helper.position.y = 0;
-  helper.position.x = 0;
-  helper.position.z = 0;
-  helper.material.opacity = Theme.GRID_STEP_10_OPACITY;
-  helper.material.transparent = true;
-  helper.receiveShadow = false;
-  helper.name = "GridHelper10mm"
-  grid.add(helper);
-  helper = new THREE.GridHelper(xmin, xmax, ymin, ymax, step100, Theme.GRID_STEP_100_COLOR);
-  helper.position.y = 0;
-  helper.position.x = 0;
-  helper.position.z = 0;
-  helper.material.opacity = Theme.GRID_STEP_100_OPACITY;
-  helper.material.transparent = true;
-  helper.receiveShadow = false;
-  helper.name = "GridHelper50mm"
-  grid.add(helper);
-  grid.name = "Grid"
+  var scale = inches ? 25.4/5 : 10;
+  var major = inches ? 5 : 10;
+  var ixmin = Math.ceil(xmin / scale);
+  var ixmax = Math.floor(xmax / scale);
+  var iymin = Math.ceil(ymin / scale);
+  var iymax = Math.floor(ymax / scale);
 
-  while (gridsystem.children.length > 0) {
-    disposeGeometryAndRemove(gridsystem.children[0]);
+  for (var i = ixmin; i <= ixmax; i++) {
+    const x = i * scale;
+    if (i % major == 0) {
+      vertices100.push(x, ymin, 0, x, ymax, 0);
+    } else {
+      vertices10.push(x, ymin, 0, x, ymax, 0);
+    }
   }
 
-  if (inches) {
-    var ruler = drawRulerInches(xmin, xmax, ymin, ymax, inches)
-  } else {
-    var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
+  for (var i = iymin; i <= iymax; i++) {
+    const y = i * scale;
+    if (i % major == 0) {
+      vertices100.push(xmin, y, 0, xmax, y, 0);
+    } else {
+      vertices10.push(xmin, y, 0, xmax, y, 0);
+    }
   }
+
+  var material10 = new THREE.LineBasicMaterial({
+    color: Theme.GRID_STEP_10_COLOR,
+    opacity: Theme.GRID_STEP_10_OPACITY,
+    transparent: true
+  });
+
+  var geometry10 = new THREE.BufferGeometry();
+  geometry10.setAttribute('position', new THREE.Float32BufferAttribute( vertices10, 3));
+
+  var grid10 = new THREE.LineSegments(geometry10, material10);
+  grid10.receiveShadow = false;
+  grid10.name = "GridHelper10";
+
+  var material100 = new THREE.LineBasicMaterial({
+    color: Theme.GRID_STEP_100_COLOR,
+    opacity: Theme.GRID_STEP_100_OPACITY,
+    transparent: true
+  });
+
+  var geometry100 = new THREE.BufferGeometry();
+  geometry100.setAttribute('position', new THREE.Float32BufferAttribute( vertices100, 3));
+
+  var grid100 = new THREE.LineSegments(geometry100, material100);
+  grid100.receiveShadow = false;
+  grid100.name = "GridHelper100";
+
+  var grid = new THREE.Group();
+  grid.name = "Grid";
+  grid.visible = viewSettings.grid;
+  grid.add(grid10);
+  grid.add(grid100);
   gridsystem.add(grid);
+
+  var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
+  ruler.name = "Ruler";
+  ruler.visible = viewSettings.ruler;
   gridsystem.add(ruler);
-
-}
-
-function setBullseyePosition(x, y, z) {
-  //console.log('Set Position: ', x, y, z)
-  if (x) {
-    bullseye.position.x = parseInt(x, 10);
-  };
-  if (y) {
-    bullseye.position.y = parseInt(y, 10);
-  };
-  if (z) {
-    bullseye.position.z = (parseInt(z, 10) + 0.1);
-  };
 }
 
 function init3D() {
@@ -358,14 +380,15 @@ function init3D() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
     camera.position.z = 295;
+    camera.up = new THREE.Vector3(0, 0, 1);
 
     $('#renderArea').append(renderer.domElement);
     renderer.setClearColor(0xffffff, 1); // Background color of viewer = transparent
     // renderer.setSize(window.innerWidth - 10, window.innerHeight - 10);
     renderer.clear();
 
-    sceneWidth = document.getElementById("renderArea").offsetWidth,
-      sceneHeight = document.getElementById("renderArea").offsetHeight;
+    const sceneWidth = document.getElementById("renderArea").offsetWidth;
+    const sceneHeight = document.getElementById("renderArea").offsetHeight;
     camera.aspect = sceneWidth / sceneHeight;
     renderer.setSize(sceneWidth, sceneHeight)
     camera.updateProjectionMatrix();
@@ -388,13 +411,9 @@ function init3D() {
       controls.enableKeys = false; // Disable Keyboard on canvas
     }
 
+    drawWorkspace(defaultXmin, defaultXmax, defaultYmin, defaultYmax);
 
-    drawWorkspace(xmin, xmax, ymin, ymax);
-
-    // Picking stuff
-    projector = new THREE.Projector();
-    mouseVector = new THREE.Vector3();
-    raycaster.linePrecision = 1
+    readViewSettings();
 
     setTimeout(function() {
       resetView()
@@ -431,7 +450,7 @@ function animate() {
     } // end clearSceneFlag
 
     // Limited FPS https://stackoverflow.com/questions/11285065/limiting-framerate-in-three-js-to-increase-performance-requestanimationframe
-    animationLoopTimeout = setTimeout(function() {
+    setTimeout(function() {
       requestAnimationFrame(animate);
     }, 60);
 
@@ -443,7 +462,6 @@ function viewExtents(objecttosee) {
   if (!disable3Dcontrols) {
     // console.log("viewExtents. object:", objecttosee);
     // console.log("controls:", controls);
-    //wakeAnimate();
 
     // lets override the bounding box with a newly
     // generated one
@@ -461,9 +479,6 @@ function viewExtents(objecttosee) {
       var minz = box3.min.z;
       var maxz = box3.max.z;
 
-
-      controls.reset();
-
       var lenx = maxx - minx;
       var leny = maxy - miny;
       var lenz = maxz - minz;
@@ -473,55 +488,22 @@ function viewExtents(objecttosee) {
 
       // console.log("lenx:", lenx, "leny:", leny, "lenz:", lenz);
       var maxlen = Math.max(lenx, leny, lenz);
-      var dist = 2 * maxlen;
-      // center camera on gcode objects center pos, but twice the maxlen
-      controls.object.position.x = centerx;
-      controls.object.position.y = centery;
-      controls.object.position.z = centerz + dist;
-      controls.target.x = centerx;
-      controls.target.y = centery;
-      controls.target.z = centerz;
-      // console.log("maxlen:", maxlen, "dist:", dist);
-      var fov = 2.2 * Math.atan(maxlen / (2 * dist)) * (180 / Math.PI);
-      // console.log("new fov:", fov, " old fov:", controls.object.fov);
-      if (isNaN(fov)) {
-        // console.log("giving up on viewing extents because fov could not be calculated");
-        return;
-      } else {
-        // console.log("fov: ", fov);
-        controls.object.fov = fov;
-        var L = dist;
-        var camera2 = controls.object;
-        var vector = controls.target.clone();
-        var l = (new THREE.Vector3()).subVectors(camera2.position, vector).length();
-        var up = camera.up.clone();
-        var quaternion = new THREE.Quaternion();
+      var target = new THREE.Vector3(centerx, centery, centerz);
 
-        // Zoom correction
-        camera2.translateZ(L - l);
-        // console.log("up:", up);
-        up.y = 1;
-        up.x = 0;
-        up.z = 0;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.position.applyQuaternion(quaternion);
-        up.y = 0;
-        up.x = 1;
-        up.z = 0;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.position.applyQuaternion(quaternion);
-        up.y = 0;
-        up.x = 0;
-        up.z = 1;
-        quaternion.setFromAxisAngle(up, 0);
-        camera2.lookAt(vector);
-        controls.object.updateProjectionMatrix();
-      }
+      // place the camera above the center, at twice the maxlen, looking straight down
+      camera.position.set(centerx, centery, centerz + 2 * maxlen);
+      camera.rotation.set(0, 0, 0);
+      camera.fov = 30; // degrees
+      camera.lookAt(target);
+      camera.updateProjectionMatrix();
+
+      controls.target = target;
+      controls.update();
     }
   }
 };
 
-function makeSprite(scene, rendererType, vals) {
+function makeSprite(rendererType, vals) {
   var canvas = document.createElement('canvas'),
     context = canvas.getContext('2d'),
     metrics = null,
@@ -572,7 +554,6 @@ function makeSprite(scene, rendererType, vals) {
 
   textObject.add(sprite);
 
-  //scene.add(textObject);
   return textObject;
 }
 
@@ -582,18 +563,18 @@ function makeSprite(scene, rendererType, vals) {
 function fixRenderSize() {
   if (renderer) {
     setTimeout(function() {
-      sceneWidth = document.getElementById("renderArea").offsetWidth;
-      sceneHeight = document.getElementById("renderArea").offsetHeight;
+      const sceneWidth = document.getElementById("renderArea").offsetWidth;
+      const sceneHeight = document.getElementById("renderArea").offsetHeight;
       renderer.setSize(sceneWidth, sceneHeight);
-      //renderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = sceneWidth / sceneHeight;
       camera.updateProjectionMatrix();
+/* prevent reset of the viewport on window resize or tab switch
       if (!disable3Dcontrols) {
         controls.reset();
       }
       setTimeout(function() {
         resetView();
-      }, 10);
+      }, 10);*/
     }, 10)
 
   }
@@ -606,115 +587,87 @@ $(window).on('resize', function() {
 });
 
 function resetView(object) {
-  // console.log(resetView.caller);
-  if (!object) {
-    if (objectsInScene.length > 0) {
-      var insceneGrp = new THREE.Group()
-      for (i = 0; i < objectsInScene.length; i++) {
-        var object = objectsInScene[i].clone();
-        insceneGrp.add(object)
-      }
-      viewExtents(insceneGrp);
-    } else {
-      viewExtents(helper);
-    }
+  if (object && object.userData.linePoints.length > 1) {
+    viewExtents(object);
   } else {
-    if (object.userData.linePoints.length > 1) {
-      viewExtents(object);
-    }
+    viewExtents(gridsystem);
   }
 }
 
-function clearMachineCoordinates() {
-  if (machineCoordinateSpace)
-    disposeGeometryAndRemove(machineCoordinateSpace);
-  machineCoordinateSpace = false;
+function updateMachineCoordinates() {
+  const limits = computeMachineLimits(0);
+  const sizeX = limits.maxX - limits.minX;
+  const sizeY = limits.maxY - limits.minY;
+  const sizeZ = limits.maxZ - limits.minZ;
+
+  if (laststatus == undefined || sizeX <= 0 || sizeY <= 0 || sizeZ <= 0) {
+    // if the box is invalid, just make it default size and hide the material
+    machineCoordinateSpace.position.set(0, 0, 0);
+    machineCoordinateSpace.scale.set(1, 1, 1);
+    machineCoordinateSpace.material.visible = false;
+  } else {
+    machineCoordinateSpace.position.set(
+      limits.minX - laststatus.machine.position.offset.x,
+      limits.minY - laststatus.machine.position.offset.y,
+      limits.minZ - laststatus.machine.position.offset.z);
+    machineCoordinateSpace.scale.set(sizeX, sizeY, sizeZ);
+    machineCoordinateSpace.material.visible = true;
+  }
 }
 
-function drawMachineCoordinates(status) {
-
-  if (status != undefined && grblParams.$130 !== undefined && grblParams.$131 !== undefined && grblParams.$132 !== undefined) {
-    var machineCoordinatesBoxMaxX = -status.machine.position.offset.x;
-    var machineCoordinatesBoxMaxY = -status.machine.position.offset.y;
-    var machineCoordinatesBoxMaxZ = -status.machine.position.offset.z;
-
-    if (grblParams.$23 != undefined && status.machine.firmware.features.contains('Z')) {
-      // homing force origin enabled
-      var homingDir = calcMaskFromDec(grblParams.$23);
-      if (homingDir.x) machineCoordinatesBoxMaxX += Number(grblParams.$130);
-      if (homingDir.y) machineCoordinatesBoxMaxY += Number(grblParams.$131);
-      if (homingDir.z) machineCoordinatesBoxMaxZ += Number(grblParams.$132);
+function readViewSettings() {
+/* decided to make the settings non-persistent
+  if (localStorage.getItem('viewSettings')) {
+    var settings = JSON.parse(localStorage.getItem('viewSettings'));
+    if (settings != undefined) {
+      for (var prop in settings) {
+        if (prop in viewSettings && typeof(settings[prop]) == typeof(viewSettings[prop]))
+          viewSettings[prop] = settings[prop];
+      }
     }
-
-    var machineCoordinatesBoxMinX = machineCoordinatesBoxMaxX - Number(grblParams.$130)
-    var machineCoordinatesBoxMinY = machineCoordinatesBoxMaxY - Number(grblParams.$131)
-    var machineCoordinatesBoxMinZ = machineCoordinatesBoxMaxZ - Number(grblParams.$132)
-
-    console.log("X", machineCoordinatesBoxMinX, machineCoordinatesBoxMaxX)
-    console.log("Y", machineCoordinatesBoxMinY, machineCoordinatesBoxMaxY)
-    console.log("Z", machineCoordinatesBoxMinZ, machineCoordinatesBoxMaxZ)
-
-    clearMachineCoordinates();
-    machineCoordinateSpace = new THREE.Group();
-    machineCoordinateSpace.name = "Machine Extents";
-
-    var material = new THREE.LineBasicMaterial({
-      color: 0x888888,
-      transparent: true,
-      opacity: 0.3
-    });
-
-    // Z min layer
-    var points = [];
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMinY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMinY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMinY, machineCoordinatesBoxMinZ));
-    var geometry = new THREE.BufferGeometry().setFromPoints(points);
-    machineCoordinateSpace.add(new THREE.Line(geometry, material));
-
-    // Z max layer
-    var points = [];
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMinY, machineCoordinatesBoxMaxZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMinY, machineCoordinatesBoxMaxZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMaxZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMaxZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMinY, machineCoordinatesBoxMaxZ));
-    var geometry = new THREE.BufferGeometry().setFromPoints(points);
-    machineCoordinateSpace.add(new THREE.Line(geometry, material));
-
-    // corner f/l
-    var points = [];
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMinY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMinY, machineCoordinatesBoxMaxZ));
-    var geometry = new THREE.BufferGeometry().setFromPoints(points);
-    machineCoordinateSpace.add(new THREE.Line(geometry, material));
-
-    // corner f/r
-    var points = [];
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMinX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMaxZ));
-    var geometry = new THREE.BufferGeometry().setFromPoints(points);
-    machineCoordinateSpace.add(new THREE.Line(geometry, material));
-
-    // corner r/l
-    var points = [];
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMinY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMinY, machineCoordinatesBoxMaxZ));
-    var geometry = new THREE.BufferGeometry().setFromPoints(points);
-    machineCoordinateSpace.add(new THREE.Line(geometry, material));
-
-    // corner r/r
-    var points = [];
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMinZ));
-    points.push(new THREE.Vector3(machineCoordinatesBoxMaxX, machineCoordinatesBoxMaxY, machineCoordinatesBoxMaxZ));
-    var geometry = new THREE.BufferGeometry().setFromPoints(points);
-    machineCoordinateSpace.add(new THREE.Line(geometry, material));
-
-    workspace.add(machineCoordinateSpace);
   }
+*/
+  $('#viewGridSetting:checkbox').prop('checked', viewSettings.grid);
+  $('#viewRulerSetting:checkbox').prop('checked', viewSettings.ruler);
+  $('#viewToolpathSetting:checkbox').prop('checked', viewSettings.toolpath);
+  $('#viewToolSetting:checkbox').prop('checked', viewSettings.tool);
+  $('#viewMachineSetting:checkbox').prop('checked', viewSettings.machine);
 
+  updateViewSettings();
+}
 
+function saveViewSettings() {
+/* decided to make the settings non-persistent
+  localStorage.setItem('viewSettings', JSON.stringify(viewSettings));
+*/
+}
 
+function changeViewSettings() {
+  viewSettings.grid = $('#viewGridSetting').is(':checked');
+  viewSettings.ruler = $('#viewRulerSetting').is(':checked');
+  viewSettings.toolpath = $('#viewToolpathSetting').is(':checked');
+  viewSettings.tool = $('#viewToolSetting').is(':checked');
+  viewSettings.machine = $('#viewMachineSetting').is(':checked');
+  saveViewSettings();
+  updateViewSettings();
+}
+
+function updateViewSettings() {
+  if (scene) {
+    if (object)
+      object.visible = viewSettings.toolpath;
+    if (cone)
+      cone.visible = viewSettings.tool;
+
+    var grid = scene.getObjectByName("Grid");
+    if (grid)
+      grid.visible = viewSettings.grid;
+
+    var ruler = scene.getObjectByName("Ruler");
+    if (ruler)
+      ruler.visible = viewSettings.ruler;
+
+    if (machineCoordinateSpace)
+      machineCoordinateSpace.visible = viewSettings.machine;
+  }
 }

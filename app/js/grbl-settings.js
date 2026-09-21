@@ -1,3 +1,5 @@
+var settingsUIConstructed = false;
+
 $(document).ready(function() {
   var backupFileOpen = document.getElementById('grblBackupFile');
   if (backupFileOpen) {
@@ -16,26 +18,28 @@ function loadGrblBackupFile(f) {
   if (f) {
     // Filereader
     var r = new FileReader();
-    // if (f.name.match(/.gcode$/i)) {
+
     r.readAsText(f);
     r.onload = function(event) {
-      //var grblsettingsfile = this.result
       //console.log(this.result)
       var data = this.result.split("\n");
-      for (i = 0; i < data.length; i++) {
+      for (var i = 0; i < data.length; i++) {
+        var parts = data[i].split('=');
         if (data[i].indexOf("$I=") == 0) {
-          setMachineButton(data[i].split('=')[1])
+          setMachineButton(parts[1])
         } else {
-          var key = data[i].split('=')[0];
-          var param = data[i].split('=')[1]
-          $("#val-" + key.substring(1) + "-input").val(parseFloat(param))
-          fixGrblHALSettings(key.substring(1)); // Fix GrblHAL Defaults
+          var key = parts[0].substring(1);
+          var value = parts[1];
+          if (grblSettingsTemplate[key] == undefined || grblSettingsTemplate[key].type == "text")
+            $("#val-" + key + "-input").val(value); // treat unknown properties like strings
+          else
+            $("#val-" + key + "-input").val(parseFloat(value));
         }
       };
 
       checkifchanged();
-      enableLimits(); // Enable or Disable
       displayDirInvert();
+      displayProbeDirInvert();
       $("#grblSettingsAdvTab").click();
     }
   }
@@ -87,31 +91,31 @@ function restoreAutoBackup(index) {
   for (const key in grblParamsBackup) {
     if (grblParamsBackup.hasOwnProperty(key)) {
       const paramValue = grblParamsBackup[key];
-      const parsedValue = parseFloat(paramValue);
-
-      // Check if the parsed value is a valid number
-      if (!isNaN(parsedValue)) {
-        // Update the input field based on the parameter using jQuery
-        const inputElement = $("#val-" + key.substring(1) + "-input");
-
-        if (inputElement.length) {
-          inputElement.val(parsedValue); // Apply the value to the input field
-        }
+      var key2 = key.substr(1);
+      const inputElement = $("#val-" + key2 + "-input");
+      if (grblSettingsTemplate[key2] == undefined || grblSettingsTemplate[key2].type == "text") {
+        inputElement.val(paramValue);
       } else {
-        console.warn(`Invalid value for ${key}: ${paramValue}`);
+        const parsedValue = parseFloat(paramValue);
+
+        // Check if the parsed value is a valid number
+        if (!isNaN(parsedValue)) {
+          // Update the input field based on the parameter using jQuery
+
+          if (inputElement.length) {
+            inputElement.val(parsedValue); // Apply the value to the input field
+          }
+        } else {
+          console.warn(`Invalid value for ${key}: ${paramValue}`);
+        }
       }
-
-      // Optionally, fix or apply any GrblHAL-specific settings
-      fixGrblHALSettings(key.substring(1)); // Adjust as needed
-
-      // Optionally, other functions you might call for updating the machine state
-      // Example: checkifchanged(); enableLimits(); displayDirInvert();
     }
   }
+
   // Call any post-restoration functions you need (e.g., re-enable limits, etc.)
   checkifchanged();
-  enableLimits();
   displayDirInvert();
+  displayProbeDirInvert();
   $("#grblSettingsAdvTab").click();
 }
 
@@ -119,15 +123,15 @@ function restoreAutoBackup(index) {
 function backupGrblSettings() {
   autoBackup("Manual Backup")
   var grblBackup = ""
-  for (key in grblParams) {
-    var key2 = key.split('=')[0].substr(1);
+  for (var key in grblParams) {
+    var key2 = key.substr(1);
 
-    if (grblSettingsTemplate2[key2] !== undefined) {
-      var descr = grblSettingsTemplate2[key2].title
+    var template = grblSettingsTemplate[key2];
+    if (template !== undefined && template.type != "text") {
+      grblBackup += key + "=" + grblParams[key] + "  ;  " + template.title + "\n";
     } else {
-      var descr = "unknown"
+        grblBackup += key + "=" + grblParams[key] + "\n";
     }
-    grblBackup += key + "=" + grblParams[key] + "  ;  " + descr + "\n"
   }
   if (laststatus.machine.name.length > 0) {
     grblBackup += "$I=" + laststatus.machine.name
@@ -146,16 +150,13 @@ function backupGrblSettings() {
 function grblSettings(data) {
   // console.log(data)
   var template = ``
-  grblconfig = data.split('\n')
-  for (i = 0; i < grblconfig.length; i++) {
+  const grblconfig = data.split('\n')
+  for (var i = 0; i < grblconfig.length; i++) {
     var key = grblconfig[i].split('=')[0];
     var param = grblconfig[i].split(/[= ;(]/)[1]
     grblParams[key] = param
   }
-  // $('#grblconfig').show();
-  // grblPopulate();
-  // $('#grblSaveBtn').removeAttr('disabled');
-  // $('#grblFirmwareBtn').removeAttr('disabled');
+
   $('#grblSettings').show()
 
   if (laststatus.machine.firmware.platform == "grblHAL") {
@@ -164,22 +165,35 @@ function grblSettings(data) {
     $("#grbl-settings-tab-title").html('Grbl');
   }
 
-
-
   if (grblParams['$22'] > 0) {
+    $('#gotozeroZmPosXYwPos').removeClass('disabled')
     $('#gotozeroMPos').removeClass('disabled')
     $('#homeBtn').attr('disabled', false)
-    $('#gotoXzeroMpos').removeClass('disabled')
-    $('#gotoYzeroMpos').removeClass('disabled')
-    $('#gotoZzeroMpos').removeClass('disabled')
-    $('.PullOffMPos').html("-" + grblParams['$27'])
+    $('#gotoXMinMpos').removeClass('disabled')
+    $('#gotoXMaxMpos').removeClass('disabled')
+    $('#gotoYMinMpos').removeClass('disabled')
+    $('#gotoYMaxMpos').removeClass('disabled')
+    $('#gotoZMinMpos').removeClass('disabled')
+    $('#gotoZMaxMpos').removeClass('disabled')
+    $('#gotoAMinMpos').removeClass('disabled')
+    $('#gotoAMaxMpos').removeClass('disabled')
   } else {
+    $('#gotozeroZmPosXYwPos').addClass('disabled')
     $('#gotozeroMPos').addClass('disabled')
     $('#homeBtn').attr('disabled', true)
-    $('#gotoXzeroMpos').addClass('disabled')
-    $('#gotoYzeroMpos').addClass('disabled')
-    $('#gotoZzeroMpos').addClass('disabled')
+    $('#gotoXMinMpos').addClass('disabled')
+    $('#gotoXMaxMpos').addClass('disabled')
+    $('#gotoYMinMpos').addClass('disabled')
+    $('#gotoYMaxMpos').addClass('disabled')
+    $('#gotoZMinMpos').addClass('disabled')
+    $('#gotoZMaxMpos').addClass('disabled')
+    $('#gotoAMinMpos').addClass('disabled')
+    $('#gotoAMaxMpos').addClass('disabled')
   }
+
+  updateGotoLimits();
+  if (!isJogWidget)
+    updateMachineCoordinates();
 
   if (grblParams['$32'] == 1) {
     $('#enLaser').removeClass('alert').addClass('success').html('ON')
@@ -206,6 +220,105 @@ function grblSettings(data) {
   }
 }
 
+// Compute the accurate machine dimensions. Takes into account:
+//   * homing enabled or disabled
+//   * the homing side for each axis (the homing side may need a pulloff offset)
+//      * the pulloff distance can be overriden for special use cases
+//   * the "home origin" feature 'Z' - if set, the pulloff is ignored
+//   * the manual homing flag (ignores pulloff for the manually homed axes)
+// Expects that grblParams and laststatus.machine.firmware.features.contains are up to date
+//
+// This should be the definitive source of the machine limits info
+function computeMachineLimits(pulloffOverride) {
+  var limits = {
+    X0: 0,
+    Y0: 0,
+    Z0: 0,
+    minX: 0,
+    minY: 0,
+    minZ: 0,
+    minA: 0,
+    maxX: parseFloat(grblParams.$130),
+    maxY: parseFloat(grblParams.$131),
+    maxZ: parseFloat(grblParams.$132),
+    maxA: parseFloat(grblParams.$133),
+  };
+
+  if (grblParams.$22 > 0) {
+    const homingMask = calcMaskFromDec(grblParams.$23);
+    const sizeX = limits.maxX;
+    const sizeY = limits.maxY;
+    const sizeZ = limits.maxZ;
+    const sizeA = limits.maxA;
+    if (laststatus && laststatus.machine.firmware.features.contains('Z')) {
+      limits.minX = homingMask.x ? 0 : -sizeX;
+      limits.maxX = homingMask.x ? sizeX : 0;
+      limits.minY = homingMask.y ? 0 : -sizeY;
+      limits.maxY = homingMask.y ? sizeY : 0;
+      limits.minZ = homingMask.z ? 0 : -sizeZ;
+      limits.maxZ = homingMask.z ? sizeZ : 0;
+      limits.minA = homingMask.a ? 0 : -sizeA;
+      limits.maxA = homingMask.a ? sizeA : 0;
+    } else {
+      const pulloff = pulloffOverride != undefined ? pulloffOverride : parseFloat(grblParams.$27);
+      var pulloffMask = 15;
+      if (grblParams.$22 & 32) {
+        pulloffMask = 0; // find which axes can be manually homed using settings $44 through $49
+        for (var i = 44; i <= 49; i++) {
+          var mask = grblParams['$' + i];
+          if (mask == undefined)
+            break;
+          pulloffMask |= parseInt(mask);
+        }
+      }
+      pulloffMask = calcMaskFromDec(pulloffMask);
+
+      if (!homingMask.x && pulloffMask.x) limits.X0 = -pulloff;
+      if (!homingMask.y && pulloffMask.y) limits.Y0 = -pulloff;
+      if (!homingMask.z && pulloffMask.z) limits.Z0 = -pulloff;
+      limits.minX = (homingMask.x &&  pulloffMask.x) ? pulloff-sizeX : -sizeX;
+      limits.maxX = (homingMask.x || !pulloffMask.x) ? 0 : -pulloff;
+      limits.minY = (homingMask.y &&  pulloffMask.y) ? pulloff-sizeY : -sizeY;
+      limits.maxY = (homingMask.y || !pulloffMask.y) ? 0 : -pulloff;
+      limits.minZ = (homingMask.z &&  pulloffMask.z) ? pulloff-sizeZ : -sizeZ;
+      limits.maxZ = (homingMask.z || !pulloffMask.z) ? 0 : -pulloff;
+      limits.minA = -sizeA;
+      limits.maxA = 0;
+    }
+    if (isNaN(limits.minX)) limits.minX = 0;
+    if (isNaN(limits.maxX)) limits.maxX = 0;
+    if (isNaN(limits.minY)) limits.minY = 0;
+    if (isNaN(limits.maxY)) limits.maxY = 0;
+    if (isNaN(limits.minZ)) limits.minZ = 0;
+    if (isNaN(limits.maxZ)) limits.maxZ = 0;
+    if (isNaN(limits.minA)) limits.minA = 0;
+    if (isNaN(limits.maxA)) limits.maxA = 0;
+    limits.homingMask = homingMask;
+  }
+  return limits;
+}
+
+function updateGotoLimits() {
+  var limits = computeMachineLimits();
+  $('#gotoXMinMpos > a > .coord').html(limits.minX.toFixed(0));
+  $('#gotoXMaxMpos > a > .coord').html(limits.maxX.toFixed(0));
+  $('#gotoYMinMpos > a > .coord').html(limits.minY.toFixed(0));
+  $('#gotoYMaxMpos > a > .coord').html(limits.maxY.toFixed(0));
+  $('#gotoZMinMpos > a > .coord').html(limits.minZ.toFixed(0));
+  $('#gotoZMaxMpos > a > .coord').html(limits.maxZ.toFixed(0));
+  $('#gotoAMinMpos > a > .coord').html(limits.minA.toFixed(0));
+  $('#gotoAMaxMpos > a > .coord').html(limits.maxA.toFixed(0));
+
+  $('#gotozeroZmPosXYwPos > a > .oord').html(limits.maxZ.toFixed(0));
+  const command = isJogWidget ? "G53" : "G0 G53";
+  const commandXY = command + " X"+ limits.X0.toFixed(0) +" Y" + limits.Y0.toFixed(0);
+  const commandZ = command + " Z" + limits.Z0.toFixed(0);
+  if (limits.homingMask && limits.homingMask.z)
+    $('#gotozeroMPos > a > .gcode').html(commandXY + ", " + commandZ);
+  else
+    $('#gotozeroMPos > a > .gcode').html(commandZ + ", " + commandXY);
+}
+
 function showBasicSettings() {
   $("#grbl-settings-basic").show();
   $("#grbl-settings-advanced").hide();
@@ -225,11 +338,11 @@ function grblPopulate() {
 
     <ul data-role="tabs" data-expand="true" class="mb-2">
       <li id="grblSettingsBasicTab" onclick="showBasicSettings()"><a href="#"><small><i class="fas fa-fw fa-cog mr-1 fg-darkGreen"></i>Basic Settings</a></small></li>
-      <li id="grblSettingsAdvTab" onclick="showAdvSettings()"><a href="#"><small><i class="fas fa-fw fa-cogs mr-1 fg-darkRed"></i>Advanced Settings</a></small></li>
+      <li id="grblSettingsAdvTab" onclick="showAdvSettings()" class="active"><a href="#"><small><i class="fas fa-fw fa-cogs mr-1 fg-darkRed"></i>Advanced Settings</a></small></li>
     </ul>
 
 
-    <div id="grbl-settings-basic">
+    <div id="grbl-settings-basic" style="display: none;">
         <ul class="step-list mb-3">
           <li>
             <h6>Select your Machine<br><small>Tell us what machine you have?</small></h6>
@@ -357,7 +470,7 @@ function grblPopulate() {
 
         </ul>
     </div>
-    <div id="grbl-settings-advanced" style="display: none; overflow-y: scroll; max-height: calc(100vh - 300px);">
+    <div id="grbl-settings-advanced" style="overflow-y: scroll; max-height: calc(100vh - 300px);">
         <div id="grblSettingsTableView">
           <table data-role="table"
             data-table-search-title="Search for Parameters by Name or $-Key"
@@ -379,17 +492,14 @@ function grblPopulate() {
             </thead>
             <tbody>`
 
-    for (key in grblParams) {
-      var key2 = key.split('=')[0].substr(1);
-      //console.log(key2)
-      if (grblSettingsTemplate2[key2] !== undefined) {
-        //template += grblSettingsTemplate2[key2].template;
-        template += `<tr id="grblSettingsRow` + key2 + `"
-                title="` + grblSettingsTemplate2[key2].description + `">
-                <td>` + grblSettingsTemplate2[key2].key + `</td>
-                <td>` + grblSettingsTemplate2[key2].title + `</td>
-                <td>` + grblSettingsTemplate2[key2].template + `</td>
-                <td>` + grblSettingsTemplate2[key2].utils + `</td>
+    for (var key in grblParams) {
+      var key2 = key.substr(1);
+      if (grblSettingsTemplate[key2] !== undefined) {
+        template += `<tr>
+                <td>` + grblSettingsTemplate[key2].key + `</td>
+                <td>` + grblSettingsTemplate[key2].title + `</td>
+                <td>` + grblSettingsTemplate[key2].template + `</td>
+                <td>` + grblSettingsTemplate[key2].utils + `</td>
               </tr>`
       } else {
         template += `
@@ -414,7 +524,8 @@ function grblPopulate() {
     </nav>
   </form>
       `
-    $('#grblconfig').append(template)
+    $('#grblconfig').append(template);
+    settingsUIConstructed = false;
 
     $('#grblSettingsTable').on('keyup paste click change', 'input, select', function() {
       checkifchanged()
@@ -428,16 +539,7 @@ function grblPopulate() {
 
 
     $('#grblSettingsBadge').hide();
-
-    if (grblParams['$21'] == 1 && grblParams['$22'] > 0) {
-      $('#limitsinstalled:checkbox').prop('checked', true);
-      $('#gotozeroMPos').removeClass('disabled')
-      $('#homeBtn').attr('disabled', false)
-    } else {
-      $('#limitsinstalled:checkbox').prop('checked', false);
-      $('#gotozeroMPos').addClass('disabled')
-      $('#homeBtn').attr('disabled', true)
-    }
+    $('#limitsinstalled:checkbox').prop('checked', grblParams['$21'] == 1 && grblParams['$22'] > 0);
 
     // if (grblParams['$33'] == 50 && grblParams['$34'] == 5 && grblParams['$35'] == 5 && grblParams['$36'] == 10) {
     //   setSelectedToolhead('scribe')
@@ -461,58 +563,11 @@ function grblPopulate() {
 
     populateRestoreMenu();
   }
-
 }
 
-// function checkifchanged() {
-//   var hasChanged = false;
-//   for (var key in grblParams) {
-//     if (grblParams.hasOwnProperty(key)) {
-//       var j = key.substring(1)
-//       var newVal = $("#val-" + j + "-input").val();
-//
-//       if (newVal !== undefined) {
-//         // Only send values that changed
-//         if (newVal != grblParams[key]) {
-//           hasChanged = true;
-//           console.log("changed: " + key)
-//           console.log("old: " + grblParams[key])
-//           console.log("new: " + newVal)
-//           if (!$("#val-" + j + "-input").parent().is('td')) {
-//             $("#val-" + j + "-input").parent().addClass('alert')
-//           } else if ($("#val-" + j + "-input").is('select')) {
-//             $("#val-" + j + "-input").addClass('alert')
-//           } else if (j == 3) { // axes
-//             $('#xdirinvert').parent().children('.check').addClass('bd-red')
-//             $('#ydirinvert').parent().children('.check').addClass('bd-red')
-//             $('#zdirinvert').parent().children('.check').addClass('bd-red')
-//           }
-//         } else {
-//           if (!$("#val-" + j + "-input").parent().is('td')) {
-//             $("#val-" + j + "-input").parent().removeClass('alert')
-//           } else if ($("#val-" + j + "-input").is('select')) {
-//             $("#val-" + j + "-input").removeClass('alert')
-//           } else if (j == 3) {
-//             $('#xdirinvert').parent().children('.check').removeClass('bd-red')
-//             $('#ydirinvert').parent().children('.check').removeClass('bd-red')
-//             $('#zdirinvert').parent().children('.check').removeClass('bd-red')
-//           }
-//         }
-//       }
-//     }
-//   }
-//   if (hasChanged) {
-//     $('#grblSettingsBadge').fadeIn('slow');
-//     $('#saveBtn').attr('disabled', false).removeClass('disabled');
-//     $('#saveBtnIcon').removeClass('fg-gray').addClass('fg-grayBlue');
-//   } else {
-//     $('#grblSettingsBadge').fadeOut('slow');
-//     $('#saveBtn').attr('disabled', true).addClass('disabled');
-//     $('#saveBtnIcon').removeClass('fg-grayBlue').addClass('fg-gray');
-//   }
-// }
-
 function checkifchanged() {
+  if (!settingsUIConstructed) return;
+
   var hasChanged = false;
 
   for (var key in grblParams) {
@@ -539,10 +594,45 @@ function checkifchanged() {
           } else if ($("#val-" + j + "-input").is('select')) {
             $("#val-" + j + "-input").addClass('alert');
           } else if (j == 3) { // axes
-            $('#xdirinvert').parent().children('.check').addClass('bd-red');
-            $('#ydirinvert').parent().children('.check').addClass('bd-red');
-            $('#zdirinvert').parent().children('.check').addClass('bd-red');
-            $('#adirinvert').parent().children('.check').addClass('bd-red');
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#ydirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#adirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#yHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#aHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
           }
         } else {
           if (!$("#val-" + j + "-input").parent().is('td')) {
@@ -550,10 +640,15 @@ function checkifchanged() {
           } else if ($("#val-" + j + "-input").is('select')) {
             $("#val-" + j + "-input").removeClass('alert');
           } else if (j == 3) {
-            $('#xdirinvert').parent().children('.check').removeClass('bd-red');
-            $('#ydirinvert').parent().children('.check').removeClass('bd-red');
-            $('#zdirinvert').parent().children('.check').removeClass('bd-red');
-            $('#adirinvert').parent().children('.check').removeClass('bd-red');
+            $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
           }
         }
       }
@@ -602,9 +697,12 @@ function autoBackup(note) {
   console.log('Settings saved and backup created.');
 }
 
+const prioritySettings = ["$22"]; // change homing setting first because it can prevent soft limits from being set (grblHAL)
+
 function grblSaveSettings() {
   autoBackup("Updated Grbl Settings")
-  var toSaveCommands = [];
+  var toSaveCommandsFirst = [];
+  var toSaveCommandsSecond = [];
   var saveProgressBar = $("#grblSaveProgress").data("progress");
   for (var key in grblParams) {
     if (grblParams.hasOwnProperty(key)) {
@@ -614,11 +712,18 @@ function grblSaveSettings() {
       if (newVal !== undefined) {
         if (parseFloat(newVal) != parseFloat(grblParams[key]) && newVal != grblParams[key]) {
           // console.log(key + ' was ' + grblParams[key] + ' but now, its ' + newVal);
-          toSaveCommands.push(key + '=' + newVal);
+
+          if (prioritySettings.contains(key))
+            toSaveCommandsFirst.push(key + '=' + newVal);
+          else
+            toSaveCommandsSecond.push(key + '=' + newVal);
         }
       }
     }
   }
+
+  var toSaveCommands = [...toSaveCommandsFirst, ...toSaveCommandsSecond];
+
   if (toSaveCommands.length > 0) {
     //console.log("commands", toSaveCommands)
     let counter = 0;
@@ -634,8 +739,8 @@ function grblSaveSettings() {
       //console.log(counter, toSaveCommands[counter]);
       var newParam = toSaveCommands[counter].split("=")[0];
       var newParamKey = newParam.substr(1);
-      if (grblSettingsTemplate2[newParamKey] !== undefined) {
-        var newParamName = grblSettingsTemplate2[newParamKey].title
+      if (grblSettingsTemplate[newParamKey] !== undefined) {
+        var newParamName = grblSettingsTemplate[newParamKey].title
       } else {
         var newParamName = "unknown"
       }
@@ -730,6 +835,7 @@ function calcMaskFromDec(dec) {
   }
   return invertmask
 }
+
 
 function changeProbeDirInvert() {
   var xticked = $('#xHomeDir').is(':checked');
@@ -854,10 +960,16 @@ function updateToolOnSValues() {
 
 function setup_settings_table() {
 
-  for (key in grblParams) {
-    var key2 = key.split('=')[0].substr(1);
-    $("#val-" + key2 + "-input").val(grblParams[key])
+  for (var key in grblParams) {
+    var key2 = key.substr(1);
+    var input = $("#val-" + key2 + "-input");
+    input.val(grblParams[key])
+    var setting = grblSettingsTemplate[key2];
+    // Metro UI destroys the tooltips for td and tr elements - readding here
+    if (setting !== undefined && setting.description.length > 0)
+      input.closest('td').prev().attr('title', setting.description);
   }
+  settingsUIConstructed = true;
 
   setTimeout(function() {
     $("#val-32-input").val(parseInt(grblParams['$32'])).trigger("change");
@@ -871,7 +983,7 @@ function setup_settings_table() {
     $("#val-3-input").val(parseInt(grblParams['$3'])).trigger("change");
     $("#val-4-input").val(parseInt(grblParams['$4'])).trigger("change");
     $("#val-13-input").val(parseInt(grblParams['$13'])).trigger("change");
-  }, 100);;
+  }, 100);
 
   $('#limitsinstalled:checkbox').change(function() {
     enableLimits();
@@ -925,8 +1037,8 @@ function setup_settings_table() {
   });
 
   // populare Direction Invert Checkboxes
-  displayDirInvert()
-  displayProbeDirInvert()
+  displayDirInvert();
+  displayProbeDirInvert();
 
   console.log("Updated")
 }
@@ -952,13 +1064,7 @@ function enableLimits() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_lim[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
-  var elm = document.getElementById("grblSettingsLimits");
-  // elm.scrollIntoView(true);
 }
 
 var grblParams_scribe = {
@@ -978,10 +1084,6 @@ function enableScribe() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_scribe[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1006,10 +1108,6 @@ function enableLaser() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_laser[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1034,10 +1132,6 @@ function enableRouter() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_router[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1062,10 +1156,6 @@ function enablePlasma() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_plasma[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);
@@ -1090,10 +1180,6 @@ function enableVFD() {
       $("#val-" + j + "-input").val(parseFloat(grblParams_vfd[key]))
     }
   }
-  allowGrblSettingsViewScroll = false;
-  setTimeout(function() {
-    allowGrblSettingsViewScroll = true;
-  }, 500);
   checkifchanged();
   var elm = document.getElementById("grblSettingsPWM");
   // elm.scrollIntoView(true);

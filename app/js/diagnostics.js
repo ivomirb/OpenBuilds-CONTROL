@@ -6,6 +6,7 @@ var disable3Dgcodepreview = false;
 var disableSerialLog = false; // todo also hide tab when set to true
 var disableDROupdates = false;
 var disableAggressiveHomeReset = false;
+var disableAutoStart = false;
 
 function saveDiagnostics() {
   localStorage.setItem('disable3Dviewer', disable3Dviewer);
@@ -15,7 +16,22 @@ function saveDiagnostics() {
   localStorage.setItem('disable3Dgcodepreview', disable3Dgcodepreview);
   localStorage.setItem('disableSerialLog', disableSerialLog);
   localStorage.setItem('disableDROupdates', disableDROupdates);
+
   localStorage.setItem('disableAggressiveHomeReset', disableAggressiveHomeReset);
+  if (disableAggressiveHomeReset)
+    $('#disableAggressiveHomeResetTick').addClass("checked");
+  else
+    $('#disableAggressiveHomeResetTick').removeClass("checked");
+
+  if (process.platform == 'win32') {
+    localStorage.setItem('disableAutoStart', disableAutoStart);
+    $('#mainCloseBtn').attr( "title", disableAutoStart ? "Close" : "Close to Tray");
+    if (disableAutoStart)
+      $('#disableAutoStartTick').addClass("checked");
+    else
+      $('#disableAutoStartTick').removeClass("checked");
+    socket.emit('autoStart', !disableAutoStart);
+  }
 }
 
 function initDiagnostics() {
@@ -95,6 +111,25 @@ function initDiagnostics() {
     disableAggressiveHomeReset = false;
   }
 
+  if (typeof process !== "undefined" && process.platform == 'win32') {
+    if (localStorage.getItem('disableAutoStart')) {
+      if (JSON.parse(localStorage.getItem('disableAutoStart')) == true) {
+        disableAutoStart = true;
+        $('#disableAutoStartTick').addClass("checked");
+      }
+    } else {
+      disableAutoStart = false;
+    }
+  }
+  else {
+    $('#disableAutoStartTick').prev().hide();
+    $('#disableAutoStartTick').hide();
+  }
+
+  if (disable3Drealtimepos || disable3Dgcodepreview)
+    $('#runSimBtn').parent().hide();
+  else
+    $('#runSimBtn').parent().show();
 };
 
 initDiagnostics();

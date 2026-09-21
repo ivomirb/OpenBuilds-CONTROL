@@ -1,6 +1,7 @@
-var time = 10
+var updateCountdown = 10
 $(document).ready(function() {
-  checkUpdate()
+// Ivo: disable update checks because the app is no longer in development
+//  checkUpdate()
 });
 
 
@@ -24,7 +25,7 @@ function checkUpdate() {
         // console.log(versionCompare(availVersion, currentVersion), availVersion, currentVersion);
         if (versionCompare(availVersion, currentVersion) == 1) {
           console.log('outdated')
-          time = 10
+          updateCountdown = 10
           printLog("<span class='fg-darkRed'>[ Update Available! ] </span><span class='fg-green'>OpenBuilds CONTROL <code>" + availVersion + "</code>. is available now.</span>")
           printLog("<span class='fg-darkRed'>[ Update Available! ] </span><span class='fg-darkGray'>Download will start in <span class='tally' id='countdown'>10</span> seconds (<a href='#' onclick='cancelTimer();'>cancel</a>) </span>")
           printLog("<span class='fg-darkRed'>[ Update Available! ] </span><span class='fg-darkGray'>You will be prompted when its ready to be installed </span>")
@@ -45,20 +46,20 @@ function checkUpdate() {
 
 
 function updateTime() {
-  time--
-  if (time > 0) {
-    $('#countdown').html(time)
+  updateCountdown--
+  if (updateCountdown > 0) {
+    $('#countdown').html(updateCountdown)
     setTimeout(function() {
       updateTime();
     }, 1000);
-  } else if (time == 0) {
-    $('#countdown').html(time)
+  } else if (updateCountdown == 0) {
+    $('#countdown').html(updateCountdown)
     socket.emit('downloadUpdate', true)
   }
 }
 
 function cancelTimer() {
-  time = -1
+  updateCountdown = -1
   $('#countdown').html('cancelled')
   printLog("<span class='fg-darkRed'>[ Update Deferred! ] </span><span class='fg-darkGray'>No problem, we will ask you again next time</span>")
 }

@@ -1,5 +1,8 @@
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = '1';
 
+var autoStart = undefined;
+var foceShowGui = false;
+
 process.on('uncaughtException', function(err) {
   //showErrorDialog(err, attempts = 2) // make two attempts to show an uncaughtException in a dialog
   if (DEBUG) {
@@ -32,7 +35,7 @@ function showErrorDialog(err, attempts) {
 
 // To see console.log output run with `DEBUGCONTROL=true electron .` or set environment variable for DEBUGCONTROL=true
 // debug_log debug overhead
-DEBUG = false;
+var DEBUG = false;
 if (process.env.DEBUGCONTROL) {
   DEBUG = true;
   console.log("Console Debugging Enabled")
@@ -518,7 +521,7 @@ async function findPorts() {
   const ports = await SerialPort.list()
   // console.log(ports)
   status.comms.interfaces.ports = ports;
-  for (i = 0; i < status.comms.interfaces.ports.length; i++) {
+  for (var i = 0; i < status.comms.interfaces.ports.length; i++) {
     var data = friendlyPort(status.comms.interfaces.ports[i])
     status.comms.interfaces.ports[i].img = data.img;
     status.comms.interfaces.ports[i].note = data.note;
@@ -748,14 +751,14 @@ io.on("connection", function(socket) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://www.openbuilds.com')
+    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
   });
 
   socket.on("openbuildspartstore", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://www.openbuildspartstore.com')
+    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
   });
 
   socket.on("carveco", function(data) {
@@ -769,42 +772,42 @@ io.on("connection", function(socket) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://www.getfabber.com/openbuilds?ref=OpenBuilds')
+    shell.openExternal('https://www.getfabber.com/')
   });
 
   socket.on("lightburn", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://openbuildspartstore.com/lightburn/')
+    shell.openExternal('https://lightburnsoftware.com/')
   });
 
   socket.on("vectric", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://openbuildspartstore.com/vectric/')
+    shell.openExternal('https://www.vectric.com/')
   });
 
   socket.on("opencam", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://cam.openbuilds.com')
+    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
   });
 
   socket.on("opendocs", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://docs.openbuilds.com/')
+    shell.openExternal('https://github.com/OpenBuilds/docs-migrated/wiki')
   });
 
   socket.on("openforum", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://openbuilds.com/threads/openbuilds-control-software.13121/')
+    shell.openExternal('https://github.com/OpenBuilds/docs-migrated/wiki')
   });
 
   socket.on("gpuinfo", function(data) {
@@ -885,6 +888,26 @@ io.on("connection", function(socket) {
       } else {
         debug_log("autoUpdater not found")
       }
+    }
+  })
+
+  socket.on("autoStart", function(enabled) {
+    if (enabled != autoStart) {
+      if (enabled) {
+        electronApp.setLoginItemSettings({openAtLogin: true, args: ["--startup"]});
+        if (!appIcon)
+          createTrayIcon();
+        if (autoStart == undefined && !foceShowGui)
+          jogWindow.hide();
+      }
+      else {
+        electronApp.setLoginItemSettings({openAtLogin: false});
+        if (appIcon) {
+          appIcon.destroy();
+          appIcon = null;
+        }
+      }
+      autoStart = enabled;
     }
   })
 
@@ -2279,7 +2302,7 @@ function readFile(filePath) {
               const {
                 shell
               } = require('electron')
-              shell.openExternal('https://cam.openbuilds.com')
+              shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
             } else { // GCODE
               var payload = {
                 gcode: data,
@@ -2390,7 +2413,7 @@ function stopPort() {
   status.machine.firmware.version = ""; // get version
   status.machine.firmware.date = "";
   status.machine.firmware.buffer = "";
-	status.machine.modals.homedRecently = false;
+  status.machine.modals.homedRecently = false;
   gcodeQueue.length = 0;
   sentBuffer.length = 0; // dump bufferSizes
   // port.drain(port.close());
@@ -3028,22 +3051,26 @@ if (isElectron()) {
     // Module to create native browser window.
 
     function createApp() {
-      createTrayIcon();
+      if (process.platform != 'win32' || autoStart)
+        createTrayIcon();
       if (process.platform == 'darwin') {
         debug_log("Creating MacOS Menu");
-        createMenu();
         status.driver.operatingsystem = 'macos';
+        createMenu();
       }
-      if (process.platform == 'win32' && process.argv.length >= 2) {
-        var openFilePath = process.argv[1];
-        if (openFilePath !== "") {
-          debug_log("path" + openFilePath);
-          readFile(openFilePath);
-        }
+      if (process.platform == 'win32') {
         status.driver.operatingsystem = 'windows';
+        if (process.argv.length >= 2) {
+          var openFilePath = process.argv[1];
+          if (openFilePath !== "") {
+           debug_log("path" + openFilePath);
+            readFile(openFilePath);
+          }
+        }
       }
 
-      if (process.platform == 'darwin' || uploadedgcode.length > 1) {
+      foceShowGui = uploadedgcode.length > 1 || process.argv.indexOf("-showGui") > 0;
+      if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !autoStart)) {
         showJogWindow()
       }
 
@@ -3135,6 +3162,19 @@ if (isElectron()) {
               appIcon.destroy();
             }
             electronApp.exit(0);
+          }
+        }, {
+          type: 'separator'
+        }, {
+          label: 'Disable Auto Start and the Tray Icon',
+          click() {
+            showJogWindow();
+            io.sockets.emit("disableAutoStart");
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              buttons: ['OK'],
+              message: 'Auto Start and the tray icon have been disabled.\n\nThey can be restored from the Application Diagnostics menu in the Troubleshooting tab.'
+            });
           }
         }])
         if (appIcon) {
@@ -3269,12 +3309,9 @@ if (isElectron()) {
       }
     });
 
-    // Autostart on Login
     if (process.platform == 'win32') {
-      electronApp.setLoginItemSettings({
-        openAtLogin: true,
-        args: []
-      })
+      // If the app was auto-started by Windows, create the tray icon and don't create the main window until the icon is clicked
+      autoStart = process.argv.indexOf("--startup") > 0 ? true : undefined;
     }
   }
 } else { // if its not running under Electron, lets get Chrome up.

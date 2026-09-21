@@ -13,8 +13,8 @@ function jogOverride(newVal) {
     jogRateX = (grblParams['$110'] * (newVal / 100)).toFixed(0);
     jogRateY = (grblParams['$111'] * (newVal / 100)).toFixed(0);
     jogRateZ = (grblParams['$112'] * (newVal / 100)).toFixed(0);
-
-    $('#jro').data('slider').val(newVal)
+    if ($('#jro').data('slider').val() != newVal)
+      $('#jro').data('slider').val(newVal)
   }
   if (grblParams.hasOwnProperty('$113')) {
     jogRateA = (grblParams['$113'] * (newVal / 100)).toFixed(0);
@@ -23,7 +23,7 @@ function jogOverride(newVal) {
 }
 
 function setADist(newADist) {
-  $("#distAAxislabel").html("A: " + newADist + " deg")
+  $("#distAAxislabel").html("A: " + newADist + "&deg;")
   jogdistA = newADist;
 }
 
@@ -46,20 +46,8 @@ function mmMode() {
   if (jogdistXYZ == 25.4) {
     jogdistXYZ = 100
   }
-  if (typeof object !== 'undefined') {
-    if (object.userData.inch) {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x * 25.4, object.userData.bbbox2.max.x * 25.4, object.userData.bbbox2.min.y * 25.4, object.userData.bbbox2.max.y * 25.4, false);
-      }
-    } else {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, false);
-      }
-    }
-  } else {
-    if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-      redrawGrid(xmin, xmax, ymin, ymax, false);
-    }
+  if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
+    redrawGrid(sizexmin, sizexmax, sizeymin, sizeymax, false);
   }
 }
 
@@ -83,20 +71,8 @@ function inMode() {
     jogdistXYZ = 25.4
   }
 
-  if (typeof object !== 'undefined') {
-    if (object.userData.inch) {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, true);
-      }
-    } else {
-      if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-        redrawGrid(object.userData.bbbox2.min.x / 25.4, object.userData.bbbox2.max.x / 25.4, object.userData.bbbox2.min.y / 25.4, object.userData.bbbox2.max.y / 25.4, true);
-      }
-    }
-  } else {
-    if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
-      redrawGrid(xmin / 25.4, xmax / 25.4, ymin / 25.4, ymax / 25.4, true);
-    }
+  if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
+    redrawGrid(sizexmin / 25.4, sizexmax / 25.4, sizeymin / 25.4, sizeymax / 25.4, true);
   }
 
 }
@@ -391,47 +367,79 @@ $(document).ready(function() {
     sendGcode('G0 Z0');
   });
 
-  $('#gotoXzeroMpos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 X-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 X0');
+  $('#gotoXMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minX = computeMachineLimits().minX;
+      sendGcode("G0 G53 G90 G21 X" + minX.toFixed(2));
     }
   });
 
-  $('#gotoYzeroMpos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Y-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 Y0');
+  $('#gotoXMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxX = computeMachineLimits().maxX;
+      sendGcode("G0 G53 G90 G21 X" + maxX.toFixed(2));
     }
   });
 
-  $('#gotoZzeroMpos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Z-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 Z0');
+  $('#gotoYMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minY = computeMachineLimits().minY;
+      sendGcode("G0 G53 G90 G21 Y" + minY.toFixed(2));
+    }
+  });
+
+  $('#gotoYMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxY = computeMachineLimits().maxY;
+      sendGcode("G0 G53 G90 G21 Y" + maxY.toFixed(2));
+    }
+  });
+
+  $('#gotoZMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minZ = computeMachineLimits().minZ;
+      sendGcode("G0 G53 G90 G21 Z" + minZ.toFixed(2));
+    }
+  });
+
+  $('#gotoZMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxZ = computeMachineLimits().maxZ;
+      sendGcode("G0 G53 G90 G21 Z" + maxZ.toFixed(2));
+    }
+  });
+
+  $('#gotoAMinMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const minA = computeMachineLimits().minA;
+      sendGcode("G0 G53 G90 G21 A" + minA.toFixed(2));
+    }
+  });
+
+  $('#gotoAMaxMpos').on('click', function(ev) {
+    if (grblParams.$22 > 0) {
+      const maxA = computeMachineLimits().maxA;
+      sendGcode("G0 G53 G90 G21 A" + maxA.toFixed(2));
     }
   });
 
   $('#gotozeroZmPosXYwPos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Z-' + grblParams["$27"]);
-    } else {
-      sendGcode('G53 G0 Z0');
-    }
+    const maxZ = computeMachineLimits()().maxZ;
+    sendGcode('G0 G53 G90 G21 Z' + maxZ.toFixed(2));
     sendGcode('G0 X0 Y0');
     sendGcode('G0 Z0');
   });
 
   $('#gotozeroMPos').on('click', function(ev) {
-    if (grblParams['$22'] == 1) {
-      sendGcode('G53 G0 Z-' + grblParams["$27"]);
-      sendGcode('G53 G0 X-' + grblParams["$27"] + ' Y-' + grblParams["$27"]);
+    const limits = computeMachineLimits();
+    if (limits.homingMask && limits.homingMask.z) {
+      // Z0 at the bottom - first move XY, then Z
+      sendGcode('G0 G53 X' + limits.X0.toFixed(2) + ' Y' + limits.Y0.toFixed(2));
+      sendGcode('G0 G53 G90 G21 Z' + limits.Z0.toFixed(2));
     } else {
-      sendGcode('G53 G0 Z0');
-      sendGcode('G53 G0 X0 Y0');
+      // Z0 at the top - first move Z, then XY
+      sendGcode('G0 G53 G90 G21 Z' + limits.Z0.toFixed(2));
+      sendGcode('G0 G53 X' + limits.X0.toFixed(2) + ' Y' + limits.Y0.toFixed(2));
     }
   });
 
@@ -444,31 +452,21 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "X-";
-        var distance = 1000;
-
+        var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
+        var minX = mcsX - 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$130)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          minX = computeMachineLimits(1).minX;
+          if (minX >= mcsX) {
             toastJogWillHit("X-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateX + "\n");
+        if (minX < mcsX) {
+          socket.emit('runCommand', "$J=G53 G90 G21 X" + minX.toFixed(3) + " F" + jogRateX + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xM').click();
@@ -495,29 +493,21 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "X";
-        var distance = 1000;
+        var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
+        var maxX = mcsX + 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$130)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          maxX = computeMachineLimits(1).maxX;
+          if (maxX <= mcsX) {
             toastJogWillHit("X+");
           }
         }
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateX + "\n");
+        if (maxX > mcsX) {
+          socket.emit('runCommand', "$J=G53 G90 G21 X" + maxX.toFixed(3) + " F" + jogRateX + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xP').click();
@@ -544,31 +534,22 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Y-";
-        var distance = 1000;
-
+        var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
+        var minY = mcsY - 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$131)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          minY = computeMachineLimits(1).minY;
+          if (minY >= mcsY) {
             toastJogWillHit("Y-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateY + "\n");
+        if (minY < mcsY) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Y" + minY.toFixed(3) + " F" + jogRateY + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.yM').click();
@@ -594,31 +575,21 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Y";
-        var distance = 1000;
-
+        var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
+        var maxY = mcsY + 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$131)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          maxY = computeMachineLimits(1).maxY;
+          if (maxY <= mcsY) {
             toastJogWillHit("Y+");
           }
         }
-
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateY + "\n");
+        if (maxY > mcsY) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Y" + maxY.toFixed(3) + " F" + jogRateY + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('#yP').click();
@@ -644,31 +615,22 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Z-";
-        var distance = 1000;
-
+        var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
+        var minZ = mcsZ - 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$132)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          minZ = computeMachineLimits(1).minZ;
+          if (minZ >= mcsZ) {
             toastJogWillHit("Z-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateZ + "\n");
+        if (minZ < mcsZ) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Z" + minZ.toFixed(3) + " F" + jogRateZ + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zM').click();
@@ -694,31 +656,21 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "Z";
-        var distance = 1000;
-
+        var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
+        var maxZ = mcsZ + 1000;
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$132)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          maxZ = computeMachineLimits(1).maxZ;
+          if (maxZ <= mcsZ) {
             toastJogWillHit("Z+");
           }
         }
-
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateZ + "\n");
+        if (maxZ > mcsZ) {
+          socket.emit('runCommand', "$J=G53 G90 G21 Z" + maxZ.toFixed(3) + " F" + jogRateZ + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zP').click();
@@ -744,31 +696,23 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "A-";
-        var distance = 1000;
-
-        if (hasSoftLimits) {
+        var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
+        var minA = mcsA - 1000;
+        var travelA = parseFloat(grblParams.$133);
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
+        if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$133)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Negative move:
-          distance = (mindistance + (parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          minA = computeMachineLimits(0).minA;
+          if (minA >= mcsA) {
             toastJogWillHit("A-");
           }
         }
 
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateA + "\n");
+        if (minA < mcsA) {
+          socket.emit('runCommand', "$J=G53 G90 G21 A" + minA.toFixed(3) + " F" + jogRateA + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aM').click();
@@ -794,31 +738,22 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    var hasSoftLimits = false;
-    if (Object.keys(grblParams).length > 0) {
-      if (parseInt(grblParams.$20) == 1) {
-        hasSoftLimits = true;
-      }
-    }
+
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var direction = "A";
-        var distance = 1000;
-
-        if (hasSoftLimits) {
+        var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
+        var maxA = mcsA + 1000;
+        var travelA = parseFloat(grblParams.$133);
+        const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
+        if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
-          var mindistance = parseInt(grblParams.$133)
-          var maxdistance = 0; // Grbl all negative coordinates
-          // Positive move:
-          distance = (maxdistance - (parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a))) - 1
-          distance = distance.toFixed(3);
-          if (distance < 1) {
+          maxA = computeMachineLimits(0).maxA;
+          if (maxA <= mcsA) {
             toastJogWillHit("A+");
           }
         }
-
-        if (distance >= 1) {
-          socket.emit('runCommand', "$J=G91 G21 " + direction + distance + " F" + jogRateA + "\n");
+        if (maxA > mcsA) {
+          socket.emit('runCommand', "$J=G53 G90 G21 A" + maxA.toFixed(3) + " F" + jogRateA + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aP').click();
