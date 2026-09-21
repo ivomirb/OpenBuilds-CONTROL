@@ -751,14 +751,14 @@ io.on("connection", function(socket) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://www.openbuilds.com')
+    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
   });
 
   socket.on("openbuildspartstore", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://www.openbuildspartstore.com')
+    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
   });
 
   socket.on("carveco", function(data) {
@@ -772,42 +772,42 @@ io.on("connection", function(socket) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://www.getfabber.com/openbuilds?ref=OpenBuilds')
+    shell.openExternal('https://www.getfabber.com/')
   });
 
   socket.on("lightburn", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://openbuildspartstore.com/lightburn/')
+    shell.openExternal('https://lightburnsoftware.com/')
   });
 
   socket.on("vectric", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://openbuildspartstore.com/vectric/')
+    shell.openExternal('https://www.vectric.com/')
   });
 
   socket.on("opencam", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://cam.openbuilds.com')
+    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
   });
 
   socket.on("opendocs", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://docs.openbuilds.com/')
+    shell.openExternal('https://github.com/OpenBuilds/docs-migrated/wiki')
   });
 
   socket.on("openforum", function(data) {
     const {
       shell
     } = require('electron')
-    shell.openExternal('https://openbuilds.com/threads/openbuilds-control-software.13121/')
+    shell.openExternal('https://github.com/OpenBuilds/docs-migrated/wiki')
   });
 
   socket.on("gpuinfo", function(data) {
@@ -2302,7 +2302,7 @@ function readFile(filePath) {
               const {
                 shell
               } = require('electron')
-              shell.openExternal('https://cam.openbuilds.com')
+              shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
             } else { // GCODE
               var payload = {
                 gcode: data,
