@@ -390,6 +390,12 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   border: 1px solid #222;
 }
 
+.theme_dark .v-menu .menu-title,
+.theme_dark .d-menu .menu-title,
+.theme_dark .ribbon-dropdown .menu-title {
+  background: #222 !important;
+}
+
 .theme_dark .drop-container {
   background: #222 !important;
   border: 1px solid #333;
