@@ -585,12 +585,12 @@
                         <i class="fas fa-stethoscope"></i>
                       </span>
                     </span>
-                    <span class="caption">Application<br>Diagnostics</span>
+                    <span class="caption">Perf<br>Diagnostics</span>
                   </button>
                   <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
-                    <li onclick="disable3Dviewer = !disable3Dviewer; saveDiagnostics(); location.reload();" id="disable3DviewerTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer System (For slower computers)</a></li>
                     <li onclick="socket.emit('gpuinfo')"><a href="#"><i class="fa fa-microchip fa-fw"></i> Show GPU Information</a></li>
                     <li class="divider"></li>
+                    <li onclick="disable3Dviewer = !disable3Dviewer; saveDiagnostics(); location.reload();" id="disable3DviewerTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer System (For slower computers)</a></li>
                     <li onclick="disable3Dcontrols = !disable3Dcontrols; saveDiagnostics(); location.reload();" id="disable3DcontrolsTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer Interactions</a></li>
                     <li onclick="disable3Dskybox = !disable3Dskybox; saveDiagnostics(); location.reload();" id="disable3DskyboxTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer Skybox/Fog</a></li>
                     <li onclick="disable3Drealtimepos = !disable3Drealtimepos; saveDiagnostics(); location.reload();" id="disable3DrealtimeposTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer Realtime Job Position
@@ -599,10 +599,22 @@
                     <li class="divider"></li>
                     <li onclick="disableSerialLog = !disableSerialLog; saveDiagnostics(); location.reload();" id="disableSerialLogTick"><a href="#"><i class="fas fa-fw fa-terminal"></i> Disable Serial Log</a></li>
                     <li onclick="disableDROupdates = !disableDROupdates; saveDiagnostics(); location.reload();" id="disableDROupdatesTick"><a href="#"><i class="fas fa-fw fa-list-ol"></i> Disable DRO/Status Updates</a></li>
-                    <li class="divider"></li>
+                  </ul>
+                </div>
+                <div>
+                  <button id="settingsbtn" class="ribbon-button dropdown-toggle">
+                    <span class="icon">
+                      <span class="fa-layers fa-fw">
+                        <i class="fas fa-cog"></i>
+                      </span>
+                    </span>
+                    <span class="caption">Application<br>Settings</span>
+                  </button>
+                  <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
+                    <li onclick="disableAutoStart = !disableAutoStart; saveDiagnostics();" id="disableAutoStartTick" style="display:none"><a href="#"><i class="fas fa-fw fa-running"></i> Disable Auto Start and Tray Icon</a></li>
                     <li onclick="disableAggressiveHomeReset = !disableAggressiveHomeReset; saveDiagnostics();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
-                    <li class="divider"></li>
-                    <li onclick="disableAutoStart = !disableAutoStart; saveDiagnostics();" id="disableAutoStartTick"><a href="#"><i class="fas fa-fw fa-running"></i> Disable Auto Start and Tray Icon</a></li>
+                    <li onclick="disable4thAxis = !disable4thAxis; saveDiagnostics();" id="disable4thAxisTick" style="display:none"><a href="#"><i class="fas fa-fw fa-chess-rook"></i> Disable 4th axis</a></li>
+                  </ul>
                 </div>
                 <span class="title">Settings</span>
               </div>

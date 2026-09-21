@@ -459,49 +459,49 @@ function animate() {
 }
 
 function viewExtents(objecttosee) {
-  if (!disable3Dcontrols) {
-    // console.log("viewExtents. object:", objecttosee);
-    // console.log("controls:", controls);
+  // console.log("viewExtents. object:", objecttosee);
+  // console.log("controls:", controls);
 
-    // lets override the bounding box with a newly
-    // generated one
-    // get its bounding box
-    if (objecttosee) {
-      // console.log(objecttosee)
-      var helper = new THREE.BoxHelper(objecttosee);
-      helper.update();
-      var box3 = new THREE.Box3();
-      box3.setFromObject(helper);
-      var minx = box3.min.x;
-      var miny = box3.min.y;
-      var maxx = box3.max.x;
-      var maxy = box3.max.y;
-      var minz = box3.min.z;
-      var maxz = box3.max.z;
+  // lets override the bounding box with a newly
+  // generated one
+  // get its bounding box
+  if (objecttosee) {
+    // console.log(objecttosee)
+    var helper = new THREE.BoxHelper(objecttosee);
+    helper.update();
+    var box3 = new THREE.Box3();
+    box3.setFromObject(helper);
+    var minx = box3.min.x;
+    var miny = box3.min.y;
+    var maxx = box3.max.x;
+    var maxy = box3.max.y;
+    var minz = box3.min.z;
+    var maxz = box3.max.z;
 
-      var lenx = maxx - minx;
-      var leny = maxy - miny;
-      var lenz = maxz - minz;
-      var centerx = minx + (lenx / 2);
-      var centery = miny + (leny / 2);
-      var centerz = minz + (lenz / 2);
+    var lenx = maxx - minx;
+    var leny = maxy - miny;
+    var lenz = maxz - minz;
+    var centerx = minx + (lenx / 2);
+    var centery = miny + (leny / 2);
+    var centerz = minz + (lenz / 2);
 
-      // console.log("lenx:", lenx, "leny:", leny, "lenz:", lenz);
-      var maxlen = Math.max(lenx, leny, lenz);
-      var target = new THREE.Vector3(centerx, centery, centerz);
+    // console.log("lenx:", lenx, "leny:", leny, "lenz:", lenz);
+    var maxlen = Math.max(lenx, leny, lenz);
+    var target = new THREE.Vector3(centerx, centery, centerz);
 
-      // place the camera above the center, at twice the maxlen, looking straight down
-      camera.position.set(centerx, centery, centerz + 2 * maxlen);
-      camera.rotation.set(0, 0, 0);
-      camera.fov = 30; // degrees
-      camera.lookAt(target);
-      camera.updateProjectionMatrix();
+    // place the camera above the center, at twice the maxlen, looking straight down
+    camera.position.set(centerx, centery, centerz + 2 * maxlen);
+    camera.fov = 30; // degrees
+    camera.lookAt(target);
+    camera.rotation.set(0, 0, 0);
+    camera.updateProjectionMatrix();
 
+    if (!disable3Dcontrols) {
       controls.target = target;
       controls.update();
     }
   }
-};
+}
 
 function makeSprite(rendererType, vals) {
   var canvas = document.createElement('canvas'),
