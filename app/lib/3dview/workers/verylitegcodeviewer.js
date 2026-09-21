@@ -377,7 +377,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
 
       if (p2.arc) {
         //console.log("");
-        console.log("drawing arc. p1:", vp1, ", p2:", vp2);
+        //console.log("drawing arc. p1:", vp1, ", p2:", vp2);
 
         var vpArc;
 
