@@ -5,7 +5,6 @@ This is a fork by Ivo Beltchev with multiple improvements.
 
 ### Workflow
 
-* Remembers the last used COM port and auto-selects it on startup
 * New option to reload the last gcode file
 * More reliable jogging features, better compatibilty with different firmware and homing settings
 * Corrected the math and improved the safety of the "goto zero" buttons
