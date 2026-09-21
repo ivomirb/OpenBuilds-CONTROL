@@ -1311,7 +1311,7 @@ window.UpdateHeightmapMenu =function()
 	EnableMenuItem('#revertGCode', editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1 && laststatus.comms.connectionStatus != 3);
 }
 
-const heightmapBtnHtml = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 5px 9px;">
+const heightmapBtnHtml = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 6px 9px;">
 	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark drop-shadow"><i class="fas fa-layer-group"></i> Heightmap</button>
 	<ul class="ribbon-dropdown drop-up" id="heightmapMenu" data-role="dropdown" role="menu" style="margin-bottom:5px;">
 		<style>#heightmapMenu > li {text-align: left;}</style>
@@ -1335,7 +1335,14 @@ $(document).ready(function()
 {
 	CleanupOldVersion();
 
-	$('#resetViewBtn').after(heightmapBtnHtml);
+	if ($('#simControls').length > 0)
+	{
+		$('#simControls').before(heightmapBtnHtml);
+	}
+	else
+	{
+		$('#resetViewBtn').after(heightmapBtnHtml);
+	}
 	$('#loadHeightmapFile').on('change', LoadHeightmap);
 
 	var settings = JSON.parse(localStorage.getItem("HeightmapSettings"));
