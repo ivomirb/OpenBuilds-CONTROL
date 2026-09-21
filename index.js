@@ -3055,16 +3055,18 @@ if (isElectron()) {
         createTrayIcon();
       if (process.platform == 'darwin') {
         debug_log("Creating MacOS Menu");
-        createMenu();
         status.driver.operatingsystem = 'macos';
+        createMenu();
       }
-      if (process.platform == 'win32' && process.argv.length >= 2) {
-        var openFilePath = process.argv[1];
-        if (openFilePath !== "") {
-          debug_log("path" + openFilePath);
-          readFile(openFilePath);
-        }
+      if (process.platform == 'win32') {
         status.driver.operatingsystem = 'windows';
+        if (process.argv.length >= 2) {
+          var openFilePath = process.argv[1];
+          if (openFilePath !== "") {
+           debug_log("path" + openFilePath);
+            readFile(openFilePath);
+          }
+        }
       }
 
       foceShowGui = uploadedgcode.length > 1 || process.argv.indexOf("-showGui") > 0;
