@@ -375,7 +375,7 @@ function simStepBack() {
 }
 
 function simSetProgress(progress) {
-  if (object && !suppressProgress) {
+  if (object && simRunning && !suppressProgress) {
     var newIdx = undefined;
     var partial = 0;
     if (progress == 100) {
