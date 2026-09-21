@@ -916,8 +916,13 @@ function initSocket() {
 
     // Enable or disable 4th axis UI elements
     if (status.machine.has4thAxis) {
-      $(".4thaxis-active").show();
+      $('#disable4thAxisTick').show();
+      if (disable4thAxis)
+        $(".4thaxis-active").hide();
+      else
+        $(".4thaxis-active").show();
     } else {
+      $('#disable4thAxisTick').hide();
       $(".4thaxis-active").hide();
     }
 

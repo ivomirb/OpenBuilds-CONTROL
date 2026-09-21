@@ -7,6 +7,7 @@ var disableSerialLog = false; // todo also hide tab when set to true
 var disableDROupdates = false;
 var disableAggressiveHomeReset = false;
 var disableAutoStart = false;
+var disable4thAxis = false;
 
 function saveDiagnostics() {
   localStorage.setItem('disable3Dviewer', disable3Dviewer);
@@ -32,6 +33,12 @@ function saveDiagnostics() {
       $('#disableAutoStartTick').removeClass("checked");
     socket.emit('autoStart', !disableAutoStart);
   }
+
+  localStorage.setItem('disable4thAxis', disable4thAxis);
+  if (disable4thAxis)
+    $('#disable4thAxisTick').addClass("checked");
+  else
+    $('#disable4thAxisTick').removeClass("checked");
 }
 
 function initDiagnostics() {
@@ -39,6 +46,10 @@ function initDiagnostics() {
     if (JSON.parse(localStorage.getItem('disable3Dviewer')) == true) {
       disable3Dviewer = true;
       $('#disable3DviewerTick').addClass("checked");
+      $("#disable3DcontrolsTick").addClass("disabled");
+      $("#disable3DskyboxTick").addClass("disabled");
+      $("#disable3DrealtimeposTick").addClass("disabled");
+      $("#disable3DgcodepreviewTick").addClass("disabled");
     }
   } else {
     disable3Dviewer = false;
@@ -120,10 +131,19 @@ function initDiagnostics() {
     } else {
       disableAutoStart = false;
     }
+    $('#disableAutoStartTick').show();
   }
   else {
-    $('#disableAutoStartTick').prev().hide();
     $('#disableAutoStartTick').hide();
+  }
+
+  if (localStorage.getItem('disable4thAxis')) {
+    if (JSON.parse(localStorage.getItem('disable4thAxis')) == true) {
+      disable4thAxis = true;
+      $('#disable4thAxisTick').addClass("checked");
+    }
+  } else {
+    disable4thAxis = false;
   }
 
   if (disable3Drealtimepos || disable3Dgcodepreview)
