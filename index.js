@@ -1572,6 +1572,10 @@ io.on("connection", function(socket) {
               case 'grbl':
                 debug_log("[MSG:Reset to continue] -> Sending Reset")
                 addQRealtime(String.fromCharCode(0x18)); // ctrl-x
+                setTimeout(function() {
+                  addQToStart("$G"); // must fetch the modals after reset
+                  send1Q();
+                }, 100);
                 break;
             }
           }
@@ -2225,8 +2229,10 @@ io.on("connection", function(socket) {
               }
               addQRealtime(String.fromCharCode(0x18)); // ctrl-x
               setTimeout(function() {
-                addQRealtime('$X\n');
-                debug_log('Sent: $X');
+                debug_log('Sent: $X+$G');
+                addQToStart("$X"); // must fetch the modals after reset
+                addQToStart("$G");
+                send1Q();
               }, 500);
               status.comms.blocked = false;
               status.comms.paused = false;
@@ -2255,6 +2261,10 @@ io.on("connection", function(socket) {
       switch (status.machine.firmware.type) {
         case 'grbl':
           addQRealtime(String.fromCharCode(0x18)); // ctrl-x
+          setTimeout(function() {
+            addQToStart("$G"); // must fetch the modals after reset
+            send1Q();
+          }, 100);
           debug_log('Sent: Code(0x18)');
           break;
       }
@@ -3359,6 +3369,10 @@ function stop(data) {
           setTimeout(function() {
             addQRealtime(String.fromCharCode(0x18)); // ctrl-x
             debug_log('Sent: Code(0x18)');
+            setTimeout(function() {
+              addQToStart("$G"); // must fetch the modals after reset
+              send1Q();
+            }, 100);
           }, 200);
         }
         status.comms.connectionStatus = 2;
