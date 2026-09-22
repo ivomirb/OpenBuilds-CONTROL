@@ -2230,8 +2230,8 @@ io.on("connection", function(socket) {
               addQRealtime(String.fromCharCode(0x18)); // ctrl-x
               setTimeout(function() {
                 debug_log('Sent: $X+$G');
-                addQToStart("$X"); // must fetch the modals after reset
-                addQToStart("$G");
+                addQToStart("$X");
+                addQToStart("$G"); // must fetch the modals after reset
                 send1Q();
               }, 500);
               status.comms.blocked = false;
@@ -2944,7 +2944,7 @@ function send1Q() {
       if (jogWindow) {
         jogWindow.setProgressBar(0);
       }
-      gcodeQueue.length = 0; // Dump the Queye
+      gcodeQueue.length = 0; // Dump the Queue
       queuePointer = 0;
       status.comms.connectionStatus = 2; // finished
       jobCompletedMsg = ""
