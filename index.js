@@ -70,7 +70,6 @@ var app = express();
 var http = require("http").Server(app);
 var https = require('https');
 
-//var ioServer = require('socket.io');
 const {
   Server: ioServer
 } = require('socket.io');
@@ -2276,6 +2275,10 @@ io.on("connection", function(socket) {
 
   socket.on('aggrressiveHomeReset', function(state) {
     config.aggressiveHomeReset = state;
+  });
+
+  socket.on('captureWcsHistory', function(data) {
+    io.sockets.emit('captureWcsHistory', data);
   });
 
 });

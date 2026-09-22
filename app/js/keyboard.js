@@ -332,11 +332,7 @@ function bindKeys() {
       $(document).bind('keydown', keyboardShortcuts.playpause, function(e) {
         e.preventDefault();
         if (laststatus.comms.connectionStatus == 1 || laststatus.comms.connectionStatus == 2) {
-          socket.emit('runJob', {
-            data: editor.getValue(),
-            isJob: true,
-            fileName: ""
-          });
+          runJobFile();
         } else if (laststatus.comms.connectionStatus == 3) {
           socket.emit('pause', true);
         } else if (laststatus.comms.connectionStatus == 4) {
@@ -360,7 +356,8 @@ function bindKeys() {
     if (keyboardShortcuts.setzeroxyz.length) {
       $(document).bind('keydown', keyboardShortcuts.setzeroxyz, function(e) {
         e.preventDefault();
-        sendGcode('G10 P0 L20 X0 Y0 Z0')
+        captureWcsHistory('Modified by <b>Set Zero XYZ</b>');
+        sendGcode('G10 P0 L20 X0 Y0 Z0');
       });
     }
 
