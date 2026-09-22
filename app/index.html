@@ -108,7 +108,7 @@
               </div>
               <div class="group">
                 <div class="ribbon-group" style="width: 90px;">
-                  <button class="ribbon-icon-button" onclick="sendGcode(String.fromCharCode(0x18))">
+                  <button class="ribbon-icon-button" onclick="socket.emit('resetMachine')">
                     <span class="icon">
                       <span class="mif-loop"></span>
                     </span>
@@ -210,7 +210,7 @@
               </div> -->
               <div class="group">
                 <div class="ribbon-group" style="width: 90px;">
-                  <button class="ribbon-icon-button" onclick="sendGcode(String.fromCharCode(0x18))">
+                  <button class="ribbon-icon-button" onclick="socket.emit('resetMachine')">
                     <span class="icon">
                       <span class="mif-loop"></span>
                     </span>
@@ -306,7 +306,7 @@
 
                     <div class="ribbon-group" id="grblButtons">
                       <hr>
-                      <button class="ribbon-icon-button" onclick="sendGcode(String.fromCharCode(0x18))">
+                      <button class="ribbon-icon-button" onclick="socket.emit('resetMachine')">
                         <span class="icon">
                           <span class="mif-loop"></span>
                         </span>
@@ -679,16 +679,30 @@
 
 
                         <div class="pos-relative">
-                          <button class="button mini light jogbtn" style="width: 60px; height: 24px;" id="wcsBtn">
-                            <span title="Show/change current Work Coordinate System" class="fas fa-fw fa-layer-group icon fg-darkGray"></span>G54
-                          </button>
-                          <ul class="ribbon-dropdown drop-shadow" data-role="dropdown">
-                            <li class="checked wcsItem wcsItemG54" onclick="sendGcode('G54')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span>G54</a></li>
-                            <li class="wcsItem wcsItemG55" onclick="sendGcode('G55')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span>G55</a></li>
-                            <li class="wcsItem wcsItemG56" onclick="sendGcode('G56')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span>G56</a></li>
-                            <li class="wcsItem wcsItemG57" onclick="sendGcode('G57')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span>G57</a></li>
-                            <li class="wcsItem wcsItemG58" onclick="sendGcode('G58')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span>G58</a></li>
-                            <li class="wcsItem wcsItemG59" onclick="sendGcode('G59')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span>G59</a></li>
+                          <!-- special styling for the dropdown arrow to set a contrast color and adjust the position -->
+                          <style>
+                            .button.light.dropdown-toggle::before {
+                              border-color: #1d1d1d !important;
+                              margin-left: -11px;
+                            }
+                            .theme_dark .button.light.dropdown-toggle::before {
+                              border-color: #fff !important;
+                            }
+                          </style>
+                          <button class="button mini light jogbtn dropdown-toggle" style="width: 60px; height: 24px;" id="wcsBtn"
+                            title="Show/change current Work Coordinate System.
+Restore previous origins from history.">
+                            <span class="fas fa-fw fa-layer-group icon fg-darkGray"></span> <span class="wcsText">G54</span></button>
+                          <ul class="ribbon-dropdown drop-shadow" data-role="dropdown" style="width:max-content;">
+                            <li class="menu-title">Current Coordinate System</li>
+                            <li class="checked wcsItem wcsItemG54" onclick="sendGcode('G54')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span> G54</a></li>
+                            <li class="wcsItem wcsItemG55" onclick="sendGcode('G55')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span> G55</a></li>
+                            <li class="wcsItem wcsItemG56" onclick="sendGcode('G56')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span> G56</a></li>
+                            <li class="wcsItem wcsItemG57" onclick="sendGcode('G57')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span> G57</a></li>
+                            <li class="wcsItem wcsItemG58" onclick="sendGcode('G58')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span> G58</a></li>
+                            <li class="wcsItem wcsItemG59" onclick="sendGcode('G59')"><a href="#"><span class="fas fa-fw fa-layer-group icon fg-darkGray"></span> G59</a></li>
+                            <li class="menu-title" id="wcsHistory"><span class="wcsText">G54</span> Origin History</li>
+                            <li class="disabled">G54 history will show here</li>
                           </ul>
                         </div>
 
@@ -705,7 +719,7 @@
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
+                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -741,7 +755,7 @@
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
+                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-green" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Y</span>
@@ -765,7 +779,7 @@
                         <div class="pos-relative">
                           <button class="button light jogbtn" style="width: 42px;"><i class="fas fa-caret-down fg-openbuilds"></i></button>
                           <ul class="d-menu context drop-shadow drop-right" data-role="dropdown">
-                            <li><a href="#" onclick="sendGcode( 'G0 G90 G21 Y0')"><span class="fas fa-chart-line fg-green icon"></span>Goto Y0 (Work Coord) (G0 Y0)</a></li>
+                            <li><a href="#" onclick="sendGcode('G0 G90 G21 Y0')"><span class="fas fa-chart-line fg-green icon"></span>Goto Y0 (Work Coord) (G0 Y0)</a></li>
                             <li id="gotoYMinMpos"><a href="#"><span class="fas fa-chart-line fg-green icon"></span>Goto Machine Front (G0 G53 Y<span class="coord">0</span>)</a></li>
                             <li id="gotoYMaxMpos"><a href="#"><span class="fas fa-chart-line fg-green icon"></span>Goto Machine Rear (G0 G53 Y<span class="coord">0</span>)</a></li>
                             <li class="divider"></li>
@@ -777,7 +791,7 @@
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-blue" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Z</span>
@@ -814,7 +828,7 @@
 
                     <tr class="4thaxis-active" style="display: none;">
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero A</b>'); sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-orange" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">A</span>
@@ -848,7 +862,7 @@
 
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
+                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-18"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-2" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>

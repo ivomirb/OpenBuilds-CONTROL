@@ -49,6 +49,7 @@ function mmMode() {
   if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
     redrawGrid(sizexmin, sizexmax, sizeymin, sizeymax, false);
   }
+  updateWcsHistory();
 }
 
 function inMode() {
@@ -74,7 +75,7 @@ function inMode() {
   if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
     redrawGrid(sizexmin / 25.4, sizexmax / 25.4, sizeymin / 25.4, sizeymax / 25.4, true);
   }
-
+  updateWcsHistory();
 }
 
 function cancelJog() {
@@ -171,14 +172,16 @@ $(document).ready(function() {
       $(this).removeAttr("disabled");
       if (unit == "mm") {
         if (e.shiftKey) {
-          sendGcode("G21\nG10 P0 L20 X" + $("#xPosInput").val());
+          captureWcsHistory('Modified by <b>X input</b>');
+          sendGcode("G10 G21 P0 L20 X" + $("#xPosInput").val());
         } else {
           sendGcode("$J=G90 G21 X" + $("#xPosInput").val() + " F" + jogRateX);
         }
 
       } else if (unit == "in") {
         if (e.shiftKey) {
-          sendGcode("G21\nG10 P0 L20 X" + ($("#xPosInput").val() * 25.4));
+          captureWcsHistory('Modified by <b>X input</b>');
+          sendGcode("G10 G21 P0 L20 X" + ($("#xPosInput").val() * 25.4));
         } else {
           sendGcode("$J=G90 G20 X" + $("#xPosInput").val() + " F" + jogRateX);
         }
@@ -213,13 +216,15 @@ $(document).ready(function() {
       $(this).removeAttr("disabled");
       if (unit == "mm") {
         if (e.shiftKey) {
-          sendGcode("G21\nG10 P0 L20 Y" + $("#yPosInput").val());
+          captureWcsHistory('Modified by <b>Y input</b>');
+          sendGcode("G10 G21 P0 L20 Y" + $("#yPosInput").val());
         } else {
           sendGcode("$J=G90 G21 Y" + $("#yPosInput").val() + " F" + jogRateY);
         }
       } else if (unit == "in") {
         if (e.shiftKey) {
-          sendGcode("G21\nG10 P0 L20 Y" + ($("#yPosInput").val() * 25.4));
+          captureWcsHistory('Modified by <b>Y input</b>');
+          sendGcode("G10 G21 P0 L20 Y" + ($("#yPosInput").val() * 25.4));
         } else {
           sendGcode("$J=G90 G20 Y" + $("#yPosInput").val() + " F" + jogRateY);
         }
@@ -254,13 +259,15 @@ $(document).ready(function() {
       $(this).removeAttr("disabled");
       if (unit == "mm") {
         if (e.shiftKey) {
-          sendGcode("G21\nG10 P0 L20 Z" + $("#zPosInput").val());
+          captureWcsHistory('Modified by <b>Z input</b>');
+          sendGcode("G10 G21 P0 L20 Z" + $("#zPosInput").val());
         } else {
           sendGcode("$J=G90 G21 Z" + $("#zPosInput").val() + " F" + jogRateZ);
         }
       } else if (unit == "in") {
         if (e.shiftKey) {
-          sendGcode("G21\nG10 P0 L20 Z" + ($("#zPosInput").val() * 25.4));
+          captureWcsHistory('Modified by <b>Z input</b>');
+          sendGcode("G10 G21 P0 L20 Z" + ($("#zPosInput").val() * 25.4));
         } else {
           sendGcode("$J=G90 G20 Z" + $("#zPosInput").val() + " F" + jogRateZ);
         }
@@ -293,7 +300,8 @@ $(document).ready(function() {
       $(this).removeAttr("disabled");
 
       if (e.shiftKey) {
-        sendGcode("G21\nG10 P0 L20 A" + $("#aPosInput").val());
+        captureWcsHistory('Modified by <b>A input</b>');
+        sendGcode("G10 G21 P0 L20 A" + $("#aPosInput").val());
       } else {
         sendGcode("$J=G90 G21 A" + $("#aPosInput").val() + " F" + jogRateA);
       }

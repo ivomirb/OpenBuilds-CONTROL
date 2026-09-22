@@ -877,18 +877,8 @@ function initSocket() {
       showGrbl(false, false)
     }
 
-    var updateWCS = false
-    if (laststatus == undefined) {
-      var updateWCS = true
-    } else {
-      if (status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
-        var updateWCS = true
-      }
-    }
-
-
-    if (updateWCS) {
-      $('#wcsBtn').html(`<span class="fas fa-fw fa-layer-group icon fg-darkGray"></span>` + status.machine.modals.coordinatesys)
+    if (laststatus == undefined || status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
+      $('.wcsText').html(status.machine.modals.coordinatesys)
       $('.wcsItem').removeClass('checked')
       switch (status.machine.modals.coordinatesys) {
         case "G54":
@@ -910,7 +900,7 @@ function initSocket() {
           $('.wcsItemG59').addClass('checked')
           break;
       }
-
+      updateWcsHistory(status.machine.modals.coordinatesys);
     }
 
 
@@ -1025,6 +1015,12 @@ function initSocket() {
       socket.emit('autoStart', false);
     }
   })
+
+  socket.on('captureWcsHistory', function(data) {
+    if (!isJogWidget) {
+     captureWcsHistoryInternal(data.position, data.wcs, data.name, data.tooltip, data.isRunJob);
+    }
+  });
 
   $('#sendCommand').on('click', function() {
     var commandValue = $('#command').val();

@@ -778,8 +778,9 @@ function askToResetOnGrblSettingsChange() {
           cls: "js-dialog-close success",
           onclick: function() {
             setTimeout(function() {
-              sendGcode(String.fromCharCode(0x18));
+              socket.emit('resetMachine');
               setTimeout(function() {
+                sendGcode("$G");
                 refreshGrblSettings()
               }, 1000); // refresh grbl settings
             }, 800); // reset
