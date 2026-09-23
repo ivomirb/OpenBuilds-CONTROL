@@ -3,22 +3,13 @@
 // Thanks @rlwoodjr
 
 function recoverCrashedJob() {
-  if (localStorage.getItem('gcodeLineNumber')) {
-    var lineNumber = localStorage.getItem('gcodeLineNumber')
-    if (lineNumber > editor.session.getLength()) { // Wrong file
-      lineNumber = 1;
-    }
-  } else {
-    var lineNumber = 1;
-  }
-
   var resumeTemplate = `
   <form>
     Enter the starting line to recover the job from:
     <br>
     <span class="text-small">(Make sure you opened the GCODE first)</span>
     <hr>
-    <input id="selectedLineNumber" data-prepend="<i class='fas fa-list-ol'></i> Start from line: " type="number" data-role="input"  data-clear-button="false" value="` + lineNumber + `" data-editable="true"></input>
+    <input id="selectedLineNumber" data-prepend="<i class='fas fa-list-ol'></i> Start from line: " type="number" data-role="input"  data-clear-button="false" value="1" data-editable="true"></input>
   </form>
   <div class="remark success">
   Tip: You can pick the line from the GCODE Editor tab using the right-click context menu too.</span>

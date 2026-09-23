@@ -415,10 +415,6 @@ function initSocket() {
       progressbar.val(donepercent);
     }
 
-    if (total > done) {
-      localStorage.setItem('gcodeLineNumber', done); //recovery line number
-    }
-
     if (laststatus) {
       if (laststatus.comms.connectionStatus == 3) {
         editor.gotoLine(data[1] - data[0]);
