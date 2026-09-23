@@ -1434,7 +1434,6 @@ io.on("connection", function(socket) {
   socket.on("flashGrbl", function(data) {
 
     var port = data.port;
-    var firmwareImagePath = data.file;
     var customImg = data.customImg
     console.log(__dirname, file, data.file)
     if (customImg) {
@@ -1483,16 +1482,6 @@ io.on("connection", function(socket) {
       debug_log('ERROR: Machine connection not open!');
     }
     flashInterface(data)
-  })
-
-  socket.on("flashBLOX", function(data) {
-    if (status.comms.connectionStatus > 0) {
-      debug_log('WARN: Closing Port ' + port);
-      stopPort();
-    } else {
-      debug_log('ERROR: Machine connection not open!');
-    }
-    flashBLOX(data)
   })
 
   socket.on("writeInterfaceUsbDrive", function(data) {
@@ -3208,57 +3197,6 @@ function startChrome() {
 
 // Interface Programming
 
-
-// grab latest firmware.bin for Interface on startup
-
-var file = fs.createWriteStream(path.join(uploadsDir, "firmware.bin"));
-https.get("https://raw.githubusercontent.com/OpenBuilds/firmware/main/interface/firmware.bin", function(response) {
-  response.pipe(file);
-  file.on('finish', function() {
-    file.close(function() {
-
-      const options = {
-        hostname: 'raw.githubusercontent.com',
-        port: 443,
-        path: '/OpenBuilds/firmware/main/interface/version.txt',
-        method: 'GET'
-      }
-
-      const req = https.request(options, res => {
-        console.log(`statusCode: ${res.statusCode}`)
-
-        res.on('data', d => {
-          status.interface.firmware.availVersion = parseFloat(d.toString())
-
-          var output = {
-            'command': 'interface firmware update tool',
-            'response': "Downloaded firmware.bin v" + status.interface.firmware.availVersion,
-            'type': 'info'
-          }
-          io.sockets.emit('data', output);
-          debug_log(JSON.stringify(output));
-
-        })
-      })
-
-      req.on('error', error => {
-        var output = {
-          'command': 'interface firmware update tool',
-          'response': "Unable to download latest firmware.bin",
-          'type': 'error'
-        }
-        io.sockets.emit('data', output);
-      })
-
-      req.end()
-
-
-    });
-  });
-})
-
-
-
 var firmwareImagePath = path.join(uploadsDir, './firmware.bin');
 var spawn = require('child_process').spawn;
 const multer = require('multer');
@@ -3271,112 +3209,6 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + new Date().toJSON().replace(new RegExp(':', 'g'), '.') + path.extname(file.originalname));
   }
 });
-
-function flashBLOX(data) {
-  status.comms.connectionStatus = 6;
-
-  var port = data.port;
-  var file = data.file;
-  var customImg = data.customImg
-  var erase = data.erase
-
-  console.log(__dirname, file, data.file)
-
-  if (customImg == true) {
-    var firmwarePath = firmwareImagePath
-  } else {
-    var firmwarePath = path.join(__dirname, file)
-  }
-
-
-
-  console.log("Flashing BLOX on " + port + " with file: " + file)
-
-  var data = {
-    'port': port,
-    'string': "[Starting...]"
-  }
-  io.sockets.emit("progStatus", data);
-
-  //esptool.exe --chip esp32s3 --port "COM9" --baud 921600  --before default_reset --after hard_reset write_flash
-  //-e -z --flash_mode dio --flash_freq 80m --flash_size 4MB
-  //0x0 "C:\Users\user\AppData\Local\Temp\arduino\sketches\1D51207397083FCB1C259015BEFF27B0/external_leds.ino.bootloader.bin"
-  //0x8000 "C:\Users\user\AppData\Local\Temp\arduino\sketches\1D51207397083FCB1C259015BEFF27B0/external_leds.ino.partitions.bin"
-  //0xe000 "C:\Users\user\AppData\Local\Arduino15\packages\esp32\hardware\esp32\2.0.5/tools/partitions/boot_app0.bin"
-  //0x10000 "C:\Users\user\AppData\Local\Temp\arduino\sketches\1D51207397083FCB1C259015BEFF27B0/external_leds.ino.bin"
-
-  var esptool_opts = [
-    '--chip', 'esp32s3',
-    '--port', port,
-    '--baud', '921600',
-    '--before', 'default_reset',
-    '--after', 'hard_reset',
-    'write_flash',
-    '-z',
-    '--flash_mode', 'dio',
-    '--flash_freq', 'keep',
-    '--flash_size', 'keep',
-    '0x0', path.join(__dirname, "./blox-bootloader.bin").replace('app.asar', 'app.asar.unpacked'),
-    '0x8000', path.join(__dirname, "./blox-partition-table.bin").replace('app.asar', 'app.asar.unpacked'),
-    '0x10000', path.resolve(firmwarePath).replace('app.asar', 'app.asar.unpacked')
-  ];
-
-  if (erase == true) {
-    esptool_opts.push('--erase-all');
-  }
-
-  console.log(esptool_opts);
-
-  if (process.platform == 'linux') {
-    //path.join(__dirname, "..", "lib", "resources", "vad.onnx"),
-    fs.chmodSync(path.join(__dirname, "./esptool-linux").replace('app.asar', 'app.asar.unpacked'), 0o755);
-    var child = spawn(path.join(__dirname, "./esptool-linux").replace('app.asar', 'app.asar.unpacked'), esptool_opts);
-  } else if (process.platform == 'win32') {
-    var child = spawn(path.join(__dirname, "./esptool.exe").replace('app.asar', 'app.asar.unpacked'), esptool_opts);
-  } else if (process.platform == 'darwin') {
-    fs.chmodSync(path.join(__dirname, "./esptool-mac").replace('app.asar', 'app.asar.unpacked'), 0o755);
-    var child = spawn(path.join(__dirname, "./esptool-mac").replace('app.asar', 'app.asar.unpacked'), esptool_opts);
-  }
-
-
-
-
-  child.stdout.on('data', function(data) {
-    var debugString = data.toString();
-    console.log(debugString)
-    var data = {
-      'port': port,
-      'string': debugString
-    }
-    io.sockets.emit("progStatus", data);
-    status.comms.connectionStatus = 6;
-
-  });
-
-  child.stderr.on('data', function(data) {
-    var debugString = data.toString();
-    console.log(debugString)
-    var data = {
-      'port': port,
-      'string': debugString
-    }
-    io.sockets.emit("progStatus", data);
-    status.comms.connectionStatus = 6;
-
-  });
-
-  child.on('close', (code) => {
-    var data = {
-      'port': port,
-      'string': `[exit:` + code + `]`,
-      'code': code
-    }
-    io.sockets.emit("progStatus", data);
-    status.comms.connectionStatus = 0;
-
-  });
-}
-// end BLOX Programming
 
 function flashInterface(data) {
   status.comms.connectionStatus = 6;
