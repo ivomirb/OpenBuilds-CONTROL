@@ -170,6 +170,7 @@ function initSocket() {
   })
 
   socket.on('gcodeupload', function(data) {
+    if (isJogWidget) return;
     var icon = ''
     var source = "api"
     var string = "Received new GCODE from API"
@@ -320,8 +321,8 @@ function initSocket() {
   });
 
   socket.on("jobComplete", function(data) {
+    if (isJogWidget) return;
 
-    // Jobstats.js
     if (data.completed && data.jobStartTime && data.jobEndTime) {
       console.log("jobComplete", data)
       var runTime = data.jobEndTime - data.jobStartTime; // in Milliseconds
@@ -416,9 +417,6 @@ function initSocket() {
     }
 
     if (laststatus) {
-      if (laststatus.comms.connectionStatus == 3) {
-        editor.gotoLine(data[1] - data[0]);
-      }
       if (typeof object !== 'undefined' && done > 0) {
         if (object.userData !== 'undefined' && object.userData && object.userData.linePoints.length > 2) {
           var timeremain = object.userData.totalTime;
@@ -598,7 +596,7 @@ function initSocket() {
 
   socket.on('status', function(status) {
 
-    if (nostatusyet) {
+    if (nostatusyet && !isJogWidget) {
       setWindowTitle(status)
       if (status.driver.operatingsystem == "rpi") {
         $('#windowtitlebar').hide();

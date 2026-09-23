@@ -292,7 +292,9 @@ function loadFile(f) {
         gcode = false;
       }
       loadedFileName = f.name;
-      setWindowTitle()
+      if (isJogWidget) {
+        setWindowTitle()
+      }
       if (webgl) {
         printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File Loaded, please wait while we render a preview... </span>`);
       } else {
