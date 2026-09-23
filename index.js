@@ -946,7 +946,12 @@ function onParserData(data) {
       io.sockets.emit('fluidncConfig', fluidncConfig);
     }
     status.comms.blocked = false;
-    send1Q();
+    io.sockets.emit("queueCount", [gcodeQueue.length + sentBuffer.length - queuePointer, gcodeQueue.length]);
+    if (queuePointer < gcodeQueue.length) {
+      send1Q();
+    } else if (sentBuffer.length == 0) {
+      clearGcodeQueue();
+    }
   } else if (data.indexOf('ALARM') === 0) { //} || data.indexOf('HALTED') === 0) {
     debug_log("ALARM:  " + data)
     status.comms.connectionStatus = 5;
@@ -1019,8 +1024,7 @@ function onParserData(data) {
         debug_log("[MSG:Reset to continue] -> Sending Reset")
         addQRealtime(String.fromCharCode(0x18)); // ctrl-x
         setTimeout(function() {
-          addQToEnd("$G"); // must fetch the modals after reset
-          send1Q();
+          addQToEndAndKick("$G"); // must fetch the modals after reset
         }, 100);
         break;
     }
@@ -1728,8 +1732,8 @@ io.on("connection", function(socket) {
   });
 
   socket.on('serialInject', function(data) {
-    // Inject a live command into Serial stream in real-time (dev tool) even while a job is running, etc (straight Port.write from machineSend)
-    machineSend(data, true);
+    // Inject a live command into Serial stream in real-time (dev tool) even while a job is running, etc (straight Port.write from machineSendRealtime)
+    machineSendRealtime(data);
   });
 
   socket.on("dump", function(data) {
@@ -1742,7 +1746,7 @@ io.on("connection", function(socket) {
     debug_log('Run Command (' + data.replace('\n', '|') + ')');
     if (status.comms.connectionStatus > 0) {
       if (data) {
-        addLinesToEnd(data);
+        addLinesToQueue(data);
         status.comms.runStatus = 'Running'
         // debug_log('sending ' + JSON.stringify(gcodeQueue))
         send1Q();
@@ -1769,8 +1773,7 @@ io.on("connection", function(socket) {
         debug_log('Adding jog commands to queue. Firmw=' + status.machine.firmware.type + ', blocked=' + status.comms.blocked + ', paused=' + status.comms.paused + ', Q=' + gcodeQueue.length);
         switch (status.machine.firmware.type) {
           case 'grbl':
-            addQToEnd('$J=G91G21' + dir + dist + feed);
-            send1Q();
+            addQToEndAndKick('$J=G91G21' + dir + dist + feed);
             break;
           default:
             debug_log('ERROR: Unknown firmware!');
@@ -1803,8 +1806,7 @@ io.on("connection", function(socket) {
         debug_log('Adding jog commands to queue. blocked=' + status.comms.blocked + ', paused=' + status.comms.paused + ', Q=' + gcodeQueue.length);
         switch (status.machine.firmware.type) {
           case 'grbl':
-            addQToEnd('$J=G91G21X' + xincrement + " Y" + yincrement + " " + feed);
-            send1Q();
+            addQToEndAndKick('$J=G91G21X' + xincrement + " Y" + yincrement + " " + feed);
             break;
           default:
             debug_log('ERROR: Unknown firmware!');
@@ -1830,7 +1832,7 @@ io.on("connection", function(socket) {
         debug_log('Adding jog commands to queue. blocked=' + status.comms.blocked + ', paused=' + status.comms.paused + ', Q=' + gcodeQueue.length);
         switch (status.machine.firmware.type) {
           case 'grbl':
-            addQToEnd('$J=G91G21' + mode + xVal + yVal + zVal + feed);
+            addQToEndAndKick('$J=G91G21' + mode + xVal + yVal + zVal + feed);
             break;
           default:
             debug_log('ERROR: Unknown firmware!');
@@ -1849,25 +1851,24 @@ io.on("connection", function(socket) {
     if (status.comms.connectionStatus > 0) {
       switch (data) {
         case 'x':
-          addQToEnd('G10 L20 P0 X0');
+          addQToEndAndKick('G10 L20 P0 X0');
           break;
         case 'y':
-          addQToEnd('G10 L20 P0 Y0');
+          addQToEndAndKick('G10 L20 P0 Y0');
           break;
         case 'z':
-          addQToEnd('G10 L20 P0 Z0');
+          addQToEndAndKick('G10 L20 P0 Z0');
           break;
         case 'a':
-          addQToEnd('G10 L20 P0 A0');
+          addQToEndAndKick('G10 L20 P0 A0');
           break;
         case 'all':
-          addQToEnd('G10 L20 P0 X0 Y0 Z0');
+          addQToEndAndKick('G10 L20 P0 X0 Y0 Z0');
           break;
         case 'xyza':
-          addQToEnd('G10 L20 P0 X0 Y0 Z0 A0');
+          addQToEndAndKick('G10 L20 P0 X0 Y0 Z0 A0');
           break;
       }
-      send1Q();
     } else {
       debug_log('ERROR: Machine connection not open!');
     }
@@ -1878,25 +1879,24 @@ io.on("connection", function(socket) {
     if (status.comms.connectionStatus > 0) {
       switch (data) {
         case 'x':
-          addQToEnd('G0 X0');
+          addQToEndAndKick('G0 X0');
           break;
         case 'y':
-          addQToEnd('G0 Y0');
+          addQToEndAndKick('G0 Y0');
           break;
         case 'z':
-          addQToEnd('G0 Z0');
+          addQToEndAndKick('G0 Z0');
           break;
         case 'a':
-          addQToEnd('G0 A0');
+          addQToEndAndKick('G0 A0');
           break;
         case 'all':
-          addQToEnd('G0 X0 Y0 Z0');
+          addQToEndAndKick('G0 X0 Y0 Z0');
           break;
         case 'xyza':
-          addQToEnd('G0 X0 Y0 Z0 A0');
+          addQToEndAndKick('G0 X0 Y0 Z0 A0');
           break;
       }
-      send1Q();
     } else {
       debug_log('ERROR: Machine connection not open!');
     }
@@ -1910,8 +1910,7 @@ io.on("connection", function(socket) {
         var yVal = (data.y !== undefined ? 'Y' + parseFloat(data.y) + ' ' : '');
         var zVal = (data.z !== undefined ? 'Z' + parseFloat(data.z) + ' ' : '');
         var aVal = (data.a !== undefined ? 'A' + parseFloat(data.a) + ' ' : '');
-        addQToEnd('G10 L20 P0 ' + xVal + yVal + zVal + aVal);
-        send1Q();
+        addQToEndAndKick('G10 L20 P0 ' + xVal + yVal + zVal + aVal);
       }
     } else {
       debug_log('ERROR: Machine connection not open!');
@@ -1923,9 +1922,8 @@ io.on("connection", function(socket) {
     if (status.comms.connectionStatus > 0) {
       switch (status.machine.firmware.type) {
         case 'grbl':
-          addQToEnd('G38.2 ' + data.direction + '-5 F1');
-          addQToEnd('G92 ' + data.direction + ' ' + data.probeOffset);
-          send1Q();
+          addQToEndAndKick('G38.2 ' + data.direction + '-5 F1');
+          addQToEndAndKick('G92 ' + data.direction + ' ' + data.probeOffset);
           break;
         default:
           //not supported
@@ -2147,9 +2145,8 @@ io.on("connection", function(socket) {
               addQRealtime(String.fromCharCode(0x18)); // ctrl-x
               setTimeout(function() {
                 debug_log('Sent: $X+$G');
-                addQToEnd("$X");
-                addQToEnd("$G"); // must fetch the modals after reset
-                send1Q();
+                addQToEndAndKick("$X");
+                addQToEndAndKick("$G"); // must fetch the modals after reset
               }, 500);
               status.comms.blocked = false;
               status.comms.paused = false;
@@ -2179,8 +2176,7 @@ io.on("connection", function(socket) {
         case 'grbl':
           addQRealtime(String.fromCharCode(0x18)); // ctrl-x
           setTimeout(function() {
-            addQToEnd("$G"); // must fetch the modals after reset
-            send1Q();
+            addQToEndAndKick("$G"); // must fetch the modals after reset
           }, 100);
           debug_log('Sent: Code(0x18)');
           break;
@@ -2249,29 +2245,26 @@ function readFile(filePath) {
   }
 }
 
-function machineSend(gcode, realtime) {
+function machineSendRealtime(gcode) {
   debug_log("SENDING: " + gcode)
   if (port.isOpen) {
-    if (realtime) {
-      // realtime commands doesnt count toward the queue, does not generate OK
-      port.write(gcode);
-    } else {
-      if (gcode.match(/T([\d.]+)/i)) {
-        var tool = parseFloat(RegExp.$1);
-        status.machine.tool.nexttool.number = tool
-        status.machine.tool.nexttool.line = gcode
-      }
-      var queueLeft = parseInt((gcodeQueue.length - queuePointer))
-      var queueTotal = parseInt(gcodeQueue.length)
-      // debug_log("Q: " + queueLeft)
-      var data = []
-      data.push(queueLeft);
-      data.push(queueTotal);
-      io.sockets.emit("queueCount", data);
-      // debug_log(gcode)
-      port.write(gcode);
-      debug_log("SENT: " + gcode)
+    // realtime commands doesnt count toward the queue, does not generate OK
+    port.write(gcode);
+  } else {
+    debug_log("PORT NOT OPEN")
+  }
+}
+
+function machineSend(gcode) {
+  debug_log("SENDING: " + gcode)
+  if (port.isOpen) {
+    if (gcode.match(/T([\d.]+)/i)) {
+      var tool = parseFloat(RegExp.$1);
+      status.machine.tool.nexttool.number = tool
+      status.machine.tool.nexttool.line = gcode
     }
+    port.write(gcode);
+    debug_log("SENT: " + gcode)
   } else {
     debug_log("PORT NOT OPEN")
   }
@@ -2279,7 +2272,7 @@ function machineSend(gcode, realtime) {
 
 // Splits the data into lines and adds them to the queue
 // Removes comments
-function addLinesToEnd(data) {
+function addLinesToQueue(data) {
   var lineCount = 0;
   data = data.split('\n');
   for (var i = 0; i < data.length; i++) {
@@ -2326,10 +2319,10 @@ function runJob(object) {
 
   // debug_log('Run Job (' + data.length + ')');
   if (status.comms.connectionStatus > 0) {
-    if (data && addLinesToEnd(data)) {
+    if (data && addLinesToQueue(data)) {
       // Start interval for qCount messages to socket clients
       queueCounter = setInterval(function() {
-        status.comms.queue = gcodeQueue.length - queuePointer
+        status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
         if (jogWindow) {
           jogWindow.setProgressBar(queuePointer / gcodeQueue.length)
         }
@@ -2681,16 +2674,15 @@ function laserTest(data) {
         if (duration >= 0) {
           switch (status.machine.firmware.type) {
             case 'grbl':
-              addQToEnd('G1F1');
-              addQToEnd('M3S' + parseInt(power * maxS / 100));
+              addQToEndAndKick('G1F1');
+              addQToEndAndKick('M3S' + parseInt(power * maxS / 100));
               laserTestOn = true;
               io.sockets.emit('laserTest', power);
               if (duration > 0) {
-                addQToEnd('G4 P' + duration / 1000);
-                addQToEnd('M5S0');
+                addQToEndAndKick('G4 P' + duration / 1000);
+                addQToEndAndKick('M5S0');
                 laserTestOn = false;
               }
-              send1Q();
               break;
           }
         }
@@ -2698,8 +2690,7 @@ function laserTest(data) {
         // debug_log('laserTest: ' + 'Power off');
         switch (status.machine.firmware.type) {
           case 'grbl':
-            addQToEnd('M5S0');
-            send1Q();
+            addQToEndAndKick('M5S0');
             break;
         }
         laserTestOn = false;
@@ -2713,8 +2704,8 @@ function laserTest(data) {
 
 // queue
 function BufferSpace(firmware) {
-  var total = 0;
-  var len = sentBuffer.length;
+  const len = sentBuffer.length;
+  var total = len; // account for the \n at the end
   for (var i = 0; i < len; i++) {
     total += sentBuffer[i].length;
   }
@@ -2732,13 +2723,15 @@ function BufferSpace(firmware) {
   }
 }
 
-
 function send1Q() {
   // console.time('send1Q');
   if (status.comms.connectionStatus > 0) {
+    if (queuePointer == 0) {
+      io.sockets.emit("queueCount", [gcodeQueue.length, gcodeQueue.length]);
+    }
     switch (status.machine.firmware.type) {
       case 'grbl':
-        if ((gcodeQueue.length - queuePointer) > 0 && !status.comms.blocked && !status.comms.paused) {
+        while ((gcodeQueue.length - queuePointer) > 0 && !status.comms.blocked && !status.comms.paused) {
           const spaceLeft = BufferSpace('grbl');
 
           // Do we have enough space in the buffer?
@@ -2746,49 +2739,52 @@ function send1Q() {
             const gcode = gcodeQueue[queuePointer];
             queuePointer++;
             sentBuffer.push(gcode);
-            machineSend(gcode + '\n', false);
+            machineSend(gcode + '\n');
             // debug_log('Sent: ' + gcode + ' Q: ' + (gcodeQueue.length - queuePointer) + ' Bspace: ' + (spaceLeft - gcode.length - 1));
           } else {
             status.comms.blocked = true;
           }
+
+          // Remove this break to allow multiple lines to be queued at a time
+          // My tests show that it works, however there was zero speedup even for complex programs with lots of small moves
+          break;
         }
         break;
-    }
-    if (queuePointer >= gcodeQueue.length) {
-      if (gcodeQueue.length > 1) {
-        var data = {
-          completed: true,
-          failed: false,
-          jobCompletedMsg: jobCompletedMsg,
-          jobStartTime: jobStartTime,
-          jobEndTime: new Date().getTime()
-        }
-        io.sockets.emit('jobComplete', data);
-      } else {
-        var data = {
-          completed: true,
-          failed: true,
-          jobCompletedMsg: jobCompletedMsg,
-          jobStartTime: jobStartTime,
-          jobEndTime: new Date().getTime()
-        }
-        io.sockets.emit('jobComplete', data);
-      }
-      status.comms.connectionStatus = 2; // finished
-      clearInterval(queueCounter);
-      if (jogWindow) {
-        jogWindow.setProgressBar(0);
-      }
-      gcodeQueue.length = 0; // Dump the Queue
-      queuePointer = 0;
-      status.comms.connectionStatus = 2; // finished
-      jobCompletedMsg = ""
-      jobStartTime = false;
     }
   } else {
     debug_log('Not Connected')
   }
   // console.timeEnd('send1Q');
+}
+
+// Clears the queue and generates a jobComplete event if necessry
+function clearGcodeQueue()
+{
+  if (gcodeQueue.length > 0) {
+    const queueLeft = parseInt((gcodeQueue.length - queuePointer + sentBuffer.length))
+    const queueTotal = parseInt(gcodeQueue.length)
+    io.sockets.emit("queueCount", [queueLeft, queueTotal]);
+
+    var data = {
+      completed: true,
+      failed: queuePointer < gcodeQueue.length,
+      jobCompletedMsg: jobCompletedMsg,
+      jobStartTime: jobStartTime,
+      jobEndTime: new Date().getTime()
+    }
+    io.sockets.emit('jobComplete', data);
+  }
+
+  clearInterval(queueCounter);
+  if (jogWindow) {
+    jogWindow.setProgressBar(0);
+  }
+  status.comms.connectionStatus = 2; // finished
+  status.comms.queue = 0;
+  gcodeQueue.length = 0; // Dump the Queue
+  queuePointer = 0;
+  jobCompletedMsg = "";
+  jobStartTime = false;
 }
 
 var modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M4', 'M5', 'M7', 'M8', 'M9']
@@ -2813,9 +2809,17 @@ function addQToEnd(gcode) {
   }
 }
 
+// Adds a line to the queue and kicks the sender if currently idle
+function addQToEndAndKick(gcode) {
+  addQToEnd(gcode);
+  if (sentBuffer.length == 0)
+    send1Q(); // nothing in the pending buffer, start the queue
+}
+
 function addQRealtime(gcode) {
-  // realtime command skip the send1Q as it doesnt respond with an ok
-  machineSend(gcode, true);
+  // realtime command skip the queue as it doesnt respond with an ok
+  // doesn't count towards the RX buffer limit
+  machineSendRealtime(gcode);
 }
 
 function stop(data) {
@@ -2847,27 +2851,19 @@ function stop(data) {
             addQRealtime(String.fromCharCode(0x18)); // ctrl-x
             debug_log('Sent: Code(0x18)');
             setTimeout(function() {
-              addQToEnd("$G"); // must fetch the modals after reset
-              send1Q();
+              addQToEndAndKick("$G"); // must fetch the modals after reset
             }, 100);
           }, 200);
         }
-        status.comms.connectionStatus = 2;
         break;
     }
-    clearInterval(queueCounter);
-    if (jogWindow) {
-      jogWindow.setProgressBar(0);
-    }
-    status.comms.queue = 0
-    queuePointer = 0;
-    gcodeQueue.length = 0; // Dump the queue
-    sentBuffer.length = 0; // Dump the queue
     laserTestOn = false;
-    status.comms.blocked = false;
-    status.comms.paused = false;
     status.comms.runStatus = 'Stopped';
     status.comms.alarm = "";
+    sentBuffer.length = 0; // Dump the queue
+    status.comms.blocked = false;
+    status.comms.paused = false;
+    clearGcodeQueue();
   } else {
     debug_log('ERROR: Machine connection not open!');
   }
