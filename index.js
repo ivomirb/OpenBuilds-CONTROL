@@ -63,6 +63,7 @@ config.nextWebPort = function() {
 config.webPort = process.env.WEB_PORT || config.nextWebPort();
 config.posDecimals = process.env.DRO_DECIMALS || 3;
 config.grblWaitTime = 0.5;
+config.singleCommandMode = true; // set to false to send as many commands as will fit in the RX buffer
 config.aggressiveHomeReset = true;
 
 var express = require("express");
@@ -83,8 +84,6 @@ const {
   mkdirp
 } = require('mkdirp')
 
-
-//const drivelist = require('drivelist'); // removed in 1.0.350 due to Drivelist stability issues
 
 // FluidNC test
 var fluidncConfig = "";
@@ -391,16 +390,6 @@ var listPortsLoop;
 var GRBL_RX_BUFFER_SIZE = 127; // 128 characters
 var GRBLHAL_RX_BUFFER_SIZE = 1023; // 128 characters
 var sentBuffer = [];
-
-var xPos = 0.00;
-var yPos = 0.00;
-var zPos = 0.00;
-var aPos = 0.00;
-var xOffset = 0.00;
-var yOffset = 0.00;
-var zOffset = 0.00;
-var aOffset = 0.00;
-
 
 var feedOverride = 100,
   spindleOverride = 100;
@@ -1955,9 +1944,6 @@ io.on("connection", function(socket) {
             var tens = Math.floor(delta / 10)
 
             debug_log("need to send " + tens + " x10s increase")
-            // for (i = 0; i < tens; i++) {
-            //   addQRealtime(String.fromCharCode(0x91));
-            // }
             for (let i = 1; i < tens + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(0x91));
@@ -1967,9 +1953,6 @@ io.on("connection", function(socket) {
 
             var ones = delta - (10 * tens);
             debug_log("need to send " + ones + " x1s increase")
-            // for (i = 0; i < ones; i++) {
-            //   addQRealtime(String.fromCharCode(0x93));
-            // }
             for (let i = 1; i < ones + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(0x93));
@@ -1983,9 +1966,6 @@ io.on("connection", function(socket) {
 
             var tens = Math.floor(delta / 10)
             debug_log("need to send " + tens + " x10s decrease")
-            // for (i = 0; i < tens; i++) {
-            //   addQRealtime(String.fromCharCode(0x92));
-            // }
             for (let i = 1; i < tens + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(0x92));
@@ -1995,9 +1975,6 @@ io.on("connection", function(socket) {
 
             var ones = delta - (10 * tens);
             debug_log("need to send " + ones + " x1s decrease")
-            // for (i = 0; i < tens; i++) {
-            //   addQRealtime(String.fromCharCode(0x94));
-            // }
             for (let i = 1; i < ones + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(0x94));
@@ -2033,9 +2010,6 @@ io.on("connection", function(socket) {
             var tens = Math.floor(delta / 10)
 
             debug_log("need to send " + tens + " x10s increase")
-            // for (i = 0; i < tens; i++) {
-            //   addQRealtime(String.fromCharCode(154));
-            // }
             for (let i = 1; i < tens + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(154));
@@ -2045,9 +2019,6 @@ io.on("connection", function(socket) {
 
             var ones = delta - (10 * tens);
             debug_log("need to send " + ones + " x1s increase")
-            // for (i = 0; i < ones; i++) {
-            //   addQRealtime(String.fromCharCode(156));
-            // }
             for (let i = 1; i < ones + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(156));
@@ -2061,9 +2032,6 @@ io.on("connection", function(socket) {
 
             var tens = Math.floor(delta / 10)
             debug_log("need to send " + tens + " x10s decrease")
-            // for (i = 0; i < tens; i++) {
-            //   addQRealtime(String.fromCharCode(155));
-            // }
             for (let i = 1; i < tens + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(155));
@@ -2073,9 +2041,6 @@ io.on("connection", function(socket) {
 
             var ones = delta - (10 * tens);
             debug_log("need to send " + ones + " x1s decrease")
-            // for (i = 0; i < tens; i++) {
-            //   addQRealtime(String.fromCharCode(157));
-            // }
             for (let i = 1; i < ones + 1; i++) {
               setTimeout(function timer() {
                 addQRealtime(String.fromCharCode(157));
@@ -2377,104 +2342,54 @@ function parseFeedback(data) {
   }
   if (status.machine.firmware.type == "grbl") {
     // Extract work offset (for Grbl > 1.1 only!)
-    var startWCO = data.search(/wco:/i) + 4;
-    var wco;
+    const startWCO = data.search(/wco:/i) + 4;
     if (startWCO > 4) {
-      wco = data.replace(">", "").substr(startWCO).split(/,|\|/, 4);
-    }
-    if (Array.isArray(wco)) {
-      xOffset = parseFloat(wco[0]).toFixed(config.posDecimals);
-      yOffset = parseFloat(wco[1]).toFixed(config.posDecimals);
-      zOffset = parseFloat(wco[2]).toFixed(config.posDecimals);
-      if (status.machine.has4thAxis) {
-        aOffset = parseFloat(wco[3]).toFixed(config.posDecimals);
-        status.machine.position.offset.x = parseFloat(xOffset);
-        status.machine.position.offset.y = parseFloat(yOffset);
-        status.machine.position.offset.z = parseFloat(zOffset);
-        status.machine.position.offset.a = parseFloat(aOffset);
-      } else {
-        status.machine.position.offset.x = parseFloat(xOffset);
-        status.machine.position.offset.y = parseFloat(yOffset);
-        status.machine.position.offset.z = parseFloat(zOffset);
-      }
-    }
-    // Extract wPos (for Grbl > 1.1 only!)
-    var startWPos = data.search(/wpos:/i) + 5;
-    var wPos;
-    if (startWPos > 5) {
-      var wPosLen = data.substr(startWPos).search(/>|\|/);
-      wPos = data.substr(startWPos, wPosLen).split(/,/);
-    }
-    var startMPos = data.search(/mpos:/i) + 5;
-    var mPos;
-    if (startMPos > 5) {
-      var mPosLen = data.substr(startMPos).search(/>|\|/);
-      mPos = data.substr(startMPos, mPosLen).split(/,/);
-    }
-    // If we got a WPOS
-    if (Array.isArray(wPos)) {
-      // debug_log('wpos')
-      if (xPos !== parseFloat(wPos[0]).toFixed(config.posDecimals)) {
-        xPos = parseFloat(wPos[0]).toFixed(config.posDecimals);
-      }
-      if (yPos !== parseFloat(wPos[1]).toFixed(config.posDecimals)) {
-        yPos = parseFloat(wPos[1]).toFixed(config.posDecimals);
-      }
-      if (zPos !== parseFloat(wPos[2]).toFixed(config.posDecimals)) {
-        zPos = parseFloat(wPos[2]).toFixed(config.posDecimals);
-      }
-      if (wPos.length > 3) {
-        if (aPos !== parseFloat(wPos[3]).toFixed(config.posDecimals)) {
-          aPos = parseFloat(wPos[3]).toFixed(config.posDecimals);
-          status.machine.has4thAxis = true;
-        }
-      } else {
-        status.machine.has4thAxis = false;
-      }
-      if (status.machine.has4thAxis) {
-        status.machine.position.work.x = parseFloat(xPos);
-        status.machine.position.work.y = parseFloat(yPos);
-        status.machine.position.work.z = parseFloat(zPos);
-        status.machine.position.work.a = parseFloat(aPos);
-      } else {
-        status.machine.position.work.x = parseFloat(xPos);
-        status.machine.position.work.y = parseFloat(yPos);
-        status.machine.position.work.z = parseFloat(zPos);
-      }
-      // end is WPOS
-    } else if (Array.isArray(mPos)) {
-      // debug_log('mpos', mPos)
-      if (xPos !== parseFloat(mPos[0]).toFixed(config.posDecimals)) {
-        xPos = parseFloat(mPos[0]).toFixed(config.posDecimals);
-      }
-      if (yPos !== parseFloat(mPos[1]).toFixed(config.posDecimals)) {
-        yPos = parseFloat(mPos[1]).toFixed(config.posDecimals);
-      }
-      if (zPos !== parseFloat(mPos[2]).toFixed(config.posDecimals)) {
-        zPos = parseFloat(mPos[2]).toFixed(config.posDecimals);
-      }
-      if (mPos.length > 3) {
-        if (aPos !== parseFloat(mPos[3]).toFixed(config.posDecimals)) {
-          aPos = parseFloat(mPos[3]).toFixed(config.posDecimals);
-          status.machine.has4thAxis = true;
-        }
-      } else {
-        status.machine.has4thAxis = false;
-      }
-      if (status.machine.has4thAxis) {
-        status.machine.position.work.x = parseFloat(parseFloat(xPos - status.machine.position.offset.x).toFixed(config.posDecimals));
-        status.machine.position.work.y = parseFloat(parseFloat(yPos - status.machine.position.offset.y).toFixed(config.posDecimals));
-        status.machine.position.work.z = parseFloat(parseFloat(zPos - status.machine.position.offset.z).toFixed(config.posDecimals));
-        status.machine.position.work.a = parseFloat(parseFloat(aPos - status.machine.position.offset.a).toFixed(config.posDecimals));
-      } else {
-        status.machine.position.work.x = parseFloat(parseFloat(xPos - status.machine.position.offset.x).toFixed(config.posDecimals));
-        status.machine.position.work.y = parseFloat(parseFloat(yPos - status.machine.position.offset.y).toFixed(config.posDecimals));
-        status.machine.position.work.z = parseFloat(parseFloat(zPos - status.machine.position.offset.z).toFixed(config.posDecimals));
-      }
-      // end if MPOS
+      const wcoLen = data.substr(startWCO).search(/>|\|/);
+      const wcoArray = data.substr(startWCO, wcoLen).split(',', 4).map(parseFloat);
+
+      const xOffset = wcoArray[0];
+      const yOffset = wcoArray[1];
+      const zOffset = wcoArray[2];
+      const aOffset = wcoArray.length > 3 ? wcoArray[3] : 0;
+
+      status.machine.position.offset.x = parseFloat(xOffset.toFixed(config.posDecimals));
+      status.machine.position.offset.y = parseFloat(yOffset.toFixed(config.posDecimals));
+      status.machine.position.offset.z = parseFloat(zOffset.toFixed(config.posDecimals));
+      status.machine.position.offset.a = parseFloat(aOffset.toFixed(config.posDecimals));
     }
 
+    // Extract wPos/mPos (for Grbl > 1.1 only!)
+    const startWPos = data.search(/wpos:/i) + 5;
+    const startMPos = data.search(/mpos:/i) + 5;
+    const isMPos = startMPos > 5;
+    const startPos = isMPos ? startMPos : startWPos;
+
+    if (startPos > 5) {
+      const posLen = data.substr(startPos).search(/>|\|/);
+      const posArray = data.substr(startPos, posLen).split(',', 4).map(parseFloat);
+
+      status.machine.has4thAxis = posArray.length > 3;
+
+      var xPos = posArray[0];
+      var yPos = posArray[1];
+      var zPos = posArray[2];
+      var aPos = status.machine.has4thAxis ? posArray[3] : 0;
+
+      if (isMPos) {
+        //If the status includes machine coordinates, subtract the offset to convert to work space
+        xPos -= status.machine.position.offset.x;
+        yPos -= status.machine.position.offset.y;
+        zPos -= status.machine.position.offset.z;
+        aPos -= status.machine.position.offset.a;
+      }
+
+      status.machine.position.work.x = parseFloat(xPos.toFixed(config.posDecimals));
+      status.machine.position.work.y = parseFloat(yPos.toFixed(config.posDecimals));
+      status.machine.position.work.z = parseFloat(zPos.toFixed(config.posDecimals));
+      status.machine.position.work.a = parseFloat(aPos.toFixed(config.posDecimals));
+    }
   }
+
   // Extract override values (for Grbl > v1.1 only!)
   var startOv = data.search(/ov:/i) + 3;
   if (startOv > 3) {
@@ -2745,9 +2660,7 @@ function send1Q() {
             status.comms.blocked = true;
           }
 
-          // Remove this break to allow multiple lines to be queued at a time
-          // My tests show that it works, however there was zero speedup even for complex programs with lots of small moves
-          break;
+          if (config.singleCommandMode) break;
         }
         break;
     }
@@ -3473,14 +3386,6 @@ function flashInterface(data) {
   var erase = data.erase
 
   console.log("Flashing Interface on " + port + " with file: " + file)
-  // var data = {
-  //   'port': port,
-  //   'string': debugString
-  // }
-  // io.sockets.emit("progStatus", data);
-  //
-
-  //for (let i = 0; i < ports.length; i++) {
 
   var data = {
     'port': port,
