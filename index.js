@@ -897,19 +897,6 @@ function onParserData(data) {
         io.sockets.emit('data', output);
       }
     }
-    // debug_log("GRBL detected");
-    // setTimeout(function() {
-    //   io.sockets.emit('grbl', status.machine.firmware)
-    //   //v1.0.318 - commented out as a test - too many normal alarms clear prematurely
-    //   //io.sockets.emit('errorsCleared', true);
-    // }, 600)
-    // // Start interval for status queries
-    // clearInterval(statusLoop);
-    // statusLoop = setInterval(function() {
-    //   if (status.comms.connectionStatus > 0) {
-    //     addQRealtime("?");
-    //   }
-    // }, 200);
 
     if (config.aggressiveHomeReset)
     {
@@ -922,12 +909,7 @@ function onParserData(data) {
     status.machine.firmware.type = "smoothie";
     status.machine.firmware.version = data.substr(data.search(/version:/i) + 9).split(/,/);
     status.machine.firmware.date = new Date(data.substr(data.search(/Build date:/i) + 12).split(/,/)).toDateString();
-    // Start interval for status queries
-    // statusLoop = setInterval(function() {
-    //   if (status.comms.connectionStatus > 0) {
-    //     addQRealtime("?");
-    //   }
-    // }, 200);
+
     var output = {
       'command': "FIRMWARE ERROR",
       'response': "Detected an unsupported version: Smoothieware " + status.machine.firmware.version + ". This software no longer support Smoothieware. \nLuckilly there is an alternative firmware you can install on your controller to make it work with this software. Check out Grbl-LPC at https://github.com/cprezzi/grbl-LPC - Grbl-LPC is a Grbl port for controllers using the NXP LPC176x chips, for example Smoothieboards",
@@ -958,7 +940,7 @@ function onParserData(data) {
     // debug_log("OK FOUND")
     if (status.machine.firmware.type === "grbl") {
       // debug_log('got OK from ' + command)
-      command = sentBuffer.shift();
+      sentBuffer.shift();
     }
     if (command == "$CD") {
       io.sockets.emit('fluidncConfig', fluidncConfig);
@@ -970,7 +952,6 @@ function onParserData(data) {
     status.comms.connectionStatus = 5;
     switch (status.machine.firmware.type) {
       case 'grbl':
-        // sentBuffer.shift();
         var alarmCode = parseInt(data.split(':')[1]);
 
         if (!config.aggressiveHomeReset)
@@ -1007,7 +988,6 @@ function onParserData(data) {
   } else if (data.indexOf('error') === 0) { // Error received -> stay blocked stops queue
     switch (status.machine.firmware.type) {
       case 'grbl':
-        // sentBuffer.shift();
         var errorCode = parseInt(data.split(':')[1]);
 
         var lastAlarm = "";
@@ -1039,7 +1019,7 @@ function onParserData(data) {
         debug_log("[MSG:Reset to continue] -> Sending Reset")
         addQRealtime(String.fromCharCode(0x18)); // ctrl-x
         setTimeout(function() {
-          addQToStart("$G"); // must fetch the modals after reset
+          addQToEnd("$G"); // must fetch the modals after reset
           send1Q();
         }, 100);
         break;
@@ -1094,7 +1074,6 @@ function connectController(data) {
   // do attempt 1
   addQRealtime("\n"); // this causes smoothie and grblHAL to send the welcome string
 
-  // log attempt 2
   var output = {
     'command': 'connect',
     'response': "Attempting to detect Controller (1): (Autoreset)",
@@ -1102,108 +1081,17 @@ function connectController(data) {
   }
   io.sockets.emit('data', output);
 
-  // do attempt 2 after 1 second
-  setTimeout(function() { //wait for controller to be ready
-    if (status.machine.firmware.type.length < 1) {
-      debug_log("Didnt detect firmware after AutoReset. Lets see if we have Grbl instance with a board that doesnt have AutoReset");
-      var output = {
-        'command': 'connect',
-        'response': "Attempting to detect Controller (2): (Ctrl+X)",
-        'type': 'info'
-      }
-      io.sockets.emit('data', output);
-      addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-      debug_log("Sent: Ctrl+x");
-    }
-  }, config.grblWaitTime * 1000);
+  var attemptCount = 1;
 
-  //do attempt 3 after 2 seconds Smoothie and soft-usb
-  setTimeout(function() { //wait for controller to be ready
-    if (status.machine.firmware.type.length < 1) {
-      debug_log("No firmware yet, probably not Grbl then. lets see if we have Smoothie?");
-      var output = {
-        'command': 'connect',
-        'response': "Attempting to detect Controller (3): (others)",
-        'type': 'info'
-      }
-      io.sockets.emit('data', output);
-      addQRealtime("version\n"); // Check if it's Smoothieware?
-      debug_log("Sent: version");
-    }
-  }, config.grblWaitTime * 2000);
+  // run 4 attempts
+  var attemptInterval = setInterval(function() {
 
-
-  // Not smoothie, maybe DTR
-  setTimeout(function() { //wait for controller to be ready
-    if (status.machine.firmware.type.length < 1) {
-      debug_log("Didnt detect firmware after AutoReset or Ctrl+X. Lets try toggling DTR");
-      var output = {
-        'command': 'connect',
-        'response': "Attempting to detect Controller (4): (DTR Enable)",
-        'type': 'info'
-      }
-      io.sockets.emit('data', output);
-
-      // toggle DTR on
-      port.set({
-        "dtr": true
-      }, console.log("Set DTR"));
-
-      // then try Ctrl+X again
-      setTimeout(function() {
-
-        setTimeout(function() {
-          addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-        }, 100);
-
-        addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-        debug_log("Sent: Ctrl+x after DTR toggle");
-
-        // port.set({
-        //   "dtr": false
-        // }, console.log("Set DTR"));
-      }, 100);
-    }
-
-    // port.set({ // toggle Off again else grbl on Uno gets stuck
-    //   "dtr": false
-    // }, console.log("Set DTR"));
-  }, config.grblWaitTime * 3000);
-
-
-  setTimeout(function() {
-    // Close port if we don't detect supported firmware after 2s.
-    if (status.machine.firmware.type.length < 1) {
-      debug_log("No supported firmware detected. Closing port " + port.path);
-      if (status.interface.connected) {
-        var output = {
-          'command': 'connect',
-          'response': `ERROR!:  Connection established to INTERFACE, but no response from Grbl on the upstream controller. See https://docs.openbuilds.com/interface for more details. Closing port ` + port.path,
-          'type': 'error'
-        }
-      } else {
-        var output = {
-          'command': 'connect',
-          'response': `ERROR!:  No Response from Controller - See https://docs.openbuilds.com/doku.php?id=docs:blackbox:faq-usb-connection-failed for troubleshooting information. Closing port ` + port.path,
-          'type': 'error'
-        }
-      }
-      io.sockets.emit('data', output);
-      stopPort();
-    } else {
-
+    // check if the controller is ready
+    if (status.machine.firmware.type.length > 0) {
       if (status.machine.firmware.type === "grbl") {
         debug_log("GRBL detected");
-        var output = {
-          'command': 'connect',
-          'response': "Detecting Firmware: Detected Grbl Succesfully",
-          'type': 'info'
-        }
-
         setTimeout(function() {
           io.sockets.emit('grbl', status.machine.firmware)
-          //v1.0.318 - commented out as a test - too many normal alarms clear prematurely
-          //io.sockets.emit('errorsCleared', true);
         }, 100)
         // Start interval for status queries
         clearInterval(statusLoop);
@@ -1221,7 +1109,7 @@ function connectController(data) {
           'response': "Firmware Detected:  " + status.machine.firmware.platform + " version " + status.machine.firmware.version + " dated " + status.machine.firmware.date + " on " + port.path,
           'type': 'success'
         }
-      } else if (data.type = "telnet") {
+      } else if (data.type == "telnet") {
         var output = {
           'command': 'connect',
           'response': "Firmware Detected:  " + status.machine.firmware.platform + " version " + status.machine.firmware.version + " dated " + status.machine.firmware.date + " on " + data.ip,
@@ -1229,17 +1117,90 @@ function connectController(data) {
         }
       }
       io.sockets.emit('data', output);
+
+      clearInterval(attemptInterval);
+      return;
     }
-  }, config.grblWaitTime * 4000);
 
+    if (attemptCount == 1) { // first attempt failed
+      debug_log("Didnt detect firmware after AutoReset. Lets see if we have Grbl instance with a board that doesnt have AutoReset");
+      var output = {
+        'command': 'connect',
+        'response': "Attempting to detect Controller (2): (Ctrl+X)",
+        'type': 'info'
+      }
+      io.sockets.emit('data', output);
+      addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+      debug_log("Sent: Ctrl+x");
+    }
 
+    if (attemptCount == 2) { // second attempt failed
+      debug_log("No firmware yet, probably not Grbl then. lets see if we have Smoothie?");
+      var output = {
+        'command': 'connect',
+        'response': "Attempting to detect Controller (3): (others)",
+        'type': 'info'
+      }
+      io.sockets.emit('data', output);
+      addQRealtime("version\n"); // Check if it's Smoothieware?
+      debug_log("Sent: version");
+    }
+
+    if (attemptCount == 3) { // third attempt failed
+      debug_log("Didnt detect firmware after AutoReset, Ctrl+X or Smoothie check. Lets try toggling DTR");
+      var output = {
+        'command': 'connect',
+        'response': "Attempting to detect Controller (4): (DTR Enable)",
+        'type': 'info'
+      }
+      io.sockets.emit('data', output);
+
+      // toggle DTR on
+      port.set({
+        "dtr": true
+      }, console.log("Set DTR"));
+
+      // then try Ctrl+X again (but why twice? not sure - it was in the original code)
+      setTimeout(function() {
+
+        setTimeout(function() {
+          addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+        }, 100);
+
+        addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+        debug_log("Sent: Ctrl+x after DTR toggle");
+      }, 100);
+    }
+
+    if (attemptCount == 4) { // fourth attempt failed, out of ideas
+      debug_log("No supported firmware detected. Closing port " + port.path);
+      if (status.interface.connected) {
+        var output = {
+          'command': 'connect',
+          'response': `ERROR!:  Connection established to INTERFACE, but no response from Grbl on the upstream controller. See https://github.com/OpenBuilds/docs-migrated/wiki for more details. Closing port ` + port.path,
+          'type': 'error'
+        }
+      } else {
+        var output = {
+          'command': 'connect',
+          'response': `ERROR!:  No Response from Controller - See https://github.com/OpenBuilds/docs-migrated/wiki for troubleshooting information. Closing port ` + port.path,
+          'type': 'error'
+        }
+      }
+      io.sockets.emit('data', output);
+      stopPort();
+      clearInterval(attemptInterval);
+      return;
+    }
+    attemptCount++;
+  }, config.grblWaitTime * 2000);
 
   status.comms.connectionStatus = 2;
   if (data.type == "usb") {
     status.comms.interfaces.activePort = port.path;
     status.comms.interfaces.type = data.type
     status.comms.interfaces.activeBaud = port.baudRate;
-  } else if (data.type = "telnet") {
+  } else if (data.type == "telnet") {
     status.comms.interfaces.activePort = data.ip;
     status.comms.interfaces.type = data.type
     status.comms.interfaces.activeBaud = "net";
@@ -2317,14 +2278,27 @@ function machineSend(gcode, realtime) {
 }
 
 // Splits the data into lines and adds them to the queue
-// Removes line comments
+// Removes comments
 function addLinesToEnd(data) {
   var lineCount = 0;
   data = data.split('\n');
   for (var i = 0; i < data.length; i++) {
 
-    var line = data[i].replace("%", "").split(';'); // Remove everything after ; = comment
-    var tosend = line[0].trim();
+    var line = data[i].replace("%", "").split(';')[0]; // Remove everything after ; = comment
+
+    // remove () comments
+    var commentStart = line.indexOf('(');
+    while (commentStart >= 0) {
+      const commentEnd = line.indexOf(')', commentStart);
+      if (commentEnd < 0) {
+        line = line.slice(0, commentStart);
+        break;
+      }
+      line = line.slice(0, commentStart) + line.slice(commentEnd + 1);
+      commentStart = line.indexOf('(');
+    }
+
+    var tosend = line.trim();
     if (tosend.length > 0) {
       addQToEnd(tosend);
       lineCount++;
