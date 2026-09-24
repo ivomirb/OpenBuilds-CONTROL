@@ -2364,6 +2364,9 @@ function runJob(object) {
   // debug_log('Run Job (' + data.length + ')');
   if (status.comms.connectionStatus > 0) {
     if (data && addLinesToQueue(data)) {
+      // Add a 0 pause to delay the job completion until the last move is finished
+      addQToEnd("G4 P0.");
+
       // Start interval for qCount messages to socket clients
       queueCounter = setInterval(function() {
         status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
