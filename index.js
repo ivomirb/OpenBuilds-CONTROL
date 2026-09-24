@@ -3244,7 +3244,6 @@ if (isElectron()) {
     });
 
     // Autostart on Login
-console.log("CONFIG", persistentConfig);
     if (process.platform == 'win32' && persistentConfig.autoStart) {
       electronApp.setLoginItemSettings({
         openAtLogin: true,
