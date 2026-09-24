@@ -120,20 +120,21 @@ $(document).ready(function() {
   }
 
 
-
   if (typeof ace !== 'undefined') {
     editor = ace.edit("editor");
     editor.$blockScrolling = Infinity;
     editor.session.setMode("ace/mode/cncpro");
     editor.setTheme('ace/theme/sqlserver')
-    // editor.setOption('printMarginColumn', 0)
     editor.setAutoScrollEditorIntoView(true);
     editor.session.setValue('; No GCODE yet - please Load a GCODE file from the Open GCODE button'); // from samplefile.js
     editor.setShowPrintMargin(false);
-    editor.getSession().on('change', function() {
-      // parseGcodeInWebWorker(editor.getValue())
-    });
 
+    // The editor doesn't update when its text changes, unless it is visible.
+    // The observer forces an update when the editor becomes visible.
+    const observer = new IntersectionObserver(
+      () => { editor.resize(); },
+      {root: document.documentElement});
+    observer.observe(document.getElementById("editor"));
   }
 
 

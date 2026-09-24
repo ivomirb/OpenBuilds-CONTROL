@@ -13,37 +13,45 @@ var wcsHistory = {
 var wcsHistoryEmpty = true;
 var lastWcsCapture = {};
 
+function EnableViaClass(button, enabled) {
+  if (typeof button == "string") {
+    button = $(button);
+  }
+  if (enabled) {
+    $(button).removeClass('disabled');
+  } else {
+    $(button).addClass('disabled');
+  }
+}
+
 // Toolbar with USB port/connect/disconnect
 function setConnectBar(val, status) {
   if (val == 0) { // Not Connected Yet
-    // Status Badge
     $('#connectStatus').html("Port: Not Connected");
-    // Connect/Disconnect Button
     $("#disconnectBtn").hide();
     $("#flashBtn").hide();
     $('#portUSB').parent().show();
     $("#connectBtn").show();
     $("#scanBtn").show();
     $("#driverBtn").show();
-    if ($('#portUSB').val() != "") {
-      $("#connectBtn").attr('disabled', false);
-    } else {
-      $("#connectBtn").attr('disabled', true);
-    }
-    $('#portUSB').parent(".select").addClass('success')
-    $('#portUSB').parent(".select").removeClass('alert')
-    $('.macrobtn').removeClass('disabled')
-    $('.grblCalibrationMenu').addClass("disabled")
-    // Set Port Dropdown to Current Value
-    // Not applicable to Status 0 as its set by populatePortsMenu();
+    $("#connectBtn").attr('disabled', $('#portUSB').val() == "");
+    $('#portUSB').parent(".select").addClass('success');
+    $('#portUSB').parent(".select").removeClass('alert');
+    EnableViaClass('.macrobtn', false);
+    EnableViaClass('.grblCalibrationMenu', false);
+
     if (!wcsHistoryEmpty) {
       clearWcsHistory();
     }
 
-  } else if (val == 1 || val == 2) { // Connected, but not Playing yet
-    // Status Badge
+  } else if (val >= 1 && val <= 5) { // Normal operation
+    // 1 - connecting
+    // 2 - idle
+    // 3 - running
+    // 4 - paused
+    // 5 - alarm
+
     $('#connectStatus').html("Port: Connected");
-    // Connect/Disconnect Button
     $("#connectBtn").hide();
     $("#scanBtn").hide();
     $("#driverBtn").hide();
@@ -53,77 +61,15 @@ function setConnectBar(val, status) {
     $("#flashBtn").hide();
 
     // Port Dropdown
-    //$('#portUSB').parent(".select").addClass('disabled')
     $('#portUSB').parent(".select").removeClass('success')
     $('#portUSB').parent(".select").addClass('alert')
     // Set Port Dropdown to Current Value
     $("#portUSB").val(status.comms.interfaces.activePort);
-    $('.macrobtn').removeClass('disabled')
-    $('.grblCalibrationMenu').removeClass("disabled")
 
-  } else if (val == 3) { // Busy Streaming GCODE
-    // Status Badge
-    $('#connectStatus').html("Port: Connected");
-    // Connect/Disconnect Button
-    $("#connectBtn").hide();
-    $("#scanBtn").hide();
-    $("#driverBtn").hide();
-    $('#portUSB').parent().hide();
-    $("#connectBtn").attr('disabled', false);
-    $("#disconnectBtn").show();
-    $("#flashBtn").hide();
-    // Port Dropdown
-    //$('#portUSB').parent(".select").addClass('disabled')
-    $('#portUSB').parent(".select").removeClass('success')
-    $('#portUSB').parent(".select").addClass('alert')
-    // Set Port Dropdown to Current Value
-    $("#portUSB").val(status.comms.interfaces.activePort);
-    $('.macrobtn').addClass('disabled')
-    $('.grblCalibrationMenu').addClass("disabled")
-
-  } else if (val == 4) { // Paused
-    // Status Badge
-    $('#connectStatus').html("Port: Connected");
-    // Connect/Disconnect Button
-    $("#connectBtn").hide();
-    $("#scanBtn").hide();
-    $("#driverBtn").hide();
-    $('#portUSB').parent().hide();
-    $("#connectBtn").attr('disabled', false);
-    $("#disconnectBtn").show();
-    $("#flashBtn").hide();
-    // Port Dropdown
-    //$('#portUSB').parent(".select").addClass('disabled')
-    $('#portUSB').parent(".select").removeClass('success')
-    $('#portUSB').parent(".select").addClass('alert')
-    // Set Port Dropdown to Current Value
-    $("#portUSB").val(status.comms.interfaces.activePort);
-    $('.macrobtn').removeClass('disabled')
-    $('.grblCalibrationMenu').addClass("disabled")
-
-  } else if (val == 5) { // Alarm State
-    // Status Badge
-    $('#connectStatus').html("Port: Connected");
-    // Connect/Disconnect Button
-    $("#connectBtn").hide();
-    $("#scanBtn").hide();
-    $("#driverBtn").hide();
-    $('#portUSB').parent().hide();
-    $("#connectBtn").attr('disabled', false);
-    $("#disconnectBtn").show();
-    $("#flashBtn").hide();
-    // Port Dropdown
-    //$('#portUSB').parent(".select").addClass('disabled')
-    $('#portUSB').parent(".select").removeClass('success')
-    $('#portUSB').parent(".select").addClass('alert')
-    // Set Port Dropdown to Current Value
-    $("#portUSB").val(status.comms.interfaces.activePort);
-    $('.macrobtn').removeClass('disabled')
-    $('.grblCalibrationMenu').addClass("disabled")
+    EnableViaClass('.macrobtn', val != 3); // disable macros while running
+    EnableViaClass('.grblCalibrationMenu', val == 2); // enable calibration only during idle
   } else if (val == 6) { // Firmware Upgrade State
-    // Status Badge
     $('#connectStatus').html("Port: Flashing");
-    // Connect/Disconnect Button
     $("#connectBtn").hide();
     $("#scanBtn").hide();
     $("#driverBtn").hide();
@@ -131,249 +77,113 @@ function setConnectBar(val, status) {
     $("#connectBtn").attr('disabled', false);
     $("#disconnectBtn").hide();
     $("#flashBtn").show();
+
     // Port Dropdown
     $('#portUSB').parent(".select").removeClass('success')
     $('#portUSB').parent(".select").addClass('alert')
     // Set Port Dropdown to Current Value
     $("#portUSB").val(status.comms.interfaces.activePort);
-    $('.macrobtn').removeClass('disabled')
-    $('.grblCalibrationMenu').addClass("disabled")
+
+    EnableViaClass('.macrobtn', true);
+    EnableViaClass('.grblCalibrationMenu', false);
   }
 }
 
 // Toolbar with play/pause/stop
 function setControlBar(val, status) {
   if (val == 0) { // Not Connected Yet
-    if (toolchanges && toolchanges.length) {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    } else {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    }
+    $('#runBtn').hide().attr('disabled', true);
     $('#grblProbeMenu').hide().attr('disabled', true);
     $('#chkSize').hide().attr('disabled', true);
     $('#resumeBtn').hide().attr('disabled', true);
-    $('#pauseBtn').hide().attr('disabled', true);
+    $('#pauseBtn').hide();
     $('#stopBtn').hide().attr('disabled', true);
-    $('#toolBtn').hide().attr('disabled', true);
-    $('#toolBtn2').hide().attr('disabled', true);
+    $('#toolBtn').hide();
+    $('#toolBtn2').hide();
 
     $('#homeBtn').hide().attr('disabled', grblParams['$22'] == 0);
 
-    $('.estop').hide()
+    $('.estop').hide();
     $('#controlBtnGrp').hide();
     $("#grblSettings").hide(); // Hide Grbl Settings if it was Open
     $('#grblconfig').empty();
-  } else if (val == 1 || val == 2) { // Connected, but not Playing yet
-    $('#grblProbeMenu').show().attr('disabled', false);
-    if (typeof ace !== 'undefined') {
-      if (toolchanges.length) {
-        if (status.machine.inputs.includes('D')) {
-          $('#runToolsBtn').show().attr('disabled', true);
-          $('#runBtn').hide().attr('disabled', true);
-        } else {
-          $('#runToolsBtn').show().attr('disabled', editor.session.getLength() < 2);
-          $('#runBtn').hide().attr('disabled', editor.session.getLength() < 2);
-        }
-        if (webgl) {
-          $('#chkSize').show().attr('disabled', editor.session.getLength() < 2);
-        } else {
-          $('#chkSize').show().attr('disabled', true);
-        }
 
-      } else {
-        $('#runToolsBtn').hide().attr('disabled', editor.session.getLength() < 2);
-        if (status.machine.inputs.includes('D')) {
-          $('#runBtn').show().attr('disabled', true);
-        } else {
-          $('#runBtn').show().attr('disabled', editor.session.getLength() < 2);
-        }
+  } else if (val >= 1 && val <= 5) { // Normal operation
+    // 1 - connecting
+    // 2 - idle
+    // 3 - running
+    // 4 - paused
+    // 5 - alarm
 
-        if (webgl) {
-          $('#chkSize').show().attr('disabled', editor.session.getLength() < 2);
-        } else {
-          $('#chkSize').show().attr('disabled', true);
-        }
-      }
-    } else {
-      if (status.machine.inputs.includes('D')) {
-        $('#runBtn').show().attr('disabled', true);
-      } else {
-        $('#runBtn').show().attr('disabled', false);
-      }
-      $('#runToolsBtn').hide().attr('disabled', false);
-    }
-    $('#resumeBtn').hide().attr('disabled', true);
-    $('#pauseBtn').hide().attr('disabled', true);
-    $('#stopBtn').show().attr('disabled', true);
-    $('#toolBtn').show().attr('disabled', false);
-    $('#toolBtn2').show().attr('disabled', false);
-    $('#homeBtn').show().attr('disabled', grblParams['$22'] == 0);
-    $('.estop').show()
-    $('#controlBtnGrp').show();
-  } else if (val == 3) { // Busy Streaming GCODE
-    $('#grblProbeMenu').show().attr('disabled', true);
+    $('#grblProbeMenu').show().attr('disabled', val != 2);
 
-    if (toolchanges.length) {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    } else {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    }
-    $('#chkSize').show().attr('disabled', true);
-    $('#resumeBtn').hide().attr('disabled', true);
-    $('#pauseBtn').show().attr('disabled', false);
-    $('#stopBtn').show().attr('disabled', false);
-    $('#toolBtn').show().attr('disabled', false);
-    $('#toolBtn2').show().attr('disabled', false);
-    $('#homeBtn').show().attr('disabled', true);
-    $('.estop').show()
-    $('#controlBtnGrp').show();
-  } else if (val == 4) { // Paused
-    $('#grblProbeMenu').show().attr('disabled', true);
+    // The tool button's can't be disabled because the graphics look weird. Disable the menus instead
+    EnableViaClass($('#toolBtn').show().next(), val == 2);
+    EnableViaClass($('#toolBtn2').show().next(), val == 2);
 
-    if (toolchanges.length) {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    } else {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    }
-    $('#chkSize').show().attr('disabled', true);
-    if (status.machine.inputs.includes('D')) {
-      $('#resumeBtn').hide().attr('disabled', true);
-      $('#pauseBtn').show().attr('disabled', true);
-    } else {
-      $('#resumeBtn').show().attr('disabled', false);
-      $('#pauseBtn').hide().attr('disabled', true);
-    }
+    $('#chkSize').show().attr('disabled', val != 2 || !object);
 
-    $('#stopBtn').show().attr('disabled', false);
-    $('#toolBtn').show().attr('disabled', false);
-    $('#toolBtn2').show().attr('disabled', false);
-    $('#homeBtn').show().attr('disabled', true);
-    $('.estop').show()
-    $('#controlBtnGrp').show();
-  } else if (val == 5) { // Alarm State
-    $('#grblProbeMenu').show().attr('disabled', true);
+    // Determine the correct state for Run/Play/Pause/Stop
+    const hasJob = (editor && editor.session.getLength() > 1) || gcode;
+    const activeJob = val == 3 || val == 4;
+    const doorOpen = status.machine.inputs.includes('D');
 
-    if (toolchanges.length) {
-      $('#runToolsBtn').show().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    } else {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').show().attr('disabled', true);
-    }
-    // $('#runBtn').show().attr('disabled', true);
-    $('#chkSize').show().attr('disabled', true);
-    $('#resumeBtn').hide().attr('disabled', true);
-    $('#pauseBtn').hide().attr('disabled', true);
-    $('#stopBtn').show().attr('disabled', true);
-    $('#toolBtn').show().attr('disabled', true);
-    $('#toolBtn2').show().attr('disabled', true);
-    $('#homeBtn').show().attr('disabled', grblParams['$22'] == 0);
-    $('.estop').show()
+    // Hide the Run button if running or paused. Enable if the door is closed and there is a job to run
+    $('#runBtn').toggle(val != 3 && val != 4).attr('disabled', doorOpen || !hasJob);
+
+    // Show the Resume button only if paused. Enable if the door is closed
+    $('#resumeBtn').toggle(val == 4).attr('disabled', doorOpen);
+
+    // Show the Pause button only if running
+    $('#pauseBtn').toggle(val == 3);
+
+    // Enable the Stop button if running or paused
+    $('#stopBtn').show().attr('disabled', !activeJob);
+
+    // Disable the Home button during a job or if the homing feature is disabled
+    $('#homeBtn').show().attr('disabled', activeJob || grblParams['$22'] == 0);
+
+    $('.estop').show();
     $('#controlBtnGrp').show();
   } else if (val == 6) { // Firmware Upgrade State
     $('#grblProbeMenu').show().attr('disabled', true);
 
-    if (toolchanges.length) {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    } else {
-      $('#runToolsBtn').hide().attr('disabled', true);
-      $('#runBtn').hide().attr('disabled', true);
-    }
+    $('#runBtn').hide().attr('disabled', true);
     $('#chkSize').show().attr('disabled', true);
     $('#resumeBtn').hide().attr('disabled', true);
-    $('#pauseBtn').hide().attr('disabled', true);
+    $('#pauseBtn').hide();
     $('#stopBtn').hide().attr('disabled', true);
-    $('#toolBtn').hide().attr('disabled', true);
-    $('#toolBtn2').hide().attr('disabled', true);
+    $('#toolBtn').hide();
+    $('#toolBtn2').hide();
     $('#homeBtn').hide().attr('disabled', grblParams['$22'] == 0);
-    $('.estop').hide()
+    $('.estop').hide();
     $('#controlBtnGrp').hide();
   }
 }
 
 function setJogPanel(val, status) {
-  if (val == 0) { // Not Connected Yet
-    if (editor) {
-      editor.resize()
-    }
+  if (val == 0 || val == 6) { // Not Connected Yet or Firmware Upgrade State
     $('.jogbtn').attr('disabled', true);
     $('#xPos').html('0.00');
     $('#yPos').html('0.00');
     $('#zPos').html('0.00');
     $('#aPos').html('0.00');
 
-  } else if (val == 1 || val == 2) { // Connected, but not Playing yet
-    if (editor) {
-      editor.resize()
-    }
-    $('.jogbtn').attr('disabled', false);
+  } else if (val >= 1 && val <= 5) { // Normal operation
+    // 1 - connecting
+    // 2 - idle
+    // 3 - running
+    // 4 - paused
+    // 5 - alarm
 
-  } else if (val == 3) { // Busy Streaming GCODE
-    if (editor) {
-      editor.resize()
-    }
-    $('.jogbtn').attr('disabled', true);
-
-  } else if (val == 4) { // Paused
-    if (editor) {
-      editor.resize()
-    }
-    $('.jogbtn').attr('disabled', true);
-
-  } else if (val == 5) { // Alarm State
-    if (editor) {
-      editor.resize()
-    }
-    $('.jogbtn').attr('disabled', true);
-
-  } else if (val == 6) { // Firmware Upgrade State
-    if (editor) {
-      editor.resize()
-    }
-    $('.jogbtn').attr('disabled', true);
-    $('#xPos').html('0.00');
-    $('#yPos').html('0.00');
-    $('#zPos').html('0.00');
-    $('#aPos').html('0.00');
-
+    $('.jogbtn').attr('disabled', val != 2);
   }
 }
 
 function setConsole(val, status) {
-  if (val == 0) { // Not Connected Yet
-    if (!$('#command').attr('disabled')) {
-      $('#command').attr('disabled', true);
-    }
-    $("#sendCommand").prop('disabled', true);
-  } else if (val == 0 || val == 2) { // Connected, but not Playing yet
-    $("#command").attr('disabled', false);
-    $("#sendCommand").prop('disabled', false);
-  } else if (val == 3) { // Busy Streaming GCODE
-    if (!$('#command').attr('disabled')) {
-      $('#command').attr('disabled', true);
-    }
-    $("#sendCommand").prop('disabled', true);
-  } else if (val == 4) { // Paused
-    if (!$('#command').attr('disabled')) {
-      $('#command').attr('disabled', true);
-    }
-    $("#sendCommand").prop('disabled', false);
-  } else if (val == 5) { // Alarm State
-    $("#command").attr('disabled', false);
-    $("#sendCommand").prop('disabled', false);
-  } else if (val == 6) { // Firmware Upgrade State
-    if (!$('#command').attr('disabled')) {
-      $('#command').attr('disabled', true);
-    }
-    $("#sendCommand").prop('disabled', true);
-  }
+  // Allow typing on the console only during idle or alarm
+  $("#command").attr('disabled', val != 2 && val != 5);
+  $("#sendCommand").prop('disabled', val != 2 && val != 5);
 }
 
 function updateWcsHistory(wcs) {

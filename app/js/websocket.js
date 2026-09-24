@@ -166,11 +166,8 @@ function initSocket() {
 
   socket.on('gcodeupload', function(data) {
     if (isJogWidget) return;
-    var icon = ''
-    var source = "api"
-    var string = "Received new GCODE from API"
-    var printLogCls = "fg-darkGreen"
-    printLogModern(icon, source, string, printLogCls)
+    printLogModern('', "api", "Received new GCODE from API", "fg-darkGreen");
+    printLogModern('', "api", "API called window into focus", "fg-darkGreen");
 
     if (data.gcode.length > 10000000) {
       gcode = data.gcode
@@ -193,14 +190,6 @@ function initSocket() {
       $('#gcodeeditortab').click()
     }
     jobNeedsHoming();
-  });
-
-  socket.on('gcodeupload', function(data) {
-    var icon = ''
-    var source = "api"
-    var string = "API called window into focus"
-    var printLogCls = "fg-darkGreen"
-    printLogModern(icon, source, string, printLogCls)
   });
 
   socket.on('integrationpopup', function(data) {
@@ -861,7 +850,7 @@ function initSocket() {
     setConsole(status.comms.connectionStatus, status)
     if (status.comms.connectionStatus != 5) {
       bellstate = false
-    };
+    }
     if (status.comms.connectionStatus == 0) {
       showGrbl(false, false)
     }
@@ -935,64 +924,64 @@ function initSocket() {
           $('#enServo').removeClass('alert').addClass('success').html('ON')
           $(".servo-active").show()
           break;
-        case 'V': //	Variable spindle enabled
+        case 'V': // Variable spindle enabled
           // console.log('Variable spindle enabled')
           $('#enVariableSpindle').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'N': //	Line numbers enabled
+        case 'N': // Line numbers enabled
           // console.log('Line numbers enabled')
           $('#enLineNumbers').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'M': //	Mist coolant enabled
+        case 'M': // Mist coolant enabled
           // console.log('Mist coolant enabled')
           $('#menuMisting').show();
           $('#enMisting').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'C': //	CoreXY enabled
+        case 'C': // CoreXY enabled
           // console.log('CoreXY enabled')
           $('#enCoreXY').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'P': //	Parking motion enabled
+        case 'P': // Parking motion enabled
           // console.log('Parking motion enabled')
           $('#enParking').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'Z': //	Homing force origin enabled
+        case 'Z': // Homing force origin enabled
           // console.log('Homing force origin enabled')
           $('#enHomingOrigin').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'H': //	Homing single axis enabled
+        case 'H': // Homing single axis enabled
           // console.log('Homing single axis enabled')
           $('#enSingleAxisHome').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'T': //	Two limit switches on axis enabled
+        case 'T': // Two limit switches on axis enabled
           // console.log('Two limit switches on axis enabled')
           $('#enTwoLimits').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'A': //	Allow feed rate overrides in probe cycles
+        case 'A': // Allow feed rate overrides in probe cycles
           // console.log('Allow feed rate overrides in probe cycles')
           $('#enFeedOVProbe').removeClass('alert').addClass('success').html('ON')
           break;
-        case '$': //	Restore EEPROM $ settings disabled
+        case '$': // Restore EEPROM $ settings disabled
           // console.log('Restore EEPROM $ settings disabled')
           $('#enEepromSettingsDisable').removeClass('alert').addClass('success').html('ON')
           break;
-        case '#': //	Restore EEPROM parameter data disabled
+        case '#': // Restore EEPROM parameter data disabled
           // console.log('Restore EEPROM parameter data disabled')
           $('#enEepromParamsDisable').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'I': //	Build info write user string disabled
+        case 'I': // Build info write user string disabled
           // console.log('Build info write user string disabled')
           $('#enBuildInfoDisabled').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'E': //	Force sync upon EEPROM write disabled
+        case 'E': // Force sync upon EEPROM write disabled
           // console.log('Force sync upon EEPROM write disabled')
           $('#enForceSyncEeprom').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'W': //	Force sync upon work coordinate offset change disabled
+        case 'W': // Force sync upon work coordinate offset change disabled
           // console.log('Force sync upon work coordinate offset change disabled')
           $('#enForceSyncWco').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'L': //	Homing init lock sets Grbl into an alarm state upon power up
+        case 'L': // Homing init lock sets Grbl into an alarm state upon power up
           // console.log('Homing init lock sets Grbl into an alarm state upon power up')
           $('#enHomingInitLock').removeClass('alert').addClass('success').html('ON')
           break;
