@@ -472,12 +472,84 @@ var webgl = (function() {
 })();
 
 function saveGcode() {
-  var blob = new Blob([editor.getValue()], {
-    type: "plain/text"
+  var saveFileParams = {
+    id: "gcode",
+    title: "Save GCODE",
+    filters: [
+      {name: "GCODE files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
+      {name: "All files", extensions: ["*"]},
+    ],
+  };
+
+  socket.emit('saveFileDialog', saveFileParams, (filePath) => {
+    var blob = new Blob([gcode || editor.getValue()], {
+      type: 'text/plain'
+    });
+    saveBlobToDisk(blob, filePath);
   });
-  invokeSaveAsDialog(blob, 'edited-gcode.gcode');
 }
 
+function saveBlobToDisk(blob, filePath, showErrorDlg) {
+  var formData = new FormData();
+  var fileOfBlob = new File([blob], filePath);
+  formData.append("file", fileOfBlob);
+  formData.append("showErrorDlg", showErrorDlg ? "true" : "false");
+  var xhr = new XMLHttpRequest();
+  var promise = new Promise((resolve) => {
+    xhr.onload = function() {
+      resolve(xhr.response);
+    };
+  });
+  xhr.open('POST', '/saveFile', true);
+  xhr.send(formData);
+
+  return promise;
+}
+
+// params could be a suggested file name
+// or params could be an object with optional fields
+//   * id - dialog id, used to persist the default folder
+//   * title - the dialog title
+//   * filters - FileFilter[]
+//   * fileName - a suggested file name
+function invokeSaveAsDialogNew(blob, params) {
+  if (!params) {
+    params = {};
+  } else if (typeof params == "string") {
+    params = {
+      fileName: params,
+    };
+  }
+
+  socket.emit('saveFileDialog', params, (filePath) => {
+    saveBlobToDisk(blob, filePath);
+  });
+}
+
+// params is an object with the following fields (all optional)
+//   * id - dialog id, used to persist the default folder
+//   * title - the dialog title
+//   * filters - FileFilter[]
+//   * fileName - a suggested file name
+function invokeOpenDialog(params) {
+  return new Promise((resolve) => {
+    socket.emit('openFileDialog', params, (filePath) => {
+      resolve(filePath);
+    });
+  });
+}
+
+function invokeOpenDialogReadFile(params) {
+  return new Promise((resolve) => {
+    socket.emit('openFileDialog', params, (filePath) => {
+      socket.emit('readTextFile', filePath, (err, data) => {
+        resolve({err, data});
+      });
+    });
+  });
+}
+
+// This is unused, but preserved in case an old macro needs it
 function invokeSaveAsDialog(file, fileName) {
   if (!file) {
     throw 'Blob object is required.';

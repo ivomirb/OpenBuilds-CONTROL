@@ -4,34 +4,12 @@ var autoStart = undefined;
 var foceShowGui = false;
 
 process.on('uncaughtException', function(err) {
-  //showErrorDialog(err, attempts = 2) // make two attempts to show an uncaughtException in a dialog
   if (DEBUG) {
     debug_log(err)
   } else {
     console.log(err);
   }
 })
-
-function showErrorDialog(err, attempts) {
-  console.error('Attempting to show an error dialog.')
-  if (!attempts) return;
-  try {
-    let options = {
-      type: 'error',
-      buttons: ['OK'],
-      title: 'Error',
-      message: `An error occured.`,
-      detail: `${err.message}\r\r\rIf you feel this shouldn't be happening, please report it at:\r\rhttps://github.com/OpenBuilds/OpenBuilds-CONTROL/issues`,
-    };
-    let window = BrowserWindow.getFocusedWindow()
-    dialog.showMessageBoxSync(window, options)
-  } catch (e) {
-    console.error(`An error occurred trying show an error, ho-boy. ${e}. We'll try again ${attempts} more time(s).`)
-    setTimeout(() => {
-      showErrorDialog(err, --attempts)
-    }, millisecondDelay = 2000);
-  }
-}
 
 // To see console.log output run with `DEBUGCONTROL=true electron .` or set environment variable for DEBUGCONTROL=true
 // debug_log debug overhead
@@ -66,6 +44,12 @@ config.grblWaitTime = 0.5;
 config.singleCommandMode = true; // set to false to send as many commands as will fit in the RX buffer
 config.aggressiveHomeReset = true;
 
+// Individual settings are stored and restores wholesale.
+// If you add a new sub-field to the initial settings, it will be destroyed on load
+var persistentConfig = {
+  defaultPaths: {},
+};
+
 var express = require("express");
 var app = express();
 var http = require("http").Server(app);
@@ -84,6 +68,27 @@ const {
   mkdirp
 } = require('mkdirp')
 
+
+function savePersistentConfig() {
+console.log("SAVING TO", configFilePath);
+  try {
+    var text = JSON.stringify(persistentConfig);
+    fs.writeFileSync(configFilePath, text, 'utf8');
+  } catch (err) {}
+}
+
+function loadPersistentConfig() {
+console.log("LOADING FROM", configFilePath);
+  try {
+    var text = fs.readFileSync(configFilePath, 'utf8');
+    var stored = JSON.parse(text);
+    for (var prop in stored) {
+      if (prop in persistentConfig && typeof(stored[prop]) == typeof(persistentConfig[prop])) {
+        persistentConfig[prop] = stored[prop];
+      }
+    }
+  } catch (err) {}
+}
 
 // FluidNC test
 var fluidncConfig = "";
@@ -109,7 +114,7 @@ app.all('/*', function(req, res, next) {
 app.post('/uploadCustomFirmware', (req, res) => {
   // 'firmwareBin' is the name of our file input field in the HTML form
   let upload = multer({
-    storage: storage
+    storage: uploadFileStorage
   }).single('firmwareBin');
 
   upload(req, res, function(err) {
@@ -207,8 +212,7 @@ const Menu = require('electron').Menu
 var forceQuit
 
 var appIcon = null,
-  jogWindow = null,
-  mainWindow = null
+  jogWindow = null;
 var autoUpdater
 
 
@@ -292,8 +296,10 @@ if (isElectron()) {
 
 if (isElectron()) {
   var uploadsDir = electronApp.getPath('userData') + '/upload/';
+  var configDir = electronApp.getPath('userData');
 } else {
   var uploadsDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
+  var configDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
 }
 var jobStartTime = false;
 var jobCompletedMsg = ""; // message sent when job is done
@@ -376,6 +382,7 @@ const iconPlay = path.join(__dirname, 'app/icon-play.png');
 const iconStop = path.join(__dirname, 'app/icon-stop.png');
 const iconPause = path.join(__dirname, 'app/icon-pause.png');
 const iconAlarm = path.join(__dirname, 'app/icon-bell.png');
+const configFilePath = path.join(configDir, "config.json");
 
 var iosocket;
 var lastCommand = false
@@ -586,9 +593,8 @@ app.get('/workspace', (req, res) => {
 
 
 app.post('/runjob', (req, res) => {
-  // 'firmwareBin' is the name of our file input field in the HTML form
   let upload = multer({
-    storage: storage
+    storage: memoryStorage
   }).single('file');
 
   upload(req, res, function(err) {
@@ -599,22 +605,36 @@ app.post('/runjob', (req, res) => {
     } else if (err) {
       return res.send(err);
     }
-    fs.readFile(req.file.path, 'utf8', function(err, data) {
-      if (err) {
-        return console.log(err);
-      }
-      var object = {
-        isJob: true,
-        //completedMsg: "",
-        data: data,
-      }
-      runJob(object)
-    });
+    var object = {
+      isJob: true,
+      data: req.file.buffer.toString(),
+    }
+    runJob(object)
+
     res.send(`Running ` + req.file.path);
 
   });
 });
 
+
+// Saves a file to disk
+app.post('/saveFile', (req, res) => {
+  let upload = multer({
+    preservePath: true,
+    storage: saveFileStorage
+  }).single('file');
+
+  upload(req, res, function(err) {
+    if (err && req.body.showErrorDlg == "true") {
+      dialog.showMessageBox(jogWindow, {
+        type: 'error',
+        buttons: ['OK'],
+        message: err.toString()
+      });
+    }
+    res.send(err ? err.toString() : "");
+  });
+});
 
 // File Post
 app.post('/upload', function(req, res) {
@@ -717,63 +737,63 @@ function onParserData(data) {
             debug_log('SPINDLE_IS_SERVO Enabled')
             //
             break;
-          case 'V': //	Variable spindle enabled
+          case 'V': // Variable spindle enabled
             debug_log('Variable spindle enabled')
             //
             break;
-          case 'N': //	Line numbers enabled
+          case 'N': // Line numbers enabled
             debug_log('Line numbers enabled')
             //
             break;
-          case 'M': //	Mist coolant enabled
+          case 'M': // Mist coolant enabled
             debug_log('Mist coolant enabled')
             //
             break;
-          case 'C': //	CoreXY enabled
+          case 'C': // CoreXY enabled
             debug_log('CoreXY enabled')
             //
             break;
-          case 'P': //	Parking motion enabled
+          case 'P': // Parking motion enabled
             debug_log('Parking motion enabled')
             //
             break;
-          case 'Z': //	Homing force origin enabled
+          case 'Z': // Homing force origin enabled
             debug_log('Homing force origin enabled')
             //
             break;
-          case 'H': //	Homing single axis enabled
+          case 'H': // Homing single axis enabled
             debug_log('Homing single axis enabled')
             //
             break;
-          case 'T': //	Two limit switches on axis enabled
+          case 'T': // Two limit switches on axis enabled
             debug_log('Two limit switches on axis enabled')
             //
             break;
-          case 'A': //	Allow feed rate overrides in probe cycles
+          case 'A': // Allow feed rate overrides in probe cycles
             debug_log('Allow feed rate overrides in probe cycles')
             //
             break;
-          case '$': //	Restore EEPROM $ settings disabled
+          case '$': // Restore EEPROM $ settings disabled
             debug_log('Restore EEPROM $ settings disabled')
             //
             break;
-          case '#': //	Restore EEPROM parameter data disabled
+          case '#': // Restore EEPROM parameter data disabled
             debug_log('Restore EEPROM parameter data disabled')
             //
             break;
-          case 'I': //	Build info write user string disabled
+          case 'I': // Build info write user string disabled
             debug_log('Build info write user string disabled')
             //
             break;
-          case 'E': //	Force sync upon EEPROM write disabled
+          case 'E': // Force sync upon EEPROM write disabled
             debug_log('Force sync upon EEPROM write disabled')
             //
             break;
-          case 'W': //	Force sync upon work coordinate offset change disabled
+          case 'W': // Force sync upon work coordinate offset change disabled
             debug_log('Force sync upon work coordinate offset change disabled')
             //
             break;
-          case 'L': //	Homing init lock sets Grbl into an alarm state upon power up
+          case 'L': // Homing init lock sets Grbl into an alarm state upon power up
             debug_log('Homing init lock sets Grbl into an alarm state upon power up')
             //
             break;
@@ -1229,14 +1249,75 @@ io.on("connection", function(socket) {
     scanForTelnetDevices(data)
   })
 
-  socket.on("openFile", function(data) {
+  socket.on("saveFileDialog", function(data, callback) {
+    var defaultPath = persistentConfig.defaultPaths[data.id || "default"] || persistentConfig.defaultPaths["last"];
+
+    if (data.fileName) {
+      defaultPath = defaultPath ? path.join(defaultPath, data.fileName) : data.fileName;
+    }
+
+    dialog.showSaveDialog(jogWindow, {
+      title: data.title,
+      filters: data.filters,
+      defaultPath: defaultPath,
+      properties: ['dontAddToRecent']
+    }).then(result => {
+      if (!result.canceled) {
+        persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePath);
+        persistentConfig.defaultPaths["last"] = path.dirname(result.filePath);
+      }
+      callback(result.filePath);
+    }).catch(err => {
+      console.log(err)
+    })
+  })
+
+  socket.on("openFileDialog", function(data, callback) {
+    var defaultPath = persistentConfig.defaultPaths[data.id || "default"] || persistentConfig.defaultPaths["last"];
+
     dialog.showOpenDialog(jogWindow, {
+      title: data.title,
+      filters: data.filters,
+      defaultPath: defaultPath,
+      properties: ['openFile']
+    }).then(result => {
+      if (!result.canceled && result.filePaths.length > 0) {
+        persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePaths[0]);
+        persistentConfig.defaultPaths["last"] = path.dirname(result.filePaths[0]);
+        callback(result.filePaths[0]);
+      }
+    }).catch(err => {
+      console.log(err)
+    })
+  })
+
+  // generic function for reading a text file
+  socket.on("readTextFile", function(filePath, callback) {
+    fs.readFile(filePath, 'utf8',
+      function(err, data) {
+        callback(err ? err.toString() : "", data);
+      });
+  })
+
+  socket.on("openFile", function() {
+    var defaultPath = persistentConfig.defaultPaths["gcode"] || persistentConfig.defaultPaths["last"];
+
+    dialog.showOpenDialog(jogWindow, {
+      title: "Open GCODE",
+      filters: [
+        {name: "GCODE files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
+        {name: "All files", extensions: ["*"]},
+      ],
+      defaultPath: defaultPath,
       properties: ['openFile']
     }).then(result => {
       console.log(result.canceled)
       console.log(result.filePaths)
-      var openFilePath = result.filePaths[0];
-      if (openFilePath !== "") {
+      if (!result.canceled && result.filePaths.length > 0) {
+        const openFilePath = result.filePaths[0];
+        persistentConfig.defaultPaths["gcode"] = path.dirname(openFilePath);
+        persistentConfig.defaultPaths["last"] = path.dirname(openFilePath);
+        savePersistentConfig();
         debug_log("path" + openFilePath);
         readFile(openFilePath);
       }
@@ -1246,7 +1327,7 @@ io.on("connection", function(socket) {
     })
   })
 
-  socket.on("reopenFile", function(data) {
+  socket.on("reopenFile", function() {
     if (status.interface.lastFilePath !== "") {
       debug_log("path" + status.interface.lastFilePath);
       readFile(status.interface.lastFilePath);
@@ -3006,7 +3087,7 @@ if (isElectron()) {
           click() {
             showJogWindow();
             io.sockets.emit("disableAutoStart");
-            dialog.showMessageBox(mainWindow, {
+            dialog.showMessageBox(jogWindow, {
               type: 'info',
               buttons: ['OK'],
               message: 'Auto Start and the tray icon have been disabled.\n\nThey can be restored from the Application Diagnostics menu in the Troubleshooting tab.'
@@ -3140,9 +3221,7 @@ if (isElectron()) {
     electronApp.on('activate', function() {
       // On OS X it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
-      if (mainWindow === null) {
-        createApp();
-      }
+      createApp();
     });
 
     if (process.platform == 'win32') {
@@ -3200,7 +3279,12 @@ function startChrome() {
 var firmwareImagePath = path.join(uploadsDir, './firmware.bin');
 var spawn = require('child_process').spawn;
 const multer = require('multer');
-const storage = multer.diskStorage({
+
+// Used for running gcode
+const memoryStorage = multer.memoryStorage();
+
+// Used for uploading firmware
+const uploadFileStorage = multer.diskStorage({
   destination: function(req, file, cb) {
     cb(null, uploadsDir);
   },
@@ -3209,6 +3293,18 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + new Date().toJSON().replace(new RegExp(':', 'g'), '.') + path.extname(file.originalname));
   }
 });
+
+// Used for save as
+const saveFileStorage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, path.dirname(file.originalname));
+  },
+  // By default, multer removes file extensions so let's add them back
+  filename: function(req, file, cb) {
+    cb(null, path.basename(file.originalname));
+  }
+});
+
 
 function flashInterface(data) {
   status.comms.connectionStatus = 6;
@@ -3662,5 +3758,7 @@ getSystemInfo().catch(err => console.error("Error retrieving system information:
 
 
 // End system info on startup
+
+loadPersistentConfig();
 
 process.on('exit', () => debug_log('exit'))
