@@ -23,11 +23,6 @@ $(document).ready(function() {
   $("form").submit(function() {
     return false;
   });
-
-  if (typeof process !== "undefined" && process.platform == 'win32') {
-    $('#mainCloseBtn').attr( "title", disableAutoStart ? "Close" : "Close to Tray");
-    socket.emit('autoStart', !disableAutoStart);
-  }
 });
 
 function showGrbl(bool, firmware) {
@@ -170,6 +165,7 @@ function initSocket() {
   })
 
   socket.on('gcodeupload', function(data) {
+    if (isJogWidget) return;
     var icon = ''
     var source = "api"
     var string = "Received new GCODE from API"
@@ -320,8 +316,8 @@ function initSocket() {
   });
 
   socket.on("jobComplete", function(data) {
+    if (isJogWidget) return;
 
-    // Jobstats.js
     if (data.completed && data.jobStartTime && data.jobEndTime) {
       console.log("jobComplete", data)
       var runTime = data.jobEndTime - data.jobStartTime; // in Milliseconds
@@ -415,14 +411,7 @@ function initSocket() {
       progressbar.val(donepercent);
     }
 
-    if (total > done) {
-      localStorage.setItem('gcodeLineNumber', done); //recovery line number
-    }
-
     if (laststatus) {
-      if (laststatus.comms.connectionStatus == 3) {
-        editor.gotoLine(data[1] - data[0]);
-      }
       if (typeof object !== 'undefined' && done > 0) {
         if (object.userData !== 'undefined' && object.userData && object.userData.linePoints.length > 2) {
           var timeremain = object.userData.totalTime;
@@ -602,7 +591,7 @@ function initSocket() {
 
   socket.on('status', function(status) {
 
-    if (nostatusyet) {
+    if (nostatusyet && !isJogWidget) {
       setWindowTitle(status)
       if (status.driver.operatingsystem == "rpi") {
         $('#windowtitlebar').hide();
@@ -916,6 +905,15 @@ function initSocket() {
       $(".4thaxis-active").hide();
     }
 
+    if ((!laststatus || laststatus.interface.autoStart != status.interface.autoStart) &&
+        !isJogWidget && typeof process !== "undefined" && process.platform == 'win32') {
+      $('#mainCloseBtn').attr( "title", status.interface.autoStart ? "Close to Tray" : "Close");
+      if (status.interface.autoStart) {
+        $('#disableAutoStartTick').removeClass("checked");
+      } else {
+        $('#disableAutoStartTick').addClass("checked");
+      }
+    }
 
     laststatus = status;
 
@@ -1004,16 +1002,6 @@ function initSocket() {
 
   socket.on("interfaceOutdated", function(status) {
     console.log("interfaceOutdated", status)
-  })
-
-  socket.on("disableAutoStart", function() {
-    if (typeof process !== "undefined" && process.platform == 'win32' && !disableAutoStart) {
-      disableAutoStart = true;
-      localStorage.setItem('disableAutoStart', true);
-      $('#mainCloseBtn').attr( "title", "Close");
-      $('#disableAutoStartTick').addClass("checked");
-      socket.emit('autoStart', false);
-    }
   })
 
   socket.on('captureWcsHistory', function(data) {

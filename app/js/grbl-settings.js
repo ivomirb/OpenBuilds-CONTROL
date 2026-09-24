@@ -1,28 +1,19 @@
 var settingsUIConstructed = false;
+const backupFileFilters = [
+  {name: "TXT files", extensions: ["txt"]},
+  {name: "All files", extensions: ["*"]},
+];
 
-$(document).ready(function() {
-  var backupFileOpen = document.getElementById('grblBackupFile');
-  if (backupFileOpen) {
-    backupFileOpen.addEventListener('change', readGrblBackupFile, false);
-  }
-});
+function loadGrblBackupFile() {
+  var loadFileParams = {
+    id: "settings",
+    title: "Restore Settings",
+    filters: backupFileFilters,
+  };
 
-function readGrblBackupFile(evt) {
-  var files = evt.target.files || evt.dataTransfer.files;
-  loadGrblBackupFile(files[0]);
-  document.getElementById('grblBackupFile').value = '';
-
-}
-
-function loadGrblBackupFile(f) {
-  if (f) {
-    // Filereader
-    var r = new FileReader();
-
-    r.readAsText(f);
-    r.onload = function(event) {
-      //console.log(this.result)
-      var data = this.result.split("\n");
+  invokeOpenDialogReadFile(loadFileParams).then(({err, data}) => {
+    if (!err) {
+      var data = data.split("\n");
       for (var i = 0; i < data.length; i++) {
         var parts = data[i].split('=');
         if (data[i].indexOf("$I=") == 0) {
@@ -42,7 +33,7 @@ function loadGrblBackupFile(f) {
       displayProbeDirInvert();
       $("#grblSettingsAdvTab").click();
     }
-  }
+  });
 }
 
 function populateRestoreMenu() {
@@ -140,11 +131,19 @@ function backupGrblSettings() {
     type: "plain/text"
   });
   var date = new Date();
+
+  var saveFileParams = {
+    id: "settings",
+    title: "Backup Settings",
+    filters: backupFileFilters,
+  };
+
   if (laststatus.machine.name.length > 0) {
-    invokeSaveAsDialog(blob, 'grbl-settings-backup-' + laststatus.machine.name + "-" + date.yyyymmdd() + '.txt');
+    saveFileParams.fileName = 'grbl-settings-backup-' + laststatus.machine.name + "-" + date.yyyymmdd() + '.txt';
   } else {
-    invokeSaveAsDialog(blob, 'grbl-settings-backup-' + date.yyyymmdd() + '.txt');
+    saveFileParams.fileName = 'grbl-settings-backup-' + date.yyyymmdd() + '.txt';
   }
+  invokeSaveAsDialogNew(blob, saveFileParams);
 }
 
 function grblSettings(data) {

@@ -31,6 +31,11 @@ var g_HeghtmapSettings =
 	modifyRapids: false, // modify the height of rapid moves (G0 commands)
 };
 
+const heightmapFilters = [
+	{name: "Comma Separate Values files", extensions: ["csv"]},
+	{name: "All files", extensions: ["*"]},
+];
+
 function ClearHeightmapMesh()
 {
 	var geo = g_HeightmapGeo ? g_HeightmapGeo : workspace.getObjectByName("Heightmap");
@@ -604,7 +609,62 @@ function FileReadError(message)
 	});
 }
 
-function LoadHeightmap(event)
+function LoadHeightmap(file)
+{
+	try
+	{
+		var lines = file.split('\n');
+		var config = lines[0].split(',').map(Number);
+		if (config.length != 11)
+		{
+			throw new Error("Line 1 doesn't have the correct number of values. Expecting 11 numbers.");
+		}
+
+		var start = {x: config[0], y: config[1]};
+		var size = {x: Math.max(config[2], 1), y: Math.max(config[3], 1)};
+		var pointCount = {x: Math.max(Math.floor(config[4]), 2), y: Math.max(Math.floor(config[5]), 2)};
+		var anchor = {x: config[6], y: config[7]};
+		var seek = Math.max(config[8], 0.1);
+		var feed = Math.max(config[9], 1);
+		var retract = Math.max(config[10], 0.1);
+
+		if (lines.length < pointCount.y + 1)
+		{
+			throw new Error("The file doesn't have the correct number of lines. Expecting " + (pointCount.y+1) + " lines.");
+		}
+		var data = [];
+		for (var y = 0; y < pointCount.y; y++)
+		{
+			var row = lines[y+1].split(',').map(Number);
+			row.splice(pointCount.x);
+			if (row.length != pointCount.x)
+			{
+				throw new Error("Line " + (y+2) + " doesn't have the correct number of values. Expecting " + pointCount.x + " numbers.");
+			}
+			data.push(row);
+		}
+
+		g_HeightmapData = data;
+		g_HeightmapStart = start;
+		g_HeightmapSize = size;
+		g_HeightmapPointCount = pointCount;
+		g_HeightmapAnchor = anchor;
+		g_HeightmapSeek = seek;
+		g_HeigtmapFeed = feed;
+		g_HeightmapRetract = retract;
+		g_bHeightmapDataValid = true;
+	}
+	catch (error)
+	{
+		FileReadError(error.message);
+		return;
+	}
+
+	ClearHeightmapMesh();
+	ShowHeightmap(true);
+}
+
+function LoadHeightmapOld(event)
 {
 	var files = event.target.files || event.dataTransfer.files;
 	var file = files[0];
@@ -616,59 +676,30 @@ function LoadHeightmap(event)
 		r.readAsText(file);
 		r.onload = function()
 		{
-			try
-			{
-				var lines = this.result.split('\n');
-				var config = lines[0].split(',').map(Number);
-				if (config.length != 11)
-				{
-					throw new Error("Line 1 doesn't have the correct number of values. Expecting 11 numbers.");
-				}
-
-				var start = {x: config[0], y: config[1]};
-				var size = {x: Math.max(config[2], 1), y: Math.max(config[3], 1)};
-				var pointCount = {x: Math.max(Math.floor(config[4]), 2), y: Math.max(Math.floor(config[5]), 2)};
-				var anchor = {x: config[6], y: config[7]};
-				var seek = Math.max(config[8], 0.1);
-				var feed = Math.max(config[9], 1);
-				var retract = Math.max(config[10], 0.1);
-
-				if (lines.length < pointCount.y + 1)
-				{
-					throw new Error("The file doesn't have the correct number of lines. Expecting " + (pointCount.y+1) + " lines.");
-				}
-				var data = [];
-				for (var y = 0; y < pointCount.y; y++)
-				{
-					var row = lines[y+1].split(',').map(Number);
-					row.splice(pointCount.x);
-					if (row.length != pointCount.x)
-					{
-						throw new Error("Line " + (y+2) + " doesn't have the correct number of values. Expecting " + pointCount.x + " numbers.");
-					}
-					data.push(row);
-				}
-
-				g_HeightmapData = data;
-				g_HeightmapStart = start;
-				g_HeightmapSize = size;
-				g_HeightmapPointCount = pointCount;
-				g_HeightmapAnchor = anchor;
-				g_HeightmapSeek = seek;
-				g_HeigtmapFeed = feed;
-				g_HeightmapRetract = retract;
-				g_bHeightmapDataValid = true;
-			}
-			catch (error)
-			{
-				FileReadError(error.message);
-				return;
-			}
-
-			ClearHeightmapMesh();
-			ShowHeightmap(true);
+			LoadHeightmap(this.result);
+		}
+		r.onerror = function()
+		{
+			FileReadError(r.error.message);
 		}
 	}
+}
+
+window.LoadHeightmapNew = function()
+{
+	var loadFileParams = {
+		id: "heightmap",
+		title: "Load Heightmap",
+		filters: heightmapFilters,
+	};
+
+	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>
+	{
+		if (err)
+			FileReadError(err);
+		else
+			LoadHeightmap(data);
+	});
 }
 
 window.SaveHeightmap = function()
@@ -694,7 +725,21 @@ window.SaveHeightmap = function()
 	{
 		name += '-' + loadedFileName.split('.')[0];
 	}
-	invokeSaveAsDialog(blob, name + '.csv');
+
+	if (typeof invokeSaveAsDialogNew == 'function')
+	{
+		var saveFileParams = {
+			id: "heightmap",
+			title: "Save Heightmap",
+			filters: heightmapFilters,
+			fileName: name + '.csv'
+		};
+		invokeSaveAsDialogNew(blob, saveFileParams);
+	}
+	else
+	{
+		invokeSaveAsDialog(blob, name + '.csv');
+	}
 }
 
 window.ClearHeightmap = function()
@@ -1318,7 +1363,8 @@ const heightmapBtnHtml = `<div class="pos-relative" style="display:inline-block;
 		<li onclick="EditHeightmapSettings()" id="editHeightmapSettings"><a href="#">Heightmap Settings</a></li>
 		<li class="divider"></li>
 		<li onclick="GenerateHeightmap()" id="generateHeightmap"><a href="#">Generate Heightmap</a></li>
-		<li class="btn-file" title=""><a href="#"><input class="btn-file" id="loadHeightmapFile" type="file" accept=".csv" />Load Heightmap</a></li>
+		<li class="btn-file" title="" id="loadHeightmapOld"><a href="#"><input class="btn-file" id="loadHeightmapFile" type="file" accept=".csv" />Load Heightmap</a></li>
+		<li onclick="LoadHeightmapNew();" id="loadHeightmapNew"><a href="#">Load Heightmap</a></li>
 		<li onclick="SaveHeightmap()" id="saveHeightmap"><a href="#">Save Heightmap</a></li>
 		<li onclick="ClearHeightmap()" id="clearHeightmap"><a href="#">Clear Heightmap</a></li>
 		<li class="divider"></li>
@@ -1343,7 +1389,15 @@ $(document).ready(function()
 	{
 		$('#resetViewBtn').after(heightmapBtnHtml);
 	}
-	$('#loadHeightmapFile').on('change', LoadHeightmap);
+	if (typeof invokeOpenDialog == 'function')
+	{
+		$('#loadHeightmapOld').remove();
+	}
+	else
+	{
+		$('#loadHeightmapNew').remove();
+		$('#loadHeightmapFile').on('change', LoadHeightmapOld);
+	}
 
 	var settings = JSON.parse(localStorage.getItem("HeightmapSettings"));
 	if (settings)

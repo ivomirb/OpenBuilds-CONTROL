@@ -513,7 +513,20 @@ window.ExportAll = function()
 {
 	var blob = new Blob([JSON.stringify(buttonsarray)], {type: "plain/text"});
 	var date = new Date();
-	invokeSaveAsDialog(blob, 'macro-backup-' + date.yyyymmdd() + '.json');
+
+	if (typeof invokeSaveAsDialogNew == 'function')
+	{
+		var saveFileParams = {
+			id: "macros",
+			title: "Backup Macros",
+			filters: macroFileFilters,
+			fileName: 'macro-backup-' + date.yyyymmdd() + '.json'
+		};
+		invokeSaveAsDialogNew(blob, saveFileParams);
+	}
+	else{
+		invokeSaveAsDialog(blob, 'macro-backup-' + date.yyyymmdd() + '.json');
+	}
 }
 
 function FileReadError(message)
@@ -537,7 +550,25 @@ function FileReadError(message)
 	});
 }
 
-function ImportAll(event)
+function ImportAll(data)
+{
+	var newButtons = undefined;
+	try
+	{
+		newButtons = JSON.parse(data);
+	}
+	catch (error)
+	{
+		FileReadError(error.message);
+	}
+	if (newButtons != undefined)
+	{
+		buttonsarray = newButtons;
+		populateMacroButtons();
+	}
+}
+
+function ImportAllOld(event)
 {
 	var files = event.target.files || event.dataTransfer.files;
 	var file = files[0];
@@ -548,26 +579,30 @@ function ImportAll(event)
 		r.readAsText(file);
 		r.onload = function()
 		{
-			var newButtons = undefined;
-			try
-			{
-				newButtons = JSON.parse(this.result);
-			}
-			catch (error)
-			{
-				FileReadError(error.message);
-			}
-			if (newButtons != undefined)
-			{
-				buttonsarray = newButtons;
-				populateMacroButtons();
-			}
+			ImportAll(this.result);
 		}
 		r.onerror = function()
 		{
 			FileReadError(r.error.message);
 		}
 	}
+}
+
+window.ImportAllNew = function()
+{
+	var loadFileParams = {
+		id: "macros",
+		title: "Import All",
+		filters: macroFileFilters,
+	};
+
+	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>
+	{
+		if (err)
+			FileReadError(err);
+		else
+			ImportAll(data);
+	});
 }
 
 const contextMenusHtml = `
@@ -578,7 +613,8 @@ const contextMenusHtml = `
 	<li id="macroHideGroups" onclick="SetMacroTabsVisibility(0)"><a href="#"><i class="fa fa-circle icon"></i> Disable Groups</a></li>
 	<li class="divider"></li>
 	<li onclick="ExportAll()"><a href="#"><i class="fas fa-save icon"></i> Export All Macros</a></li>
-	<li class="btn-file" title=""><a href="#"><input class="btn-file" id="macroImportAllFile" type="file" accept=".json" /><i class="fas fa-upload icon"></i> Import All Macros</a></li>
+	<li class="btn-file" title="" id="macroImportAllOld"><a href="#"><input class="btn-file" id="macroImportAllFile" type="file" accept=".json" /><i class="fas fa-upload icon"></i> Import All Macros</a></li>
+	<li  id="macroImportAllNew" onclick=""><a href="#"><i class="fas fa-upload icon"></i> Import All Macros</a></li>
 </ul>
 <div id="macroMenuDivider2"/>
 <ul class="d-menu context drop-shadow" id="macroTabContextMenu" data-role="dropdown">
@@ -601,7 +637,16 @@ $(document).ready(function()
 
 	// create context menu for the background
 	$('body').append(contextMenusHtml);
-	$('#macroImportAllFile').on('change', ImportAll);
+
+if (typeof invokeOpenDialog == 'function')
+	{
+		$('#macroImportAllOld').remove();
+	}
+	else
+	{
+		$('#macroImportAllNew').remove();
+		$('#macroImportAllFile').on('change', ImportAll);
+	}
 
 	// add items to button context menu
 	$('#macroContextMenuItems').after(groupContextMenuHtml);

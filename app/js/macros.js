@@ -1,7 +1,6 @@
 var buttonsarray = []
 var macroCodeType = "gcode"
 
-
 function populateMacroButtons(firstRun) {
 
   $("#macros").empty();
@@ -76,8 +75,7 @@ function populateMacroButtons(firstRun) {
   </button>
 
 
-  <button class="m-1 command-button command-button-macro drop-shadow outline rounded btn-file">
-    <input class="btn-file" id="macroBackupFile" type="file" accept=".json" />
+  <button class="m-1 command-button command-button-macro drop-shadow outline rounded" onclick="importMacroBackupFile()">
     <span class="fas fa-upload icon"></span>
     <span class="caption mt-2">
       Import <small>JSON Macro</small>
@@ -87,15 +85,8 @@ function populateMacroButtons(firstRun) {
   <hr>
 
   <small><i class="fas fa-info-circle"></i>  Right click your Macro buttons to edit/sort/delete/export</small>
-
-
   `
   $("#macros").append(button);
-
-  var macroBackupFileOpen = document.getElementById('macroBackupFile');
-  if (macroBackupFileOpen) {
-    macroBackupFileOpen.addEventListener('change', readmacroBackupFileOpen, false);
-  }
 
   localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
 }
@@ -429,9 +420,6 @@ function executeJS(js) {
 function macroContextMenu(e) {
   console.log(e)
   setMacroContextMenuPosition(e);
-  //e.preventDefault();
-  //$('.linenumber').html((editor.getSelectionRange().start.row + 1));
-  // alert('success! - rightclicked line ' + (editor.getSelectionRange().start.row + 1));
 }
 
 function setMacroContextMenuPosition(e) {
@@ -468,7 +456,6 @@ function setMacroContextMenuPosition(e) {
 }
 
 function sortMacros(index, delta) {
-  // var index = array.indexOf(element);
   var newIndex = index + delta;
   if (newIndex < 0 || newIndex == buttonsarray.length) return; //Already at the top or bottom.
   var indexes = [index, newIndex].sort((a, b) => a - b); //Sort the indixes
@@ -503,34 +490,39 @@ function confirmMacroDelete(i) {
   });
 }
 
+const macroFileFilters = [
+  {name: "JSON files", extensions: ["json"]},
+  {name: "All files", extensions: ["*"]},
+];
+
 function backupMacro(index) {
   var blob = new Blob([JSON.stringify(buttonsarray[index])], {
     type: "plain/text"
   });
-  invokeSaveAsDialog(blob, 'control-macro-backup-' + buttonsarray[index].title + '.json');
 
+  var saveFileParams = {
+    id: "macros",
+    title: "Export Macro",
+    filters: macroFileFilters,
+    fileName: 'control-macro-backup-' + buttonsarray[index].title + '.json'
+  };
+  invokeSaveAsDialogNew(blob, saveFileParams);
 }
 
-function readmacroBackupFileOpen(evt) {
-  var files = evt.target.files || evt.dataTransfer.files;
-  loadmacroBackupFileOpen(files[0]);
-  document.getElementById('macroBackupFile').value = '';
-}
+function importMacroBackupFile() {
+  var loadFileParams = {
+    id: "macros",
+    title: "Import Macro",
+    filters: macroFileFilters,
+  };
 
-function loadmacroBackupFileOpen(f) {
-  if (f) { // Filereader
-    var r = new FileReader();
-    // if (f.name.match(/.gcode$/i)) {
-    r.readAsText(f);
-    r.onload = function(event) {
-      //var grblsettingsfile = this.result
-      console.log(this.result)
-      var newMacro = JSON.parse(this.result);
+  invokeOpenDialogReadFile(loadFileParams).then(({err, data}) => {
+    if (!err) {
+      var newMacro = JSON.parse(data);
       if (newMacro.title != undefined && newMacro.codetype != undefined) {
         buttonsarray.push(newMacro)
         populateMacroButtons();
       }
-
     }
-  }
+  });
 }
