@@ -40,7 +40,7 @@
           <span title="Minimize" class="btn-custom" onclick="socket.emit('minimize')"><i class="fas fa-window-minimize"></i></span>
           <span title="Maximize" class="btn-custom" onclick="socket.emit('maximize')"><i class="fas fa-window-maximize"></i></span>
           <span title="Toggle Fullscreen" class="btn-custom" onclick="socket.emit('fullscreen')"><i class="fas fa-desktop"></i></span>
-          <span title="Close to Tray" class="btn-custom" onclick="socket.emit(disableAutoStart?'quit':'minimisetotray')" id="mainCloseBtn"><i class="fas fa-window-close"></i></span>
+          <span title="Close to Tray" class="btn-custom" onclick="socket.emit('minimisetotray')" id="mainCloseBtn"><i class="fas fa-window-close"></i></span>
         </div>
       </div>
       <div class="window-content" style="height: 100%; overflow: hidden  !important;">
@@ -565,7 +565,7 @@
                     <span class="caption">Application<br>Settings</span>
                   </button>
                   <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
-                    <li onclick="disableAutoStart = !disableAutoStart; saveDiagnostics();" id="disableAutoStartTick" style="display:none"><a href="#"><i class="fas fa-fw fa-running"></i> Disable Auto Start and Tray Icon</a></li>
+                    <li onclick="toggleAutoStart();" id="disableAutoStartTick" style="display:none"><a href="#"><i class="fas fa-fw fa-running"></i> Disable Auto Start and Tray Icon</a></li>
                     <li onclick="disableAggressiveHomeReset = !disableAggressiveHomeReset; saveDiagnostics();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
                     <li onclick="disable4thAxis = !disable4thAxis; saveDiagnostics();" id="disable4thAxisTick" style="display:none"><a href="#"><i class="fas fa-fw fa-chess-rook"></i> Disable 4th axis</a></li>
                   </ul>

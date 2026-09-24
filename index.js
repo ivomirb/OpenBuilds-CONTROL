@@ -1,6 +1,5 @@
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = '1';
 
-var autoStart = undefined;
 var foceShowGui = false;
 
 process.on('uncaughtException', function(err) {
@@ -47,6 +46,7 @@ config.aggressiveHomeReset = true;
 // Individual settings are stored and restores wholesale.
 // If you add a new sub-field to the initial settings, it will be destroyed on load
 var persistentConfig = {
+  autoStart: true,
   defaultPaths: {},
 };
 
@@ -70,7 +70,6 @@ const {
 
 
 function savePersistentConfig() {
-console.log("SAVING TO", configFilePath);
   try {
     var text = JSON.stringify(persistentConfig);
     fs.writeFileSync(configFilePath, text, 'utf8');
@@ -78,7 +77,6 @@ console.log("SAVING TO", configFilePath);
 }
 
 function loadPersistentConfig() {
-console.log("LOADING FROM", configFilePath);
   try {
     var text = fs.readFileSync(configFilePath, 'utf8');
     var stored = JSON.parse(text);
@@ -373,6 +371,28 @@ function checkPowerSettings() {
   }
 }
 
+function setAutoStart(enabled) {
+  if (enabled != persistentConfig.autoStart) {
+    persistentConfig.autoStart = enabled;
+    status.interface.autoStart = enabled;
+    savePersistentConfig();
+    electronApp.setLoginItemSettings({
+      openAtLogin: enabled,
+      args: []
+    })
+    if (enabled) {
+      if (!appIcon) {
+        createTrayIcon();
+      }
+    }
+    else {
+      if (appIcon) {
+        appIcon.destroy();
+        appIcon = null;
+      }
+    }
+  }
+}
 
 var oldiplist;
 var oldpinslist;
@@ -406,7 +426,6 @@ var feedOverride = 100,
 var re = new RegExp("^[a-f0-9]{32}");
 
 var status = {
-  login: false,
   driver: {
     version: require('./package').version,
     ipaddress: ip.address(),
@@ -503,11 +522,12 @@ var status = {
   interface: {
     diskdrive: false,
     lastFilePath: "",
-      firmware: {
-        availVersion: "",
-        installedVersion: "",
-      },
-      connected: false
+    firmware: {
+      availVersion: "",
+      installedVersion: "",
+    },
+    connected: false,
+    autoStart: true,
   }
 };
 
@@ -1445,7 +1465,14 @@ io.on("connection", function(socket) {
   });
 
   socket.on("minimisetotray", function(data) {
-    jogWindow.hide();
+    if (persistentConfig.autoStart) {
+      jogWindow.hide();
+    } else {
+      if (appIcon) {
+        appIcon.destroy();
+      }
+      electronApp.exit(0);
+    }
   });
 
   socket.on("minimize", function(data) {
@@ -1492,25 +1519,7 @@ io.on("connection", function(socket) {
     }
   })
 
-  socket.on("autoStart", function(enabled) {
-    if (enabled != autoStart) {
-      if (enabled) {
-        electronApp.setLoginItemSettings({openAtLogin: true, args: ["--startup"]});
-        if (!appIcon)
-          createTrayIcon();
-        if (autoStart == undefined && !foceShowGui)
-          jogWindow.hide();
-      }
-      else {
-        electronApp.setLoginItemSettings({openAtLogin: false});
-        if (appIcon) {
-          appIcon.destroy();
-          appIcon = null;
-        }
-      }
-      autoStart = enabled;
-    }
-  })
+  socket.on("autoStart", setAutoStart);
 
   socket.on("flashGrbl", function(data) {
 
@@ -2916,6 +2925,8 @@ function isElectron() {
   return false;
 }
 
+loadPersistentConfig();
+
 if (isElectron()) {
   const gotTheLock = electronApp.requestSingleInstanceLock()
   var lauchGUI = true;
@@ -2968,7 +2979,8 @@ if (isElectron()) {
     // Module to create native browser window.
 
     function createApp() {
-      if (process.platform != 'win32' || autoStart)
+      status.interface.autoStart = persistentConfig.autoStart;
+      if (process.platform != 'win32' || persistentConfig.autoStart)
         createTrayIcon();
       if (process.platform == 'darwin') {
         debug_log("Creating MacOS Menu");
@@ -2987,8 +2999,8 @@ if (isElectron()) {
       }
 
       foceShowGui = uploadedgcode.length > 1 || process.argv.indexOf("-showGui") > 0;
-      if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !autoStart)) {
-        showJogWindow()
+      if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !persistentConfig.autoStart)) {
+        showJogWindow();
       }
 
     }
@@ -3066,7 +3078,7 @@ if (isElectron()) {
         appIcon = new Tray(
           nativeImage.createFromPath(iconPath)
         )
-        const contextMenu = Menu.buildFromTemplate([{
+        const contextMenuTemplate = [{
           label: 'Open User Interface (GUI)',
           click() {
             // debug_log("Clicked Systray")
@@ -3080,20 +3092,28 @@ if (isElectron()) {
             }
             electronApp.exit(0);
           }
-        }, {
-          type: 'separator'
-        }, {
-          label: 'Disable Auto Start and the Tray Icon',
-          click() {
-            showJogWindow();
-            io.sockets.emit("disableAutoStart");
-            dialog.showMessageBox(jogWindow, {
-              type: 'info',
-              buttons: ['OK'],
-              message: 'Auto Start and the tray icon have been disabled.\n\nThey can be restored from the Application Diagnostics menu in the Troubleshooting tab.'
-            });
-          }
-        }])
+        }];
+        if (process.platform == 'win32') {
+          contextMenuTemplate.push({type: 'separator'});
+          contextMenuTemplate.push({
+            label: 'Disable Auto Start and the Tray Icon',
+            click() {
+              showJogWindow();
+              setAutoStart(false);
+              dialog.showMessageBox(jogWindow, {
+                type: 'info',
+                buttons: ['OK'],
+                message: 'Auto Start and the tray icon have been disabled.\n\nThey can be restored from the Application Settings menu in the Troubleshooting tab.'
+              });
+              if (appIcon) {
+                appIcon.destroy();
+              }
+              appIcon = null;
+            }
+          });
+        }
+
+        const contextMenu = Menu.buildFromTemplate(contextMenuTemplate);
         if (appIcon) {
           appIcon.on('click', function() {
             // debug_log("Clicked Systray")
@@ -3117,7 +3137,6 @@ if (isElectron()) {
           appIcon.displayBalloon({
             icon: nativeImage.createFromPath(iconPath),
             title: "OpenBuilds CONTROL Started",
-            // content: "OpenBuilds CONTROL has started successfully: Active on " + ip.address() + ":" + config.webPort
             content: "OpenBuilds CONTROL has started successfully"
           })
         }
@@ -3224,9 +3243,13 @@ if (isElectron()) {
       createApp();
     });
 
-    if (process.platform == 'win32') {
-      // If the app was auto-started by Windows, create the tray icon and don't create the main window until the icon is clicked
-      autoStart = process.argv.indexOf("--startup") > 0 ? true : undefined;
+    // Autostart on Login
+console.log("CONFIG", persistentConfig);
+    if (process.platform == 'win32' && persistentConfig.autoStart) {
+      electronApp.setLoginItemSettings({
+        openAtLogin: true,
+        args: []
+      })
     }
   }
 } else { // if its not running under Electron, lets get Chrome up.
@@ -3758,7 +3781,5 @@ getSystemInfo().catch(err => console.error("Error retrieving system information:
 
 
 // End system info on startup
-
-loadPersistentConfig();
 
 process.on('exit', () => debug_log('exit'))
