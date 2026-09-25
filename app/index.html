@@ -151,14 +151,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -219,14 +219,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -242,7 +242,7 @@
                   <span class="icon">
                     <img src="img/openbuilds-logo.svg">
                   </span>
-                  <span class="caption">OpenBuilds</span>
+                  <span class="caption">OpenBuilds<br>&nbsp;</span>
                 </button>
                 <span class="title">Visit</span>
               </div>
@@ -399,12 +399,10 @@
                         <li onclick="sendGcode('M3 S'+(parseInt(grblParams.$30) * 1).toFixed(0)+'\n G1F1000')"><a href="#">Laser On 100% Power (M3 S<span class="ToolOnS100">1000</span>)</a></li>
                       </ul>
                     </li>
-                    <!-- <li class="divider"></li> -->
                     <li onclick="sendGcode('M3 S'+parseInt(grblParams.$30).toFixed(0))"><a class="grblmode" href="#">Plasma On (M3 S<span class="ToolOnS100">1000</span>)</a></li>
                     <li class="divider fg-gray"></li>
                     <li id="menuMisting" style="display: none;" onclick="sendGcode('M7')"><a class="grblmode" href="#">Misting On (M7)</a></li>
                     <li onclick="sendGcode('M8')"><a class="grblmode" href="#">Coolant On (M8)</a></li>
-                    <!-- <li><a class="grblmode" href="#" onclick="sendGcode('M9 S1000')">Coolant Off (M9)</a></li> -->
 
                   </ul>
                 </div>
@@ -434,7 +432,7 @@
                       <i class="fas fa-podcast fa-rotate-180"></i>
                     </span>
                   </span>
-                  <span class="caption grblmode">Probe</span>
+                  <span class="caption grblmode">Probe<br>&nbsp;</span>
                 </button>
 
 
@@ -502,7 +500,7 @@
                 <span class="title">Theme</span>
               </div>
 
-              <div class="group estop" style="width: 100px;">
+              <div class="group estop">
                 <button class="ribbon-button" onclick="socket.emit('clearAlarm', 2)">
                   <span class="icon">
                     <span class="fa-layers" data-toggle="tooltip" data-placement="bottom" title="Flashes red when machine has entered ALARM state, click Clear Alarm button">
@@ -512,14 +510,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -592,7 +590,7 @@
                 <span class="title">Support</span>
               </div>
 
-              <div class="group" style="width: 100px;">
+              <div class="group">
                 <button class="ribbon-button" onclick="socket.emit('clearAlarm', 2)">
                   <span class="icon">
                     <span class="fa-layers" data-toggle="tooltip" data-placement="bottom" title="Flashes red when machine has entered ALARM state, click Clear Alarm button">
@@ -602,14 +600,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true})">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true})">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -856,7 +854,6 @@ Restore previous origins from history.">
                             <span class="fa-layers fa-fw">
                               <i class="fas fa-layer-group fg-openbuilds" data-fa-transform="shrink-2 up-3"></i>
                               <i class="fas fa-caret-down fg-openbuilds" data-fa-transform="down-8"></i>
-                              <!-- <span class="fa-layers-text fg-grayBlue" data-fa-transform="up-8 " style="font-weight:900; font-family: Arial; font-size: 12px;">gotozero</span> -->
                             </span>
                           </button>
                           <ul class="d-menu context drop-shadow drop-right" data-role="dropdown">
@@ -1313,94 +1310,6 @@ Restore previous origins from history.">
 
               </div>
               <div class="cell p-0 m-0">
-
-                <!-- <div class="card">
-                  <div class="card-header  p-1 m-0">
-                    <i class="fas fa-fw fa-microchip"></i>Firmware Compiled with Parameters
-                  </div>
-                  <div class="card-content" style="height: calc(100vh - 680px); min-height: 120px; overflow-x: auto;">
-                    <table class="table striped compact">
-                      <thead>
-                        <tr>
-                          <th style="width: 80%;">Value</th>
-                          <th style="width: 20%;">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Variable Spindle</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enVariableSpindle">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Laser Mode Enabled ($32 Setting)</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enLaser">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Grbl-Servo Installed</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enServo">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Line Numbers Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enLineNumbers">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Mist Cooling Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enMisting">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">CoreXY Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enCoreXY">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Parking Motion Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enParking">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Homing Force Origin Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enHomingOrigin">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Single Axis Homing</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enSingleAxisHome">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Two Limit Switches on Axis Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enTwoLimits">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Allow Feed Override in Probe</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enFeedOVProbe">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Restore EEPROM $-settings Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enEepromSettingsDisable">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Restore EEPROM parameter Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enEepromParamsDisable">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Build Info Write Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enBuildInfoDisabled">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Force Sync on EEPROM write Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enForceSyncEeprom">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Force Sync on WCO Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enForceSyncWco">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Homing Init Lock</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enHomingInitLock">OFF</span></td>
-                        </tr>
-
-                      </tbody>
-                    </table>
-                  </div>
-                </div> -->
-
                 <div class="card">
                   <div class="card-header p-1 m-0">
                     <i class="fas fa-fw fa-tty"></i>&nbsp;Communications
