@@ -840,7 +840,7 @@ function initSocket() {
 
     laststatus = status;
 
-    if (!isJogWidget && (featuresChanged || offsetChanged))
+    if (!isJogWidget && webgl && (featuresChanged || offsetChanged))
       updateMachineCoordinates();
     if (featuresChanged)
         updateGotoLimits();

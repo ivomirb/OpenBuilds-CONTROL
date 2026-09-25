@@ -191,7 +191,7 @@ function grblSettings(data) {
   }
 
   updateGotoLimits();
-  if (!isJogWidget)
+  if (!isJogWidget && webgl)
     updateMachineCoordinates();
 
   if (grblParams['$32'] == 1) {
