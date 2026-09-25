@@ -1,50 +1,69 @@
 var allowContinuousJog = false;
 var continuousJogRunning = false;
+var safeToUpdateSliders = true;
+var jogRate = {x: 4000, y: 4000, z: 2000, a: 2000};
+var showMCS = false;
+
+var jogDistArray = [ // must have 4 items
+  {mm: 0.1, mmStr: '0.1qm', in: 0.0254, inStr: '0.001"', button: '#dist01', label: '#dist01label'},
+  {mm: 1, mmStr: '1qm', in: 0.254, inStr: '0.01"', button: '#dist1', label: '#dist1label'},
+  {mm: 10, mmStr: '10qm', in: 2.54, inStr: '0.1"', button: '#dist10', label: '#dist10label'},
+  {mm: 100, mmStr: '100qm', in: 25.4, inStr: '1"', button: '#dist100', label: '#dist100label'},
+];
+
+var jogDistIndex = 2; // initial selection
 var jogdistXYZ = 10;
 var jogdistA = 10;
-var safeToUpdateSliders = true;
-var jogRateX = 4000
-var jogRateY = 4000
-var jogRateZ = 2000
-var jogRateA = 2000
 
 function jogOverride(newVal) {
   if (grblParams.hasOwnProperty('$110')) {
-    jogRateX = (grblParams['$110'] * (newVal / 100)).toFixed(0);
-    jogRateY = (grblParams['$111'] * (newVal / 100)).toFixed(0);
-    jogRateZ = (grblParams['$112'] * (newVal / 100)).toFixed(0);
+    jogRate.x = (grblParams['$110'] * (newVal / 100)).toFixed(0);
+    jogRate.y = (grblParams['$111'] * (newVal / 100)).toFixed(0);
+    jogRate.z = (grblParams['$112'] * (newVal / 100)).toFixed(0);
     if ($('#jro').data('slider').val() != newVal)
       $('#jro').data('slider').val(newVal)
   }
   if (grblParams.hasOwnProperty('$113')) {
-    jogRateA = (grblParams['$113'] * (newVal / 100)).toFixed(0);
+    jogRate.a = (grblParams['$113'] * (newVal / 100)).toFixed(0);
   }
   localStorage.setItem('jogOverride', newVal);
 }
 
+function setJogDist(index) {
+  for (var i = 0; i < 4; i++) {
+    const jogDist = jogDistArray[i];
+    const button = $(jogDist.button);
+    const label = $(jogDist.label);
+    if (i == index) {
+     button.addClass('bd-openbuilds');
+     label.removeClass('fg-gray');
+     label.addClass('fg-openbuilds');
+    } else {
+     button.removeClass('bd-openbuilds');
+     label.removeClass('fg-openbuilds');
+     label.addClass('fg-gray');
+    }
+  }
+  jogDistIndex = index;
+  jogdistXYZ = unit == "in" ? jogDistArray[index].in : jogDistArray[index].mm;
+}
+
 function setADist(newADist) {
-  $("#distAAxislabel").html("A: " + newADist + "&deg;")
+  $("#distAAxislabel").html("A: " + newADist + "&deg;");
   jogdistA = newADist;
 }
 
 function mmMode() {
   unit = "mm";
   localStorage.setItem('unitsMode', unit);
-  $('#dist01label').html('0.1mm')
-  $('#dist1label').html('1mm')
-  $('#dist10label').html('10mm')
-  $('#dist100label').html('100mm')
-  if (jogdistXYZ == 0.0254) {
-    jogdistXYZ = 0.1
+  for (var i = 0; i < 4; i++) {
+    const jogDist = jogDistArray[i];
+    $(jogDist.label).html(jogDist.mmStr);
   }
-  if (jogdistXYZ == 0.254) {
-    jogdistXYZ = 1
-  }
-  if (jogdistXYZ == 2.54) {
-    jogdistXYZ = 10
-  }
-  if (jogdistXYZ == 25.4) {
-    jogdistXYZ = 100
+  jogdistXYZ = jogDistArray[jogDistIndex].mm;
+
+  if (!disableDROupdates && laststatus) {
+    updateDro(laststatus);
   }
   if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
     redrawGrid(sizexmin, sizexmax, sizeymin, sizeymax, false);
@@ -55,27 +74,35 @@ function mmMode() {
 function inMode() {
   unit = "in";
   localStorage.setItem('unitsMode', unit);
-  $('#dist01label').html('0.001"')
-  $('#dist1label').html('0.01"')
-  $('#dist10label').html('0.1"')
-  $('#dist100label').html('1"')
-  if (jogdistXYZ == 0.1) {
-    jogdistXYZ = 0.0254
+  for (var i = 0; i < 4; i++) {
+    const jogDist = jogDistArray[i];
+    $(jogDist.label).html(jogDist.inStr);
   }
-  if (jogdistXYZ == 1) {
-    jogdistXYZ = 0.254
-  }
-  if (jogdistXYZ == 10) {
-    jogdistXYZ = 2.54
-  }
-  if (jogdistXYZ == 100) {
-    jogdistXYZ = 25.4
+  jogdistXYZ = jogDistArray[jogDistIndex].in;
+
+  if (!disableDROupdates && laststatus) {
+    updateDro(laststatus);
   }
 
   if (typeof redrawGrid === "function") { // Check if function exists, because in Mobile view it does not
     redrawGrid(sizexmin / 25.4, sizexmax / 25.4, sizeymin / 25.4, sizeymax / 25.4, true);
   }
   updateWcsHistory();
+}
+
+function toggleWCS() {
+  showMCS = !showMCS;
+	if (showMCS) {
+    $('#mcsBtn, .dro').addClass('droMCS');
+  } else {
+    $('#mcsBtn, .dro').removeClass('droMCS');
+	}
+  $('#mcsBtn').html(showMCS ? "MCS" : "WCS");
+  EnableViaClass($(".setzero"), !showMCS);
+
+  if (!disableDROupdates && laststatus) {
+    updateDro(laststatus);
+  }
 }
 
 function cancelJog() {
@@ -87,6 +114,130 @@ function cancelJog() {
   continuousJogRunning = false;
 }
 
+function onDroClick(axis) {
+  if (!laststatus || laststatus.comms.connectionStatus != 2) return; // only allow during Idle
+
+  const main = $("#" + axis + "PosDro");
+  const view = $("#" + axis + "Pos");
+  const input = $("#" + axis + "PosInput");
+
+  view.hide();
+  main.addClass("drop-shadow");
+
+  var value = laststatus.machine.position.work[axis];
+  if (showMCS) {
+    value += laststatus.machine.position.offset[axis];
+  }
+  if (axis != 'a' && unit == "in") {
+    value /= 25.4;
+  }
+  input.show().focus().val(value.toFixed(3));
+  input.attr('title', showMCS ? "Enter to Go" : "Enter to Go, Shift+Enter to Set");
+  input[0].select();
+}
+
+function updateDro(status) {
+  var xpos = status.machine.position.work.x;
+  var ypos = status.machine.position.work.y;
+  var zpos = status.machine.position.work.z;
+  var apos = status.machine.position.work.a;
+  if (showMCS) {
+    xpos += status.machine.position.offset.x;
+    ypos += status.machine.position.offset.y;
+    zpos += status.machine.position.offset.z;
+    apos += status.machine.position.offset.a;
+  }
+
+  if (unit == "in") {
+    $(" #xPosDro").attr('title', 'X Machine: ' + ((status.machine.position.work.x + status.machine.position.offset.x) / 25.4).toFixed(3) + unit +
+      "\nX Work: " + (status.machine.position.work.x / 25.4).toFixed(3) + unit);
+    $(" #yPosDro").attr('title', 'Y Machine: ' + ((status.machine.position.work.y + status.machine.position.offset.y) / 25.4).toFixed(3) + unit +
+      "\nY Work: " + (status.machine.position.work.y / 25.4).toFixed(3) + unit);
+    $(" #zPosDro").attr('title', 'Z Machine: ' + ((status.machine.position.work.z + status.machine.position.offset.z) / 25.4).toFixed(3) + unit +
+      "\nZ Work: " + (status.machine.position.work.z / 25.4).toFixed(3) + unit);
+
+    xpos = prettyCoord(xpos / 25.4, 3).toFixed(3) + unit;
+    ypos = prettyCoord(ypos / 25.4, 3).toFixed(3) + unit;
+    zpos = prettyCoord(zpos / 25.4, 3).toFixed(3) + unit;
+  } else {
+    $(" #xPosDro").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit +
+      "\nX Work: " + status.machine.position.work.x.toFixed(3) + unit);
+    $(" #yPosDro").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit +
+      "\nY Work: " + status.machine.position.work.y.toFixed(3) + unit);
+    $(" #zPosDro").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit +
+      "\nZ Work: " + status.machine.position.work.z.toFixed(3) + unit);
+
+    xpos = prettyCoord(xpos, 2).toFixed(2) + unit;
+    ypos = prettyCoord(ypos, 2).toFixed(2) + unit;
+    zpos = prettyCoord(zpos, 2).toFixed(2) + unit;
+  }
+
+  $(" #aPosDro").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "\u{00B0}" +
+    "\nA Work: " + status.machine.position.work.a.toFixed(3) + "\u{00B0}");
+  apos = prettyCoord(apos, 2).toFixed(2) + "&deg;";
+
+  if ($('#xPos').html() != xpos) {
+    $('#xPos').html(xpos);
+  }
+  if ($('#yPos').html() != ypos) {
+    $('#yPos').html(ypos);
+  }
+  if ($('#zPos').html() != zpos) {
+    $('#zPos').html(zpos);
+  }
+  if ($('#aPos').html() != apos) {
+    $('#aPos').html(apos);
+  }
+}
+
+function onDroKeydown(axis, e) {
+  if (e.key === "Enter" || e.key === "NumpadEnter" || e.key == "Escape") {
+    if (e.ctrlKey) return; // ignore Ctrl to avoid confusion with Shift
+    if (showMCS && e.shiftKey) return; // can't change the origin of MCS
+
+    const main = $("#" + axis + "PosDro");
+    const view = $("#" + axis + "Pos");
+    const input = $("#" + axis + "PosInput");
+
+    //Disable textbox to prevent multiple submit
+    input.attr("disabled", "disabled");
+    view.show();
+    input.hide();
+    //Enable the textbox again if needed.
+    input.removeAttr("disabled");
+
+    if (e.key == "Escape") return;
+
+    var Axis = axis.toUpperCase();
+    var value = parseFloat(input.val());
+    if (!showMCS && e.shiftKey) {
+      // Modify the origin (always in mm for better precision)
+      captureWcsHistory('Modified by <b>' + Axis + ' input</b>');
+      if (axis != 'a' && unit == "in") {
+        value *= 25.4;
+      }
+      sendGcode("G10 G21 P0 L20 " + Axis + value.toFixed(3));
+    } else {
+      const origin = showMCS ? "G53 " : "";
+
+      if (axis != 'a' && unit == "in") {
+        sendGcode("$J=" + origin + "G90 G20 " + Axis + value.toFixed(3) + " F" + (jogRate[axis] / 25.4).toFixed(3));
+      } else {
+        sendGcode("$J=" + origin + "G90 G21 " + Axis + value.toFixed(3) + " F" + parseFloat(jogRate[axis]).toFixed(3));
+      }
+    }
+  }
+}
+
+function onDroBlur(axis) {
+  const main = $("#" + axis + "PosDro");
+  const view = $("#" + axis + "Pos");
+  const input = $("#" + axis + "PosInput");
+
+  main.removeClass("drop-shadow");
+  view.show();
+  input.hide();
+}
 
 $(document).ready(function() {
 
@@ -116,18 +267,11 @@ $(document).ready(function() {
     document.activeElement.blur();
   });
 
-  if (localStorage.getItem('unitsMode')) {
-    if (localStorage.getItem('unitsMode') == "mm") {
-      mmMode()
-      $('#mmMode').click()
-    } else if (localStorage.getItem('unitsMode') == "in") {
-      inMode();
-      $('#inMode').click()
-    }
-  } else {
-    // default to inches
+  setJogDist(jogDistIndex);
+  if (localStorage.getItem('unitsMode') == "in") {
     inMode();
-    $('#inMode').click()
+  } else {
+    mmMode();
   }
 
   $(document).mousedown(function(e) {
@@ -144,229 +288,10 @@ $(document).ready(function() {
     safeToUpdateSliders = true;
   });
 
-  $("#xPosDro").click(function() {
-    $("#xPos").hide()
-    $("#xPosDro").addClass("drop-shadow");
-    if (unit == "mm") {
-      $("#xPosInput").show().focus().val(laststatus.machine.position.work.x)
-    } else if (unit == "in") {
-      $("#xPosInput").show().focus().val((laststatus.machine.position.work.x / 25.4).toFixed(3))
-    }
-    document.getElementById("xPosInput").select();
-  });
-
-  $("#xPosInput").blur(function() {
-    $("#xPosDro").removeClass("drop-shadow");
-    $("#xPos").show()
-    $("#xPosInput").hide()
-  });
-
-  $('#xPosInput').on('keypress', function(e) {
-    console.log(e)
-    if (e.key === "Enter" || e.key === "NumpadEnter") {
-      //Disable textbox to prevent multiple submit
-      $(this).attr("disabled", "disabled");
-      $("#xPos").show()
-      $("#xPosInput").hide()
-      //Enable the textbox again if needed.
-      $(this).removeAttr("disabled");
-      if (unit == "mm") {
-        if (e.shiftKey) {
-          captureWcsHistory('Modified by <b>X input</b>');
-          sendGcode("G10 G21 P0 L20 X" + $("#xPosInput").val());
-        } else {
-          sendGcode("$J=G90 G21 X" + $("#xPosInput").val() + " F" + jogRateX);
-        }
-
-      } else if (unit == "in") {
-        if (e.shiftKey) {
-          captureWcsHistory('Modified by <b>X input</b>');
-          sendGcode("G10 G21 P0 L20 X" + ($("#xPosInput").val() * 25.4));
-        } else {
-          sendGcode("$J=G90 G20 X" + $("#xPosInput").val() + " F" + jogRateX);
-        }
-      }
-    }
-  });
-
-  $("#yPosDro").click(function() {
-    $("#yPos").hide()
-    $("#yPosDro").addClass("drop-shadow");
-    if (unit == "mm") {
-      $("#yPosInput").show().focus().val(laststatus.machine.position.work.y)
-    } else if (unit == "in") {
-      $("#yPosInput").show().focus().val((laststatus.machine.position.work.y / 25.4).toFixed(3))
-    }
-    document.getElementById("yPosInput").select();
-  });
-
-  $("#yPosInput").blur(function() {
-    $("#yPos").show()
-    $("#yPosDro").removeClass("drop-shadow");
-    $("#yPosInput").hide()
-  });
-
-  $('#yPosInput').on('keypress', function(e) {
-    if (e.which === 13) {
-      //Disable textbox to prevent multiple submit
-      $(this).attr("disabled", "disabled");
-      $("#yPos").show()
-      $("#yPosInput").hide()
-      //Enable the textbox again if needed.
-      $(this).removeAttr("disabled");
-      if (unit == "mm") {
-        if (e.shiftKey) {
-          captureWcsHistory('Modified by <b>Y input</b>');
-          sendGcode("G10 G21 P0 L20 Y" + $("#yPosInput").val());
-        } else {
-          sendGcode("$J=G90 G21 Y" + $("#yPosInput").val() + " F" + jogRateY);
-        }
-      } else if (unit == "in") {
-        if (e.shiftKey) {
-          captureWcsHistory('Modified by <b>Y input</b>');
-          sendGcode("G10 G21 P0 L20 Y" + ($("#yPosInput").val() * 25.4));
-        } else {
-          sendGcode("$J=G90 G20 Y" + $("#yPosInput").val() + " F" + jogRateY);
-        }
-      }
-    }
-  });
-
-  $("#zPosDro").click(function() {
-    $("#zPos").hide()
-    $("#zPosDro").addClass("drop-shadow");
-    if (unit == "mm") {
-      $("#zPosInput").show().focus().val(laststatus.machine.position.work.z)
-    } else if (unit == "in") {
-      $("#zPosInput").show().focus().val((laststatus.machine.position.work.z / 25.4).toFixed(3))
-    }
-    document.getElementById("zPosInput").select();
-  });
-
-  $("#zPosInput").blur(function() {
-    $("#zPos").show()
-    $("#zPosDro").removeClass("drop-shadow");
-    $("#zPosInput").hide()
-  });
-
-  $('#zPosInput').on('keypress', function(e) {
-    if (e.which === 13) {
-      //Disable textbox to prevent multiple submit
-      $(this).attr("disabled", "disabled");
-      $("#zPos").show()
-      $("#zPosInput").hide()
-      //Enable the textbox again if needed.
-      $(this).removeAttr("disabled");
-      if (unit == "mm") {
-        if (e.shiftKey) {
-          captureWcsHistory('Modified by <b>Z input</b>');
-          sendGcode("G10 G21 P0 L20 Z" + $("#zPosInput").val());
-        } else {
-          sendGcode("$J=G90 G21 Z" + $("#zPosInput").val() + " F" + jogRateZ);
-        }
-      } else if (unit == "in") {
-        if (e.shiftKey) {
-          captureWcsHistory('Modified by <b>Z input</b>');
-          sendGcode("G10 G21 P0 L20 Z" + ($("#zPosInput").val() * 25.4));
-        } else {
-          sendGcode("$J=G90 G20 Z" + $("#zPosInput").val() + " F" + jogRateZ);
-        }
-      }
-    }
-  });
-
-
-  // A Axis DRO entry
-  $("#aPosDro").click(function() {
-    $("#aPos").hide()
-    $("#aPosDro").addClass("drop-shadow");
-    $("#aPosInput").show().focus().val(laststatus.machine.position.work.a)
-    document.getElementById("aPosInput").select();
-  });
-
-  $("#aPosInput").blur(function() {
-    $("#aPos").show()
-    $("#aPosDro").removeClass("drop-shadow");
-    $("#aPosInput").hide()
-  });
-
-  $('#aPosInput').on('keypress', function(e) {
-    if (e.which === 13) {
-      //Disable textbox to prevent multiple submit
-      $(this).attr("disabled", "disabled");
-      $("#aPos").show()
-      $("#aPosInput").hide()
-      //Enable the textbox again if needed.
-      $(this).removeAttr("disabled");
-
-      if (e.shiftKey) {
-        captureWcsHistory('Modified by <b>A input</b>');
-        sendGcode("G10 G21 P0 L20 A" + $("#aPosInput").val());
-      } else {
-        sendGcode("$J=G90 G21 A" + $("#aPosInput").val() + " F" + jogRateA);
-      }
-
-    }
-  });
-
-  // End A-Axis DRO Entry
-
-
-  $('#dist01').on('click', function(ev) {
-    if (unit == "mm") {
-      jogdistXYZ = 0.1;
-    } else if (unit == "in") {
-      jogdistXYZ = 0.0254;
-    }
-    $('.distbtn').removeClass('bd-openbuilds')
-    $('#dist01').addClass('bd-openbuilds')
-    $('.jogdistXYZ').removeClass('fg-openbuilds')
-    $('.jogdistXYZ').addClass('fg-gray')
-    $('#dist01label').removeClass('fg-gray')
-    $('#dist01label').addClass('fg-openbuilds')
-  })
-
-  $('#dist1').on('click', function(ev) {
-    if (unit == "mm") {
-      jogdistXYZ = 1;
-    } else if (unit == "in") {
-      jogdistXYZ = 0.254;
-    }
-    $('.distbtn').removeClass('bd-openbuilds')
-    $('#dist1').addClass('bd-openbuilds')
-    $('.jogdistXYZ').removeClass('fg-openbuilds')
-    $('.jogdistXYZ').addClass('fg-gray')
-    $('#dist1label').removeClass('fg-gray')
-    $('#dist1label').addClass('fg-openbuilds')
-  })
-
-  $('#dist10').on('click', function(ev) {
-    if (unit == "mm") {
-      jogdistXYZ = 10;
-    } else if (unit == "in") {
-      jogdistXYZ = 2.54;
-    }
-    $('.distbtn').removeClass('bd-openbuilds')
-    $('#dist10').addClass('bd-openbuilds')
-    $('.jogdistXYZ').removeClass('fg-openbuilds')
-    $('.jogdistXYZ').addClass('fg-gray')
-    $('#dist10label').removeClass('fg-gray')
-    $('#dist10label').addClass('fg-openbuilds')
-  })
-
-  $('#dist100').on('click', function(ev) {
-    if (unit == "mm") {
-      jogdistXYZ = 100;
-    } else if (unit == "in") {
-      jogdistXYZ = 25.4;
-    }
-    $('.distbtn').removeClass('bd-openbuilds')
-    $('#dist100').addClass('bd-openbuilds')
-    $('.jogdistXYZ').removeClass('fg-openbuilds')
-    $('.jogdistXYZ').addClass('fg-gray')
-    $('#dist100label').removeClass('fg-gray')
-    $('#dist100label').addClass('fg-openbuilds')
-  })
+  $('#dist01').on('click', () => { setJogDist(0); });
+  $('#dist1').on('click', () => { setJogDist(1); });
+  $('#dist10').on('click', () => { setJogDist(2); });
+  $('#dist100').on('click', () => { setJogDist(3); });
 
   $('#gotozeroWPos').on('click', function(ev) {
     sendGcode('G21 G90');
@@ -474,7 +399,7 @@ $(document).ready(function() {
         }
 
         if (minX < mcsX) {
-          socket.emit('runCommand', "$J=G53 G90 G21 X" + minX.toFixed(3) + " F" + jogRateX + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 X" + minX.toFixed(3) + " F" + jogRate.x + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xM').click();
@@ -483,7 +408,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('X', '-' + jogdistXYZ, jogRateX);
+      jog('X', '-' + jogdistXYZ, jogRate.x);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -515,7 +440,7 @@ $(document).ready(function() {
           }
         }
         if (maxX > mcsX) {
-          socket.emit('runCommand', "$J=G53 G90 G21 X" + maxX.toFixed(3) + " F" + jogRateX + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 X" + maxX.toFixed(3) + " F" + jogRate.x + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xP').click();
@@ -524,7 +449,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('X', jogdistXYZ, jogRateX);
+      jog('X', jogdistXYZ, jogRate.x);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -557,7 +482,7 @@ $(document).ready(function() {
         }
 
         if (minY < mcsY) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Y" + minY.toFixed(3) + " F" + jogRateY + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 Y" + minY.toFixed(3) + " F" + jogRate.y + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.yM').click();
@@ -566,7 +491,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Y', '-' + jogdistXYZ, jogRateY);
+      jog('Y', '-' + jogdistXYZ, jogRate.y);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -597,7 +522,7 @@ $(document).ready(function() {
           }
         }
         if (maxY > mcsY) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Y" + maxY.toFixed(3) + " F" + jogRateY + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 Y" + maxY.toFixed(3) + " F" + jogRate.y + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('#yP').click();
@@ -606,7 +531,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Y', jogdistXYZ, jogRateY);
+      jog('Y', jogdistXYZ, jogRate.y);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -638,7 +563,7 @@ $(document).ready(function() {
         }
 
         if (minZ < mcsZ) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Z" + minZ.toFixed(3) + " F" + jogRateZ + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 Z" + minZ.toFixed(3) + " F" + jogRate.z + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zM').click();
@@ -647,7 +572,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Z', '-' + jogdistXYZ, jogRateZ);
+      jog('Z', '-' + jogdistXYZ, jogRate.z);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -678,7 +603,7 @@ $(document).ready(function() {
           }
         }
         if (maxZ > mcsZ) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Z" + maxZ.toFixed(3) + " F" + jogRateZ + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 Z" + maxZ.toFixed(3) + " F" + jogRate.z + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zP').click();
@@ -687,7 +612,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Z', jogdistXYZ, jogRateZ);
+      jog('Z', jogdistXYZ, jogRate.z);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -720,7 +645,7 @@ $(document).ready(function() {
         }
 
         if (minA < mcsA) {
-          socket.emit('runCommand', "$J=G53 G90 G21 A" + minA.toFixed(3) + " F" + jogRateA + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 A" + minA.toFixed(3) + " F" + jogRate.a + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aM').click();
@@ -729,7 +654,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('A', '-' + jogdistA, jogRateA);
+      jog('A', '-' + jogdistA, jogRate.a);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -761,7 +686,7 @@ $(document).ready(function() {
           }
         }
         if (maxA > mcsA) {
-          socket.emit('runCommand', "$J=G53 G90 G21 A" + maxA.toFixed(3) + " F" + jogRateA + "\n");
+          socket.emit('runCommand', "$J=G53 G90 G21 A" + maxA.toFixed(3) + " F" + jogRate.a + "\n");
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aP').click();
@@ -770,7 +695,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('A', jogdistA, jogRateA);
+      jog('A', jogdistA, jogRate.a);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -783,7 +708,7 @@ $(document).ready(function() {
   });
 
 
-  $('#homeBtn').on('click', function(ev) {
+  $('#homeBtn').on('click', function() {
     home();
   })
 
@@ -820,96 +745,7 @@ $(document).ready(function() {
 
 function changeStepSize(dir) {
   $('.distbtn').blur();
-  if (jogdistXYZ == 0.1 || jogdistXYZ == 0.0254) {
-    if (dir == 1) {
-      if (unit == "mm") {
-        jogdistXYZ = 1;
-      } else if (unit == "in") {
-        jogdistXYZ = .254;
-      }
-      $('.distbtn').removeClass('bd-openbuilds')
-      $('#dist1').addClass('bd-openbuilds')
-      $('.jogdistXYZ').removeClass('fg-openbuilds')
-      $('.jogdistXYZ').addClass('fg-gray')
-      $('#dist1label').removeClass('fg-gray')
-      $('#dist1label').addClass('fg-dark')
-    }
-    if (dir == -1) {
-      // do nothing
-    }
-  } else if (jogdistXYZ == 1 || jogdistXYZ == 0.254) {
-    if (dir == 1) {
-      if (unit == "mm") {
-        jogdistXYZ = 10;
-      } else if (unit == "in") {
-        jogdistXYZ = 2.54;
-      }
-      $('.distbtn').removeClass('bd-openbuilds')
-      $('#dist10').addClass('bd-openbuilds')
-      $('.jogdistXYZ').removeClass('fg-openbuilds')
-      $('.jogdistXYZ').addClass('fg-gray')
-      $('#dist10label').removeClass('fg-gray')
-      $('#dist10label').addClass('fg-openbuilds')
-    }
-    if (dir == -1) {
-      if (unit == "mm") {
-        jogdistXYZ = 0.1;
-      } else if (unit == "in") {
-        jogdistXYZ = 0.0254;
-      }
-      $('.distbtn').removeClass('bd-openbuilds')
-      $('#dist01').addClass('bd-openbuilds')
-      $('.jogdistXYZ').removeClass('fg-openbuilds')
-      $('.jogdistXYZ').addClass('fg-gray')
-      $('#dist01label').removeClass('fg-gray')
-      $('#dist01label').addClass('fg-openbuilds')
-    }
-  } else if (jogdistXYZ == 10 || jogdistXYZ == 2.54) {
-    if (dir == 1) {
-      if (unit == "mm") {
-        jogdistXYZ = 100;
-      } else if (unit == "in") {
-        jogdistXYZ = 25.4;
-      }
-      $('.distbtn').removeClass('bd-openbuilds')
-      $('#dist100').addClass('bd-openbuilds')
-      $('.jogdistXYZ').removeClass('fg-openbuilds')
-      $('.jogdistXYZ').addClass('fg-gray')
-      $('#dist100label').removeClass('fg-gray')
-      $('#dist100label').addClass('fg-openbuilds')
-    }
-    if (dir == -1) {
-      if (unit == "mm") {
-        jogdistXYZ = 1;
-      } else if (unit == "in") {
-        jogdistXYZ = 0.254;
-      }
-      $('.distbtn').removeClass('bd-openbuilds')
-      $('#dist1').addClass('bd-openbuilds')
-      $('.jogdistXYZ').removeClass('fg-openbuilds')
-      $('.jogdistXYZ').addClass('fg-gray')
-      $('#dist1label').removeClass('fg-gray')
-      $('#dist1label').addClass('fg-openbuilds')
-    }
-  } else if (jogdistXYZ == 100 || jogdistXYZ == 25.4) {
-    if (dir == 1) {
-      // do nothing
-    }
-    if (dir == -1) {
-      if (unit == "mm") {
-        jogdistXYZ = 10;
-      } else if (unit == "in") {
-        jogdistXYZ = 2.54;
-      }
-      $('.distbtn').removeClass('bd-openbuilds')
-      $('#dist10').addClass('bd-openbuilds')
-      $('.jogdistXYZ').removeClass('fg-openbuilds')
-      $('.jogdistXYZ').addClass('fg-gray')
-      $('#dist10label').removeClass('fg-gray')
-      $('#dist10label').addClass('fg-openbuilds')
-    }
-  }
-
+  setJogDist(Math.min(Math.max(jogDistIndex + dir, 0), jogDistArray.length - 1));
 }
 
 function jog(dir, dist, feed = null) {

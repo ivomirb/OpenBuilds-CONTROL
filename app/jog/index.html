@@ -71,16 +71,27 @@
         <div style="overflow-y: auto; height: calc(100vh - 100px);">
 
           <center>
-            <nav data-role="ribbonmenu" class="mt-2">
-              <ul class="tabs-holder ml-17">
-                <li onclick="mmMode();"><a id="mmMode" href="#tab-mm">mm-mode</a></li>
-                <li onclick="inMode();"><a id="inMode" href="#tab-inch">inch-mode</a></li>
-              </ul>
-            </nav>
-            <table class="drotable mt-2">
+            <table class="drotable mt-1">
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
+                </td>
+                <td class="p-2">
+                  <nav data-role="ribbonmenu" class="mt-1">
+                    <ul class="tabs-holder">
+                      <li onclick="mmMode()"><a id="mmMode" style="padding:0 25px" href="#tab-mm">mm</a></li>
+                      <li onclick="inMode()"><a id="inMode" style="padding:0 25px" href="#tab-inch">inch</a></li>
+                    </ul>
+                  </nav>
+                </td>
+                <td class="p-2">
+                  <div class="pos-relative">
+                    <button id="mcsBtn" class="button light jogbtn" onclick="toggleWCS()" style="width: 42px; height: 24px; line-height: 24px; padding: 0;">WCS</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                       <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -113,7 +124,7 @@
               </tr>
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                       <span class="fa-layers-text fg-green" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Y</span>
@@ -146,7 +157,7 @@
               </tr>
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                       <span class="fa-layers-text fg-blue" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Z</span>
@@ -179,7 +190,7 @@
               </tr>
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-18"></i>
                       <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-2" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -322,28 +333,28 @@
                   <td class="p-2">
                     <button class="button light jogbtn distbtn" id="dist01" style="width: 100%; height: 30px; line-height: 28px;">
                       <span class=" fa-layers fa-fw">
-                        <span id="dist01label" class="fa-layers-text fg-gray jogdist" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">0.1mm</span>
+                        <span id="dist01label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">0.1mm</span>
                       </span>
                     </button>
                   </td>
                   <td class="p-2">
                     <button class="button light jogbtn distbtn" id="dist1" style="width: 100%; height: 30px; line-height: 28px;">
                       <span class=" fa-layers fa-fw">
-                        <span id="dist1label" class="fa-layers-text fg-gray jogdist" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">1mm</span>
+                        <span id="dist1label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">1mm</span>
                       </span>
                     </button>
                   </td>
                   <td class="p-2">
                     <button class="button light jogbtn distbtn" id="dist10" style="width: 100%; height: 30px; line-height: 28px;">
                       <span class=" fa-layers fa-fw">
-                        <span id="dist10label" class="fa-layers-text fg-openbuilds jogdist" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">10mm</span>
+                        <span id="dist10label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">10mm</span>
                       </span>
                     </button>
                   </td>
                   <td class="p-2">
                     <button class="button light jogbtn distbtn" id="dist100" style="width: 100%; height: 30px; line-height: 28px;">
                       <span class=" fa-layers fa-fw">
-                        <span id="dist100label" class="fa-layers-text fg-gray jogdist" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">100mm</span>
+                        <span id="dist100label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">100mm</span>
                       </span>
                     </button>
                   </td>

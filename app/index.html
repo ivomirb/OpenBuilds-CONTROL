@@ -630,8 +630,6 @@
                   <table class="drotable mt-1">
                     <tr>
                       <td>
-
-
                         <div class="pos-relative">
                           <!-- special styling for the dropdown arrow to set a contrast color and adjust the position -->
                           <style>
@@ -662,18 +660,23 @@ Restore previous origins from history.">
 
 
                       </td>
-                      <td colspan="3">
+                      <td>
                         <nav data-role="ribbonmenu" class="mt-1">
                           <ul class="tabs-holder">
-                            <li onclick="mmMode();"><a id="mmMode" href="#tab-mm">mm-mode</a></li>
-                            <li onclick="inMode();"><a id="inMode" href="#tab-inch">inch-mode</a></li>
+                            <li onclick="mmMode()"><a id="mmMode" style="padding:0 25px" href="#tab-mm">mm</a></li>
+                            <li onclick="inMode()"><a id="inMode" style="padding:0 25px" href="#tab-inch">inch</a></li>
                           </ul>
                         </nav>
+                      </td>
+                      <td>
+                        <div class="pos-relative">
+                         <button id="mcsBtn" class="button light jogbtn" onclick="toggleWCS()" style="width: 42px; height: 24px; line-height: 24px; padding: 0;">WCS</button>
+                        </div>
                       </td>
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
+                        <button class="button light jogbtn setzero" id="setZeroX" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -682,7 +685,7 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="xPosDro">
+                        <div class="dro" id="xPosDro" onclick="onDroClick('x')">
                           <div class="float-left fg-red" data-fa-transform="right-15">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-red" data-fa-transform="right-3">X</span>
@@ -690,7 +693,7 @@ Restore previous origins from history.">
                             </span>
                           </div>
                           <div class="float-right fg-red" id="xPos" data-editable>0.000</div>
-                          <input id="xPosInput" class="m-0 p-0 droInput float-right fg-red" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="xPosInput" class="m-0 p-0 droInput float-right fg-red" data-editable="true" onkeydown="onDroKeydown('x', event)" onblur="onDroBlur('x')"/>
                         </div>
                       </td>
                       <td>
@@ -709,7 +712,7 @@ Restore previous origins from history.">
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
+                        <button class="button light jogbtn setzero" id="setZeroY" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-green" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Y</span>
@@ -718,7 +721,7 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="yPosDro">
+                        <div class="dro" id="yPosDro" onclick="onDroClick('y')">
                           <div class="float-left fg-green">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-green" data-fa-transform="right-3">Y</span>
@@ -726,7 +729,7 @@ Restore previous origins from history.">
                             </span>
                           </div>
                           <div class="float-right fg-green" id="yPos" data-editable>0.000</div>
-                          <input id="yPosInput" class="m-0 p-0 droInput float-right fg-green" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="yPosInput" class="m-0 p-0 droInput float-right fg-green" data-editable="true" onkeydown="onDroKeydown('y', event)" onblur="onDroBlur('y')"/>
                         </div>
                       </td>
                       <td>
@@ -745,7 +748,7 @@ Restore previous origins from history.">
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn setzero" id="setZeroZ" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-blue" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Z</span>
@@ -754,7 +757,7 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="zPosDro">
+                        <div class="dro" id="zPosDro" onclick="onDroClick('z')">
                           <div class="float-left fg-blue">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-blue" data-fa-transform="right-3">Z</span>
@@ -762,7 +765,7 @@ Restore previous origins from history.">
                             </span>
                           </div>
                           <div class="float-right fg-blue" id="zPos" data-editable>0.000</div>
-                          <input id="zPosInput" class="m-0 p-0 droInput float-right fg-blue" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="zPosInput" class="m-0 p-0 droInput float-right fg-blue" data-editable="true" onkeydown="onDroKeydown('z', event)" onblur="onDroBlur('z')"/>
                         </div>
                       </td>
                       <td>
@@ -782,7 +785,7 @@ Restore previous origins from history.">
 
                     <tr class="4thaxis-active" style="display: none;">
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero A</b>'); sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn setzero" id="setZeroA" onclick="captureWcsHistory('Modified by <b>Set Zero A</b>'); sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-orange" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">A</span>
@@ -791,7 +794,7 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="aPosDro">
+                        <div class="dro" id="aPosDro" onclick="onDroClick('a')">
                           <div class="float-left fg-orange">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-orange" data-fa-transform="right-3">A</span>
@@ -799,7 +802,7 @@ Restore previous origins from history.">
                             </span>
                           </div>
                           <div class="float-right fg-orange" id="aPos" data-editable>0.000</div>
-                          <input id="aPosInput" class="m-0 p-0 droInput float-right fg-orange" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="aPosInput" class="m-0 p-0 droInput float-right fg-orange" data-editable="true" onkeydown="onDroKeydown('a', event)" onblur="onDroBlur('a')"/>
                         </div>
                       </td>
                       <td>
@@ -816,7 +819,7 @@ Restore previous origins from history.">
 
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
+                        <button class="button light jogbtn setzero" id="setZeroXYZ" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-18"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-2" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -999,7 +1002,7 @@ Restore previous origins from history.">
                       <td class="4thaxis-active" style="display: none;">
 
                         <div class="pos-relative">
-                          <button class="button light jogbtn metricbtn distbtn" id="distAAxis" style="width: 100%; height: 25px; line-height: 25px;">
+                          <button class="button light jogbtn distbtn" id="distAAxis" style="width: 100%; height: 25px; line-height: 25px;">
                             <span class=" fa-layers fa-fw">
                               <span id="distAAxislabel" class="fa-layers-text fg-openbuilds jogdistA" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">A: 10&deg;</span>
                             </span>
@@ -1022,30 +1025,30 @@ Restore previous origins from history.">
 
                       </td>
                       <td>
-                        <button class="button light jogbtn metricbtn distbtn" id="dist01" style="width: 100%; height: 25px; line-height: 25px;">
+                        <button class="button light jogbtn distbtn" id="dist01" style="width: 100%; height: 25px; line-height: 25px;">
                           <span class=" fa-layers fa-fw">
-                            <span id="dist01label" class="fa-layers-text fg-gray jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">0.1mm</span>
+                            <span id="dist01label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">0.1mm</span>
                           </span>
                         </button>
                       </td>
                       <td>
-                        <button class="button light jogbtn metricbtn distbtn" id="dist1" style="width: 100%; height: 25px; line-height: 25px;">
+                        <button class="button light jogbtn distbtn" id="dist1" style="width: 100%; height: 25px; line-height: 25px;">
                           <span class=" fa-layers fa-fw">
-                            <span id="dist1label" class="fa-layers-text fg-gray jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">1mm</span>
+                            <span id="dist1label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">1mm</span>
                           </span>
                         </button>
                       </td>
                       <td>
-                        <button class="button light jogbtn distbtn metricbtn bd-openbuilds" id="dist10" style="width: 100%; height: 25px; line-height: 25px;">
+                        <button class="button light jogbtn distbtn bd-openbuilds" id="dist10" style="width: 100%; height: 25px; line-height: 25px;">
                           <span class=" fa-layers fa-fw">
-                            <span id="dist10label" class="fa-layers-text fg-openbuilds jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">10mm</span>
+                            <span id="dist10label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">10mm</span>
                           </span>
                         </button>
                       </td>
                       <td>
-                        <button class="button light jogbtn distbtn metricbtn" id="dist100" style="width: 100%; height: 25px; line-height: 25px;">
+                        <button class="button light jogbtn distbtn" id="dist100" style="width: 100%; height: 25px; line-height: 25px;">
                           <span class=" fa-layers fa-fw">
-                            <span id="dist100label" class="fa-layers-text fg-gray jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">100mm</span>
+                            <span id="dist100label" class="fa-layers-text fg-gray" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">100mm</span>
                           </span>
                         </button>
                       </td>
@@ -1057,20 +1060,20 @@ Restore previous origins from history.">
                   <button class="button light mini mb-1" onclick="jogOverride(100);">reset</button>
                   <input id="jro" data-on-stop="jogOverride(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="true" data-size="180" data-min="1" data-max="100" data-value="100" data-hint="true" data-hint-always="true"
                     data-hint-position="bottom" data-hint-mask="Jog: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realJog" style="display:none"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realJog" style="display:none;"></span>
                 </div>
 
                 <div class="cell border-left bd-gray" id="frocell">
                   <button class="button light mini mb-1" onclick="feedOverride(100);">reset</button>
                   <input id="fro" data-on-stop="feedOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Feed: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed" style="overflow-y:hidden;"></span>
                 </div>
                 <div class="cell border-left bd-gray" id="trocell">
                   <button class="button light mini  mb-1" onclick="spindleOverride(100);">reset</button>
                   <input id="tro" data-on-stop="spindleOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Tool: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed" style="overflow-y:hidden;"></span>
                 </div>
               </div>
             </div>

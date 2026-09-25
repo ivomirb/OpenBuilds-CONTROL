@@ -31,13 +31,11 @@ function setConnectBar(val, status) {
     $("#disconnectBtn").hide();
     $("#flashBtn").hide();
     $('#portUSB').parent().show();
-    $("#connectBtn").show();
-    $("#scanBtn").show();
-    $("#driverBtn").show();
+    $("#connectBtn, #scanBtn, #driverBtn").show();
     $("#connectBtn").attr('disabled', $('#portUSB').val() == "");
     $('#portUSB').parent(".select").addClass('success');
     $('#portUSB').parent(".select").removeClass('alert');
-    EnableViaClass('.macrobtn', false);
+    EnableViaClass('.macrobtn', true);
     EnableViaClass('.grblCalibrationMenu', false);
 
     if (!wcsHistoryEmpty) {
@@ -52,9 +50,7 @@ function setConnectBar(val, status) {
     // 5 - alarm
 
     $('#connectStatus').html("Port: Connected");
-    $("#connectBtn").hide();
-    $("#scanBtn").hide();
-    $("#driverBtn").hide();
+    $("#connectBtn, #scanBtn, #driverBtn").hide();
     $('#portUSB').parent().hide();
     $("#connectBtn").attr('disabled', false);
     $("#disconnectBtn").show();
@@ -70,13 +66,10 @@ function setConnectBar(val, status) {
     EnableViaClass('.grblCalibrationMenu', val == 2); // enable calibration only during idle
   } else if (val == 6) { // Firmware Upgrade State
     $('#connectStatus').html("Port: Flashing");
-    $("#connectBtn").hide();
-    $("#scanBtn").hide();
-    $("#driverBtn").hide();
-    $('#portUSB').parent().hide();
-    $("#connectBtn").attr('disabled', false);
     $("#disconnectBtn").hide();
     $("#flashBtn").show();
+    $('#portUSB').parent().hide();
+    $("#connectBtn, #scanBtn, #driverBtn").hide();
 
     // Port Dropdown
     $('#portUSB').parent(".select").removeClass('success')
@@ -92,22 +85,10 @@ function setConnectBar(val, status) {
 // Toolbar with play/pause/stop
 function setControlBar(val, status) {
   if (val == 0) { // Not Connected Yet
-    $('#runBtn').hide().attr('disabled', true);
-    $('#grblProbeMenu').hide().attr('disabled', true);
-    $('#chkSize').hide().attr('disabled', true);
-    $('#resumeBtn').hide().attr('disabled', true);
-    $('#pauseBtn').hide();
-    $('#stopBtn').hide().attr('disabled', true);
-    $('#toolBtn').hide();
-    $('#toolBtn2').hide();
-
-    $('#homeBtn').hide().attr('disabled', grblParams['$22'] == 0);
-
-    $('.estop').hide();
     $('#controlBtnGrp').hide();
     $("#grblSettings").hide(); // Hide Grbl Settings if it was Open
     $('#grblconfig').empty();
-
+    $('.estop').hide();
   } else if (val >= 1 && val <= 5) { // Normal operation
     // 1 - connecting
     // 2 - idle
@@ -121,7 +102,7 @@ function setControlBar(val, status) {
     EnableViaClass($('#toolBtn').show().next(), val == 2);
     EnableViaClass($('#toolBtn2').show().next(), val == 2);
 
-    $('#chkSize').show().attr('disabled', val != 2 || !object);
+    $('#chkSize').show().attr('disabled', val != 2 || isJogWidget || !object);
 
     // Determine the correct state for Run/Play/Pause/Stop
     const hasJob = (editor && editor.session.getLength() > 1) || gcode;
@@ -143,21 +124,11 @@ function setControlBar(val, status) {
     // Disable the Home button during a job or if the homing feature is disabled
     $('#homeBtn').show().attr('disabled', activeJob || grblParams['$22'] == 0);
 
-    $('.estop').show();
     $('#controlBtnGrp').show();
+    $('.estop').show();
   } else if (val == 6) { // Firmware Upgrade State
-    $('#grblProbeMenu').show().attr('disabled', true);
-
-    $('#runBtn').hide().attr('disabled', true);
-    $('#chkSize').show().attr('disabled', true);
-    $('#resumeBtn').hide().attr('disabled', true);
-    $('#pauseBtn').hide();
-    $('#stopBtn').hide().attr('disabled', true);
-    $('#toolBtn').hide();
-    $('#toolBtn2').hide();
-    $('#homeBtn').hide().attr('disabled', grblParams['$22'] == 0);
-    $('.estop').hide();
     $('#controlBtnGrp').hide();
+    $('.estop').hide();
   }
 }
 
@@ -183,7 +154,7 @@ function setJogPanel(val, status) {
 function setConsole(val, status) {
   // Allow typing on the console only during idle or alarm
   $("#command").attr('disabled', val != 2 && val != 5);
-  $("#sendCommand").prop('disabled', val != 2 && val != 5);
+  $("#sendCommand").attr('disabled', val != 2 && val != 5);
 }
 
 function updateWcsHistory(wcs) {

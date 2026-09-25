@@ -89,6 +89,10 @@
   padding-right: 20px;
 }
 
+.droMCS, .droMCS .droInput {
+  background-color: #f3ff84 !important;
+}
+
 .glossybtn:link, .glossybtn:visited {
   display: block;
   text-decoration: none;
@@ -195,4 +199,16 @@
 /* Custom size button for Macros */
 .command-button-macro {
   height: 70px;
+}
+
+.disabled:not(.success), [disabled]:not(.success) {
+  color: #999 !important;
+}
+
+.disabled .fg-openbuilds:not(.success), [disabled] .fg-openbuilds:not(.success) {
+  color: #999 !important;
+}
+
+hr {
+  background-color: #dadbcd;
 }
