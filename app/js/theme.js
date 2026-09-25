@@ -194,12 +194,15 @@ let ThemeData = {
       // Update the 3D view (mostly, gcode movements will keep old colours until gcode is reloaded)
       pauseAnimation = true;
       $('#splash').show()
-      while (scene.children.length > 0) {
-        disposeGeometryAndRemove(scene.children[0]);
+      if (webgl) {
+        while (scene.children.length > 0) {
+          disposeGeometryAndRemove(scene.children[0]);
+        }
+
+        cleanupWorkspace();
+        drawWorkspace(sizexmin, sizexmax, sizeymin, sizeymax);
       }
 
-      cleanupWorkspace();
-      drawWorkspace(sizexmin, sizexmax, sizeymin, sizeymax);
       clearSceneFlag = true;
       pauseAnimation = false;
       if (themeId == "dark") {
