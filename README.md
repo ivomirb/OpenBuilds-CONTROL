@@ -7,14 +7,19 @@ This is a fork by Ivo Beltchev with multiple improvements.
 
 * New option to reload the last gcode file
 * More reliable jogging features, better compatibilty with different firmware and homing settings
+* Ability to view and set machine coordinates
+* Stores a history of work origins and allows for rolling back to a previous one
 * Corrected the math and improved the safety of the "goto zero" buttons
+* The Pause and Stop buttons remain available until the very end of the job
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
 
 ### User Interface
 
 * **Windows only:** A setting to disable the autostart and the tray icon, making it behave like a regular Windows app
 * Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
+* Dialogs for opening and saving files have separate default directories for gcode, macros and grbl settings
 * Fix for dragging sliders with the mouse (bug in the external Metro UI library)
+* Improved readability for Light and Dark themes
 
 ### 3D View
 
@@ -52,6 +57,7 @@ The most notable examples are:
 * Heightmap support, similar to the one in Candle (work in progress, not yet fully tested)
 * Disable the Z jog buttons for large step sizes
 * Remove the dropdown from the file open button
+* Smart Home macro that prevents accidental homing and allows homing single axis if supported
 
 ## Download
 
