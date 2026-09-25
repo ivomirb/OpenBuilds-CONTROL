@@ -1858,11 +1858,6 @@ io.on("connection", function(socket) {
   socket.on('jogXY', function(data) {
     debug_log('Jog XY' + data);
     if (status.comms.connectionStatus > 0) {
-      // var data = {
-      //   x: xincrement,
-      //   y: yincrement,
-      //   feed: feed
-      // }
       var xincrement = parseFloat(data.x);
       var yincrement = parseFloat(data.y);
       var feed = parseFloat(data.feed)

@@ -5,15 +5,16 @@ var jogRate = {x: 4000, y: 4000, z: 2000, a: 2000};
 var showMCS = false;
 
 var jogDistArray = [ // must have 4 items
-  {mm: 0.1, mmStr: '0.1qm', in: 0.0254, inStr: '0.001"', button: '#dist01', label: '#dist01label'},
-  {mm: 1, mmStr: '1qm', in: 0.254, inStr: '0.01"', button: '#dist1', label: '#dist1label'},
-  {mm: 10, mmStr: '10qm', in: 2.54, inStr: '0.1"', button: '#dist10', label: '#dist10label'},
-  {mm: 100, mmStr: '100qm', in: 25.4, inStr: '1"', button: '#dist100', label: '#dist100label'},
+  {mm: 0.1, mmStr: '0.1mm', in: 0.0254, inStr: '0.001"', button: '#dist01', label: '#dist01label'},
+  {mm: 1, mmStr: '1mm', in: 0.254, inStr: '0.01"', button: '#dist1', label: '#dist1label'},
+  {mm: 10, mmStr: '10mm', in: 2.54, inStr: '0.1"', button: '#dist10', label: '#dist10label'},
+  {mm: 100, mmStr: '100mm', in: 25.4, inStr: '1"', button: '#dist100', label: '#dist100label'},
 ];
 
 var jogDistIndex = 2; // initial selection
 var jogdistXYZ = 10;
 var jogdistA = 10;
+var unit = "mm";
 
 function jogOverride(newVal) {
   if (grblParams.hasOwnProperty('$110')) {
@@ -36,12 +37,10 @@ function setJogDist(index) {
     const label = $(jogDist.label);
     if (i == index) {
      button.addClass('bd-openbuilds');
-     label.removeClass('fg-gray');
-     label.addClass('fg-openbuilds');
+     label.removeClass('fg-gray').addClass('fg-openbuilds');
     } else {
      button.removeClass('bd-openbuilds');
-     label.removeClass('fg-openbuilds');
-     label.addClass('fg-gray');
+     label.removeClass('fg-openbuilds').addClass('fg-gray');
     }
   }
   jogDistIndex = index;
@@ -80,7 +79,7 @@ function inMode() {
   }
   jogdistXYZ = jogDistArray[jogDistIndex].in;
 
-  if (!disableDROupdates && laststatus) {
+  if (!disableDROupdates && laststatus && laststatus.comms.connectionStatus != 0) {
     updateDro(laststatus);
   }
 
@@ -92,11 +91,13 @@ function inMode() {
 
 function toggleWCS() {
   showMCS = !showMCS;
-	if (showMCS) {
+  if (showMCS) {
     $('#mcsBtn, .dro').addClass('droMCS');
+    $('#Xwork, #Ywork, #Zwork, #Awork').html("MCS");
   } else {
     $('#mcsBtn, .dro').removeClass('droMCS');
-	}
+    $('#Xwork, #Ywork, #Zwork, #Awork').html("WORK");
+  }
   $('#mcsBtn').html(showMCS ? "MCS" : "WCS");
   EnableViaClass($(".setzero"), !showMCS);
 
@@ -136,7 +137,25 @@ function onDroClick(axis) {
   input[0].select();
 }
 
+// Round small negative values to 0 so they don't show up as -0
+function prettyCoord(val, dec) {
+  val = Number(val);
+  if (dec == 2 && val < 0 && val > -0.005) {
+    return 0;
+  }
+  if (dec == 3 && val < 0 && val > -0.0005) {
+    return 0;
+  }
+  return val;
+}
+
 function updateDro(status) {
+  if (status.comms.connectionStatus == 0 || status.comms.connectionStatus == 6) {
+    $('#xPos, #yPos, #zPos, #aPos').html('0.00');
+    $("#xPosDro, #yPosDro, #zPosDro, #aPosDro").attr('title', '');
+    return;
+  }
+
   var xpos = status.machine.position.work.x;
   var ypos = status.machine.position.work.y;
   var zpos = status.machine.position.work.z;
@@ -160,11 +179,11 @@ function updateDro(status) {
     ypos = prettyCoord(ypos / 25.4, 3).toFixed(3) + unit;
     zpos = prettyCoord(zpos / 25.4, 3).toFixed(3) + unit;
   } else {
-    $(" #xPosDro").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit +
+    $("#xPosDro").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit +
       "\nX Work: " + status.machine.position.work.x.toFixed(3) + unit);
-    $(" #yPosDro").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit +
+    $("#yPosDro").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit +
       "\nY Work: " + status.machine.position.work.y.toFixed(3) + unit);
-    $(" #zPosDro").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit +
+    $("#zPosDro").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit +
       "\nZ Work: " + status.machine.position.work.z.toFixed(3) + unit);
 
     xpos = prettyCoord(xpos, 2).toFixed(2) + unit;
@@ -172,7 +191,7 @@ function updateDro(status) {
     zpos = prettyCoord(zpos, 2).toFixed(2) + unit;
   }
 
-  $(" #aPosDro").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "\u{00B0}" +
+  $("#aPosDro").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "\u{00B0}" +
     "\nA Work: " + status.machine.position.work.a.toFixed(3) + "\u{00B0}");
   apos = prettyCoord(apos, 2).toFixed(2) + "&deg;";
 
@@ -242,28 +261,15 @@ function onDroBlur(axis) {
 $(document).ready(function() {
 
   if (localStorage.getItem('continuousJog')) {
-    if (JSON.parse(localStorage.getItem('continuousJog')) == true) {
-      $('#jogTypeContinuous').prop('checked', true)
-      allowContinuousJog = true;
-      $('.distbtn').hide()
-    } else {
-      $('#jogTypeContinuous').prop('checked', false)
-      allowContinuousJog = false;
-      $('.distbtn').show();
-    }
+    allowContinuousJog = JSON.parse(localStorage.getItem('continuousJog')) == true;
+    $('#jogTypeContinuous').prop('checked', allowContinuousJog);
+    $('.distbtn').toggle(!allowContinuousJog);
   }
 
   $('#jogTypeContinuous').on('click', function() {
-    if ($(this).is(':checked')) {
-      localStorage.setItem('continuousJog', true);
-      allowContinuousJog = true;
-      $('.distbtn').hide();
-    } else {
-      localStorage.setItem('continuousJog', false);
-      allowContinuousJog = false;
-      $('.distbtn').show();
-    }
-    // console.log(document.activeElement)
+    allowContinuousJog = $(this).is(':checked');
+    localStorage.setItem('continuousJog', allowContinuousJog);
+    $('.distbtn').toggle(!allowContinuousJog);
     document.activeElement.blur();
   });
 
@@ -375,9 +381,6 @@ $(document).ready(function() {
       sendGcode('G0 G53 X' + limits.X0.toFixed(2) + ' Y' + limits.Y0.toFixed(2));
     }
   });
-
-
-
 
   $('.xM').on('touchstart mousedown', function(ev) {
     //console.log(ev)

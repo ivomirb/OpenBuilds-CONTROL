@@ -132,30 +132,6 @@ function setControlBar(val, status) {
   }
 }
 
-function setJogPanel(val, status) {
-  if (val == 0 || val == 6) { // Not Connected Yet or Firmware Upgrade State
-    $('.jogbtn').attr('disabled', true);
-    $('#xPos').html('0.00');
-    $('#yPos').html('0.00');
-    $('#zPos').html('0.00');
-    $('#aPos').html('0.00');
-
-  } else if (val >= 1 && val <= 5) { // Normal operation
-    // 1 - connecting
-    // 2 - idle
-    // 3 - running
-    // 4 - paused
-    // 5 - alarm
-
-    $('.jogbtn').attr('disabled', val != 2);
-  }
-}
-
-function setConsole(val, status) {
-  // Allow typing on the console only during idle or alarm
-  $("#command").attr('disabled', val != 2 && val != 5);
-  $("#sendCommand").attr('disabled', val != 2 && val != 5);
-}
 
 function updateWcsHistory(wcs) {
   if (isJogWidget || !laststatus) return;

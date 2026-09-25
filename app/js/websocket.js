@@ -6,7 +6,6 @@ var nostatusyet = true;
 var safeToUpdateSliders = false;
 var laststatus, lastsysinfo
 var bellstate = false;
-var unit = "mm";
 var waitingForStatus = false;
 var openDialogs = [];
 
@@ -112,18 +111,6 @@ function printLog(string) {
     }
   }
 };
-
-// Round small negative values to 0 so they don't show up as -0
-function prettyCoord(val, dec) {
-  val = Number(val);
-  if (dec == 2 && val < 0 && val > -0.005) {
-    return 0;
-  }
-  if (dec == 3 && val < 0 && val > -0.0005) {
-    return 0;
-  }
-  return val;
-}
 
 function initSocket() {
   socket = io.connect(server, {
@@ -241,9 +228,6 @@ function initSocket() {
     $('#fluidncSettings').show()
     var fluidncJSON = YAML.parse(data);
     console.log(fluidncJSON)
-    //yamlString = YAML.stringify(nativeObject[, inline /* @integer depth to start using inline notation at */[, spaces /* @integer number of spaces to use for indentation */] ]);
-
-
   });
 
 
@@ -373,14 +357,6 @@ function initSocket() {
 
     // Cleanup
     lastJobStartTime = false;
-    // if (typeof object !== 'undefined' && object.userData != undefined) {
-    //   var timeremain = object.userData.totalTime;
-    //   if (!isNaN(timeremain)) {
-    //     $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-    //   }
-    // }
-
-
   });
 
   socket.on("machinename", function(data) {
@@ -797,11 +773,15 @@ function initSocket() {
       $('#activeportstatus').html("none")
     }
 
+    // Only allow jogging during idle
+    $('.jogbtn').attr('disabled', status.comms.connectionStatus != 2);
+
+    // Allow typing on the console only during idle or alarm
+    $("#command, #sendCommand").attr('disabled', status.comms.connectionStatus != 2 && status.comms.connectionStatus != 5);
+
     // Set the Connection Toolbar option
     setConnectBar(status.comms.connectionStatus, status);
     setControlBar(status.comms.connectionStatus, status)
-    setJogPanel(status.comms.connectionStatus, status)
-    setConsole(status.comms.connectionStatus, status)
     if (status.comms.connectionStatus != 5) {
       bellstate = false
     }
@@ -954,7 +934,6 @@ function initSocket() {
   });
 
   $('#sendCommand').on('click', function() {
-console.log("CLICK");
     var commandValue = $('#command').val();
     sendGcode(commandValue);
     // $('#command').val('');
@@ -971,28 +950,12 @@ console.log("CLICK");
   });
 
   var bellflash = setInterval(function() {
-    if (!nostatusyet) {
-      if (laststatus) {
-        if (laststatus.comms.connectionStatus == 5) {
-          if (bellstate == false) {
-            $('#navbell').hide();
-            $('#navbellBtn1').hide();
-            $('#navbellBtn2').hide();
-            $('#navbellBtn3').hide();
-            bellstate = true
-          } else {
-            $('#navbell').show();
-            $('#navbellBtn1').show();
-            $('#navbellBtn2').show();
-            $('#navbellBtn3').show();
-            bellstate = false
-          }
-        } else {
-          $('#navbell').hide();
-          $('#navbellBtn1').hide();
-          $('#navbellBtn2').hide();
-          $('#navbellBtn3').hide();
-        }
+    if (!nostatusyet && laststatus) {
+      if (laststatus.comms.connectionStatus == 5) {
+        bellstate = !bellstate;
+        $('#navbell, #navbellBtn1, #navbellBtn2, #navbellBtn3').toggle(bellstate);
+      } else {
+        $('#navbell, #navbellBtn1, #navbellBtn2, #navbellBtn3').hide();
       }
     }
   }, 200);
@@ -1088,40 +1051,6 @@ function closePort() {
   $('#controlTab').click();
   $('#consoletab').click();
 }
-
-// function populateDrivesMenu() { // removed in 1.0.350 due to Drivelist stability issues
-//   if (laststatus) {
-//     var response = `<select id="select1" data-role="select" class="mt-4"><optgroup label="USB Flashdrives">`
-//
-//     var usbDrives = []
-//
-//     for (i = 0; i < laststatus.interface.diskdrives.length; i++) {
-//       if (laststatus.interface.diskdrives[i].isUSB || !laststatus.interface.diskdrives[i].isSystem) {
-//         usbDrives.push(laststatus.interface.diskdrives[i])
-//       }
-//     };
-//
-//     if (!usbDrives.length > 0) {
-//       response += `<option value="">Waiting for USB Flashdrive</option>`
-//     } else {
-//       for (i = 0; i < usbDrives.length; i++) {
-//         response += `<option value="` + usbDrives[i].mountpoints[0].path + `">` + usbDrives[i].mountpoints[0].path + ` ` + usbDrives[i].description + `</option>`;
-//       };
-//     }
-//     response += `</optgroup></select>`
-//     var select = $("#UsbDriveList").data("select");
-//     if (select) {
-//       select.data(response);
-//       if (!usbDrives.length > 0) {
-//         $('#UsbDriveList').parent(".select").addClass('disabled')
-//         $("#copyToUsbBtn").attr('disabled', true);
-//       } else {
-//         $('#UsbDriveList').parent(".select").removeClass('disabled')
-//         $("#copyToUsbBtn").attr('disabled', false);
-//       }
-//     }
-//   }
-// }
 
 function populatePortsMenu() {
   if (laststatus) {
