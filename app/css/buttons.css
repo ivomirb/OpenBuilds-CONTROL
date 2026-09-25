@@ -201,14 +201,22 @@
   height: 70px;
 }
 
-.disabled:not(.success), [disabled]:not(.success) {
-  color: #999 !important;
-}
-
-.disabled .fg-openbuilds:not(.success), [disabled] .fg-openbuilds:not(.success) {
-  color: #999 !important;
-}
-
 hr {
   background-color: #dadbcd;
+}
+
+/* Blanket graying out of directly or indirectly disabled elements*/
+.disabled:not(.success, .alert, .warning, .info, .secondary),
+[disabled]:not(.success, .alert, .warning, .info, .secondary),
+.disabled *:not(.success, .alert, .warning, .info, .secondary),
+[disabled] *:not(.success, .alert, .warning, .info, .secondary) {
+  color: #999 !important;
+}
+
+.disabled.fg-openbuilds:not(.success, .info),
+.fg-openbuilds[disabled]:not(.success, .info),
+.disabled .fg-openbuilds:not(.success, .info),
+[disabled] .fg-openbuilds:not(.success, .info),
+{
+  color: #999 !important;
 }

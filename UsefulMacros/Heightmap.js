@@ -1357,7 +1357,7 @@ window.UpdateHeightmapMenu =function()
 }
 
 const heightmapBtnHtml = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 6px 9px;">
-	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark drop-shadow"><i class="fas fa-layer-group"></i> Heightmap</button>
+	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark"><i class="fas fa-layer-group"></i> Heightmap</button>
 	<ul class="ribbon-dropdown drop-up" id="heightmapMenu" data-role="dropdown" role="menu" style="margin-bottom:5px;">
 		<style>#heightmapMenu > li {text-align: left;}</style>
 		<li onclick="EditHeightmapSettings()" id="editHeightmapSettings"><a href="#">Heightmap Settings</a></li>

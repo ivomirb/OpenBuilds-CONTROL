@@ -17,7 +17,7 @@ var jogdistA = 10;
 var unit = "mm";
 
 function jogOverride(newVal) {
-  if (grblParams.hasOwnProperty('$110')) {
+  if (laststatus && (laststatus.comms.connectionStatus == 0 || grblParams.hasOwnProperty('$110'))) {
     jogRate.x = (grblParams['$110'] * (newVal / 100)).toFixed(0);
     jogRate.y = (grblParams['$111'] * (newVal / 100)).toFixed(0);
     jogRate.z = (grblParams['$112'] * (newVal / 100)).toFixed(0);

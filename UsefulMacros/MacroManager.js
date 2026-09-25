@@ -511,7 +511,7 @@ function MacroBackgroundContextMenu(event)
 
 window.ExportAll = function()
 {
-	var blob = new Blob([JSON.stringify(buttonsarray)], {type: "plain/text"});
+	var blob = new Blob([JSON.stringify(buttonsarray, null, 2)], {type: "plain/text"});
 	var date = new Date();
 
 	if (typeof invokeSaveAsDialogNew == 'function')
