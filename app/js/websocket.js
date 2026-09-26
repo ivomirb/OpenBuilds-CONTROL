@@ -6,7 +6,6 @@ var nostatusyet = true;
 var safeToUpdateSliders = false;
 var laststatus, lastsysinfo
 var bellstate = false;
-var unit = "mm";
 var waitingForStatus = false;
 var openDialogs = [];
 
@@ -113,18 +112,6 @@ function printLog(string) {
   }
 };
 
-// Round small negative values to 0 so they don't show up as -0
-function prettyCoord(val, dec) {
-  val = Number(val);
-  if (dec == 2 && val < 0 && val > -0.005) {
-    return 0;
-  }
-  if (dec == 3 && val < 0 && val > -0.0005) {
-    return 0;
-  }
-  return val;
-}
-
 function initSocket() {
   socket = io.connect(server, {
     'timeout': 60000,
@@ -166,11 +153,8 @@ function initSocket() {
 
   socket.on('gcodeupload', function(data) {
     if (isJogWidget) return;
-    var icon = ''
-    var source = "api"
-    var string = "Received new GCODE from API"
-    var printLogCls = "fg-darkGreen"
-    printLogModern(icon, source, string, printLogCls)
+    printLogModern('', "api", "Received new GCODE from API", "fg-darkGreen");
+    printLogModern('', "api", "API called window into focus", "fg-darkGreen");
 
     if (data.gcode.length > 10000000) {
       gcode = data.gcode
@@ -193,14 +177,6 @@ function initSocket() {
       $('#gcodeeditortab').click()
     }
     jobNeedsHoming();
-  });
-
-  socket.on('gcodeupload', function(data) {
-    var icon = ''
-    var source = "api"
-    var string = "API called window into focus"
-    var printLogCls = "fg-darkGreen"
-    printLogModern(icon, source, string, printLogCls)
   });
 
   socket.on('integrationpopup', function(data) {
@@ -252,9 +228,6 @@ function initSocket() {
     $('#fluidncSettings').show()
     var fluidncJSON = YAML.parse(data);
     console.log(fluidncJSON)
-    //yamlString = YAML.stringify(nativeObject[, inline /* @integer depth to start using inline notation at */[, spaces /* @integer number of spaces to use for indentation */] ]);
-
-
   });
 
 
@@ -384,14 +357,6 @@ function initSocket() {
 
     // Cleanup
     lastJobStartTime = false;
-    // if (typeof object !== 'undefined' && object.userData != undefined) {
-    //   var timeremain = object.userData.totalTime;
-    //   if (!isNaN(timeremain)) {
-    //     $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-    //   }
-    // }
-
-
   });
 
   socket.on("machinename", function(data) {
@@ -666,57 +631,13 @@ function initSocket() {
       $('#runStatus').html("Controller: " + status.comms.runStatus);
     }
 
-
-
     if (!disableDROupdates) {
-      if (unit == "mm") {
-
-        $(" #xPosDro").attr('title', 'X Machine: ' + (status.machine.position.work.x + status.machine.position.offset.x).toFixed(3) + unit +
-          "\nX Work: " + status.machine.position.work.x.toFixed(3) + unit);
-        $(" #yPosDro").attr('title', 'Y Machine: ' + (status.machine.position.work.y + status.machine.position.offset.y).toFixed(3) + unit +
-          "\nY Work: " + status.machine.position.work.y.toFixed(3) + unit);
-        $(" #zPosDro").attr('title', 'Z Machine: ' + (status.machine.position.work.z + status.machine.position.offset.z).toFixed(3) + unit +
-          "\nZ Work: " + status.machine.position.work.z.toFixed(3) + unit);
-
-        var xpos = prettyCoord(status.machine.position.work.x, 2).toFixed(2) + unit;
-        var ypos = prettyCoord(status.machine.position.work.y, 2).toFixed(2) + unit;
-        var zpos = prettyCoord(status.machine.position.work.z, 2).toFixed(2) + unit;
-      } else if (unit == "in") {
-
-        $(" #xPosDro").attr('title', 'X Machine: ' + ((status.machine.position.work.x + status.machine.position.offset.x) / 25.4).toFixed(3) + unit +
-          "\nX Work: " + (status.machine.position.work.x / 25.4).toFixed(3) + unit);
-        $(" #yPosDro").attr('title', 'Y Machine: ' + ((status.machine.position.work.y + status.machine.position.offset.y) / 25.4).toFixed(3) + unit +
-          "\nY Work: " + (status.machine.position.work.y / 25.4).toFixed(3) + unit);
-        $(" #zPosDro").attr('title', 'Z Machine: ' + ((status.machine.position.work.z + status.machine.position.offset.z) / 25.4).toFixed(3) + unit +
-          "\nZ Work: " + (status.machine.position.work.z / 25.4).toFixed(3) + unit);
-        var xpos = prettyCoord(status.machine.position.work.x / 25.4, 3).toFixed(3) + unit;
-        var ypos = prettyCoord(status.machine.position.work.y / 25.4, 3).toFixed(3) + unit;
-        var zpos = prettyCoord(status.machine.position.work.z / 25.4, 3).toFixed(3) + unit;
-      }
-
-      $(" #aPosDro").attr('title', 'A Machine: ' + (status.machine.position.work.a + status.machine.position.offset.a).toFixed(3) + "\u{00B0}" +
-        "\nA Work: " + status.machine.position.work.a.toFixed(3) + "\u{00B0}");
-      var apos = prettyCoord(status.machine.position.work.a, 2).toFixed(2) + "&deg;";
-
-      if ($('#xPos').html() != xpos) {
-        $('#xPos').html(xpos);
-      }
-      if ($('#yPos').html() != ypos) {
-        $('#yPos').html(ypos);
-      }
-      if ($('#zPos').html() != zpos) {
-        $('#zPos').html(zpos);
-      }
-      if ($('#aPos').html() != apos) {
-        $('#aPos').html(apos);
-      }
-
-
-
+      updateDro(status);
     } else {
       $('#xPos').html('disabled');
       $('#yPos').html('disabled');
       $('#zPos').html('disabled');
+      $('#aPos').html('disabled');
     }
 
     if (webgl) {
@@ -739,14 +660,12 @@ function initSocket() {
         $('#tro').data('slider').val(status.machine.overrides.spindleOverride)
     }
 
-    if (unit == "mm") {
-      $("#realFeed").html(status.machine.overrides.realFeed + " mm/min");
-    } else if (unit == "in") {
-      $("#realFeed").html((status.machine.overrides.realFeed / 25.4).toFixed(0) + " in/min");
+    if (unit == "in") {
+      $("#realFeed").html((status.machine.overrides.realFeed / 25.4).toFixed(0) + "<br>in/min");
+    } else {
+      $("#realFeed").html(status.machine.overrides.realFeed.toFixed(0) + "<br>mm/min");
     }
-    $("#realSpeed").html( status.machine.overrides.realSpindle + " rpm");
-
-    //console.log(JSON.stringify(status.machine.overrides, null, 4));
+    $("#realSpeed").html( status.machine.overrides.realSpindle.toFixed(0) + "<br>rpm");
 
 
     // Windows Power Management
@@ -854,14 +773,18 @@ function initSocket() {
       $('#activeportstatus').html("none")
     }
 
+    // Only allow jogging during idle
+    $('.jogbtn').attr('disabled', status.comms.connectionStatus != 2);
+
+    // Allow typing on the console only during idle or alarm
+    $("#command, #sendCommand").attr('disabled', status.comms.connectionStatus != 2 && status.comms.connectionStatus != 5);
+
     // Set the Connection Toolbar option
     setConnectBar(status.comms.connectionStatus, status);
     setControlBar(status.comms.connectionStatus, status)
-    setJogPanel(status.comms.connectionStatus, status)
-    setConsole(status.comms.connectionStatus, status)
     if (status.comms.connectionStatus != 5) {
       bellstate = false
-    };
+    }
     if (status.comms.connectionStatus == 0) {
       showGrbl(false, false)
     }
@@ -892,18 +815,9 @@ function initSocket() {
       updateWcsHistory(status.machine.modals.coordinatesys);
     }
 
-
     // Enable or disable 4th axis UI elements
-    if (status.machine.has4thAxis) {
-      $('#disable4thAxisTick').show();
-      if (disable4thAxis)
-        $(".4thaxis-active").hide();
-      else
-        $(".4thaxis-active").show();
-    } else {
-      $('#disable4thAxisTick').hide();
-      $(".4thaxis-active").hide();
-    }
+    $(".4thaxis-present").toggle(status.machine.has4thAxis);
+    $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
 
     if ((!laststatus || laststatus.interface.autoStart != status.interface.autoStart) &&
         !isJogWidget && typeof process !== "undefined" && process.platform == 'win32') {
@@ -917,7 +831,7 @@ function initSocket() {
 
     laststatus = status;
 
-    if (!isJogWidget && (featuresChanged || offsetChanged))
+    if (!isJogWidget && webgl && (featuresChanged || offsetChanged))
       updateMachineCoordinates();
     if (featuresChanged)
         updateGotoLimits();
@@ -935,64 +849,64 @@ function initSocket() {
           $('#enServo').removeClass('alert').addClass('success').html('ON')
           $(".servo-active").show()
           break;
-        case 'V': //	Variable spindle enabled
+        case 'V': // Variable spindle enabled
           // console.log('Variable spindle enabled')
           $('#enVariableSpindle').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'N': //	Line numbers enabled
+        case 'N': // Line numbers enabled
           // console.log('Line numbers enabled')
           $('#enLineNumbers').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'M': //	Mist coolant enabled
+        case 'M': // Mist coolant enabled
           // console.log('Mist coolant enabled')
           $('#menuMisting').show();
           $('#enMisting').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'C': //	CoreXY enabled
+        case 'C': // CoreXY enabled
           // console.log('CoreXY enabled')
           $('#enCoreXY').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'P': //	Parking motion enabled
+        case 'P': // Parking motion enabled
           // console.log('Parking motion enabled')
           $('#enParking').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'Z': //	Homing force origin enabled
+        case 'Z': // Homing force origin enabled
           // console.log('Homing force origin enabled')
           $('#enHomingOrigin').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'H': //	Homing single axis enabled
+        case 'H': // Homing single axis enabled
           // console.log('Homing single axis enabled')
           $('#enSingleAxisHome').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'T': //	Two limit switches on axis enabled
+        case 'T': // Two limit switches on axis enabled
           // console.log('Two limit switches on axis enabled')
           $('#enTwoLimits').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'A': //	Allow feed rate overrides in probe cycles
+        case 'A': // Allow feed rate overrides in probe cycles
           // console.log('Allow feed rate overrides in probe cycles')
           $('#enFeedOVProbe').removeClass('alert').addClass('success').html('ON')
           break;
-        case '$': //	Restore EEPROM $ settings disabled
+        case '$': // Restore EEPROM $ settings disabled
           // console.log('Restore EEPROM $ settings disabled')
           $('#enEepromSettingsDisable').removeClass('alert').addClass('success').html('ON')
           break;
-        case '#': //	Restore EEPROM parameter data disabled
+        case '#': // Restore EEPROM parameter data disabled
           // console.log('Restore EEPROM parameter data disabled')
           $('#enEepromParamsDisable').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'I': //	Build info write user string disabled
+        case 'I': // Build info write user string disabled
           // console.log('Build info write user string disabled')
           $('#enBuildInfoDisabled').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'E': //	Force sync upon EEPROM write disabled
+        case 'E': // Force sync upon EEPROM write disabled
           // console.log('Force sync upon EEPROM write disabled')
           $('#enForceSyncEeprom').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'W': //	Force sync upon work coordinate offset change disabled
+        case 'W': // Force sync upon work coordinate offset change disabled
           // console.log('Force sync upon work coordinate offset change disabled')
           $('#enForceSyncWco').removeClass('alert').addClass('success').html('ON')
           break;
-        case 'L': //	Homing init lock sets Grbl into an alarm state upon power up
+        case 'L': // Homing init lock sets Grbl into an alarm state upon power up
           // console.log('Homing init lock sets Grbl into an alarm state upon power up')
           $('#enHomingInitLock').removeClass('alert').addClass('success').html('ON')
           break;
@@ -1027,28 +941,12 @@ function initSocket() {
   });
 
   var bellflash = setInterval(function() {
-    if (!nostatusyet) {
-      if (laststatus) {
-        if (laststatus.comms.connectionStatus == 5) {
-          if (bellstate == false) {
-            $('#navbell').hide();
-            $('#navbellBtn1').hide();
-            $('#navbellBtn2').hide();
-            $('#navbellBtn3').hide();
-            bellstate = true
-          } else {
-            $('#navbell').show();
-            $('#navbellBtn1').show();
-            $('#navbellBtn2').show();
-            $('#navbellBtn3').show();
-            bellstate = false
-          }
-        } else {
-          $('#navbell').hide();
-          $('#navbellBtn1').hide();
-          $('#navbellBtn2').hide();
-          $('#navbellBtn3').hide();
-        }
+    if (!nostatusyet && laststatus) {
+      if (laststatus.comms.connectionStatus == 5) {
+        bellstate = !bellstate;
+        $('#navbell, #navbellBtn1, #navbellBtn2, #navbellBtn3').toggle(bellstate);
+      } else {
+        $('#navbell, #navbellBtn1, #navbellBtn2, #navbellBtn3').hide();
       }
     }
   }, 200);
@@ -1144,40 +1042,6 @@ function closePort() {
   $('#controlTab').click();
   $('#consoletab').click();
 }
-
-// function populateDrivesMenu() { // removed in 1.0.350 due to Drivelist stability issues
-//   if (laststatus) {
-//     var response = `<select id="select1" data-role="select" class="mt-4"><optgroup label="USB Flashdrives">`
-//
-//     var usbDrives = []
-//
-//     for (i = 0; i < laststatus.interface.diskdrives.length; i++) {
-//       if (laststatus.interface.diskdrives[i].isUSB || !laststatus.interface.diskdrives[i].isSystem) {
-//         usbDrives.push(laststatus.interface.diskdrives[i])
-//       }
-//     };
-//
-//     if (!usbDrives.length > 0) {
-//       response += `<option value="">Waiting for USB Flashdrive</option>`
-//     } else {
-//       for (i = 0; i < usbDrives.length; i++) {
-//         response += `<option value="` + usbDrives[i].mountpoints[0].path + `">` + usbDrives[i].mountpoints[0].path + ` ` + usbDrives[i].description + `</option>`;
-//       };
-//     }
-//     response += `</optgroup></select>`
-//     var select = $("#UsbDriveList").data("select");
-//     if (select) {
-//       select.data(response);
-//       if (!usbDrives.length > 0) {
-//         $('#UsbDriveList').parent(".select").addClass('disabled')
-//         $("#copyToUsbBtn").attr('disabled', true);
-//       } else {
-//         $('#UsbDriveList').parent(".select").removeClass('disabled')
-//         $("#copyToUsbBtn").attr('disabled', false);
-//       }
-//     }
-//   }
-// }
 
 function populatePortsMenu() {
   if (laststatus) {

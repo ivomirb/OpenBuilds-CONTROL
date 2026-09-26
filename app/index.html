@@ -151,14 +151,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -219,14 +219,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -242,21 +242,21 @@
                   <span class="icon">
                     <img src="img/openbuilds-logo.svg">
                   </span>
-                  <span class="caption">OpenBuilds</span>
+                  <span class="caption">OpenBuilds<br>&nbsp;</span>
                 </button>
                 <span class="title">Visit</span>
               </div>
               <div class="group">
                 <div class="form-group">
                   <form class="form">
-                    <select data-prepend="&nbsp;<i class='fab fa-usb'></i>" class="success" data-role="select" data-filter="false" id="portUSB" disabled>
+                    <select data-prepend="&nbsp;<i class='fab fa-usb'></i>" class="success" style="width:450px" data-role="select" data-filter="false" id="portUSB" disabled>
                       <option value="">Waiting for USB</option>
                     </select>
 
-                    <button class="button small success float-right" onclick="selectPort()" id="connectBtn" type="button" style="margin: 5px;" disabled>Connect</button>
+                    <button class="button small success float-right" onclick="selectPort()" id="connectBtn" type="button" style="margin-top:5px;" disabled>Connect</button>
                     <button class="button small alert" style="display:none;" onclick="closePort()" id="disconnectBtn" type="button" style="margin: 5px;">Disconnect</button>
-                    <button class="button small secondary disabled" disabled style="display:none;" id="flashBtn" type="button" style="margin: 5px;">Flashing: please wait...</button>
-                    <button class="button small outline success float-right" onclick="scanNetwork();" id="scanBtn" type="button" style="margin: 5px;">Scan Network</button>
+                    <button class="button small secondary disabled" disabled style="display:none; margin:5px;" id="flashBtn" type="button">Flashing: please wait...</button>
+                    <button class="button small outline success float-right" onclick="scanNetwork();" id="scanBtn" type="button" style="margin:5px;">Scan Network</button>
 
                     <div class="ribbon-group" id="grblButtons">
                       <hr>
@@ -333,7 +333,7 @@
                 </button>
 
                 <div>
-                  <button id="runToolsBtn" class="ribbon-button dropdown-toggle" title="Run a Job with Toolchanges">
+                  <button id="runToolsBtn" class="ribbon-button dropdown-toggle" title="Run a Job with Toolchanges" style="display:none">
                     <span class="icon">
                       <i class="fas fa-play"></i>
                     </span>
@@ -399,12 +399,10 @@
                         <li onclick="sendGcode('M3 S'+(parseInt(grblParams.$30) * 1).toFixed(0)+'\n G1F1000')"><a href="#">Laser On 100% Power (M3 S<span class="ToolOnS100">1000</span>)</a></li>
                       </ul>
                     </li>
-                    <!-- <li class="divider"></li> -->
                     <li onclick="sendGcode('M3 S'+parseInt(grblParams.$30).toFixed(0))"><a class="grblmode" href="#">Plasma On (M3 S<span class="ToolOnS100">1000</span>)</a></li>
                     <li class="divider fg-gray"></li>
                     <li id="menuMisting" style="display: none;" onclick="sendGcode('M7')"><a class="grblmode" href="#">Misting On (M7)</a></li>
                     <li onclick="sendGcode('M8')"><a class="grblmode" href="#">Coolant On (M8)</a></li>
-                    <!-- <li><a class="grblmode" href="#" onclick="sendGcode('M9 S1000')">Coolant Off (M9)</a></li> -->
 
                   </ul>
                 </div>
@@ -434,7 +432,7 @@
                       <i class="fas fa-podcast fa-rotate-180"></i>
                     </span>
                   </span>
-                  <span class="caption grblmode">Probe</span>
+                  <span class="caption grblmode">Probe<br>&nbsp;</span>
                 </button>
 
 
@@ -502,7 +500,7 @@
                 <span class="title">Theme</span>
               </div>
 
-              <div class="group estop" style="width: 100px;">
+              <div class="group estop">
                 <button class="ribbon-button" onclick="socket.emit('clearAlarm', 2)">
                   <span class="icon">
                     <span class="fa-layers" data-toggle="tooltip" data-placement="bottom" title="Flashes red when machine has entered ALARM state, click Clear Alarm button">
@@ -512,14 +510,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true});">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -567,7 +565,7 @@
                   <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
                     <li onclick="toggleAutoStart();" id="disableAutoStartTick" style="display:none"><a href="#"><i class="fas fa-fw fa-running"></i> Disable Auto Start and Tray Icon</a></li>
                     <li onclick="disableAggressiveHomeReset = !disableAggressiveHomeReset; saveDiagnostics();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
-                    <li onclick="disable4thAxis = !disable4thAxis; saveDiagnostics();" id="disable4thAxisTick" style="display:none"><a href="#"><i class="fas fa-fw fa-chess-rook"></i> Disable 4th axis</a></li>
+                    <li onclick="disable4thAxis = !disable4thAxis; saveDiagnostics();" id="disable4thAxisTick" class="4thaxis-present" style="display:none"><a href="#"><i class="fas fa-fw fa-chess-rook"></i> Disable 4th axis</a></li>
                   </ul>
                 </div>
                 <span class="title">Settings</span>
@@ -592,7 +590,7 @@
                 <span class="title">Support</span>
               </div>
 
-              <div class="group" style="width: 100px;">
+              <div class="group">
                 <button class="ribbon-button" onclick="socket.emit('clearAlarm', 2)">
                   <span class="icon">
                     <span class="fa-layers" data-toggle="tooltip" data-placement="bottom" title="Flashes red when machine has entered ALARM state, click Clear Alarm button">
@@ -602,14 +600,14 @@
                   </span>
                   <span class="caption">Unlock<br>Alarm</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('stop', { stop: false, jog: false, abort: true})">
+                <button class="ribbon-button" style="padding-left:6px; padding-right:6px;" onclick="socket.emit('stop', { stop: false, jog: false, abort: true})">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-circle fg-red" data-fa-transform="grow-8"></i>
                       <i class="fa-inverse far fa-hand-paper" data-fa-transform="grow-1 left-0.5"></i>
                     </span>
                   </span>
-                  <span class="caption">Abort</span>
+                  <span class="caption">Abort<br>&nbsp;</span>
                 </button>
                 <span class="title">E-Stop</span>
               </div>
@@ -630,8 +628,6 @@
                   <table class="drotable mt-1">
                     <tr>
                       <td>
-
-
                         <div class="pos-relative">
                           <!-- special styling for the dropdown arrow to set a contrast color and adjust the position -->
                           <style>
@@ -662,18 +658,22 @@ Restore previous origins from history.">
 
 
                       </td>
-                      <td colspan="3">
-                        <nav data-role="ribbonmenu" class="mt-1">
-                          <ul class="tabs-holder">
-                            <li onclick="mmMode();"><a id="mmMode" href="#tab-mm">mm-mode</a></li>
-                            <li onclick="inMode();"><a id="inMode" href="#tab-inch">inch-mode</a></li>
-                          </ul>
-                        </nav>
+                      <td colspan="2">
+                        <div style="display:flex; flex-direction: row; align-items:flex-end;">
+                          <button id="mcsBtn" class="button light" onclick="toggleWCS()" title="Toggles between Work Coordinate System (WCS) and Machine Coordinate System (MCS)"
+                              style="width:51px; height:24px; line-height:24px; padding:0; margin-right:6px;">WCS</button>
+                          <nav data-role="ribbonmenu" class="mt-1">
+                            <ul class="tabs-holder">
+                              <li onclick="mmMode()"><a id="mmMode" style="padding:0 25px" href="#tab-mm">mm</a></li>
+                              <li onclick="inMode()"><a id="inMode" style="padding:0 25px" href="#tab-inch">inch</a></li>
+                            </ul>
+                          </nav>
+                        </div>
                       </td>
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
+                        <button class="button light jogbtn setzero" id="setZeroX" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -682,15 +682,15 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="xPosDro">
+                        <div class="dro" id="xPosDro" onclick="onDroClick('x')">
                           <div class="float-left fg-red" data-fa-transform="right-15">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-red" data-fa-transform="right-3">X</span>
-                              <span class="fa-layers-text fg-red" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
+                              <span class="fa-layers-text fg-red" id="Xwork" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
                             </span>
                           </div>
                           <div class="float-right fg-red" id="xPos" data-editable>0.000</div>
-                          <input id="xPosInput" class="m-0 p-0 droInput float-right fg-red" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="xPosInput" class="m-0 p-0 droInput float-right fg-red" data-editable="true" onkeydown="onDroKeydown('x', event)" onblur="onDroBlur('x')"/>
                         </div>
                       </td>
                       <td>
@@ -709,7 +709,7 @@ Restore previous origins from history.">
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
+                        <button class="button light jogbtn setzero" id="setZeroY" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-green" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Y</span>
@@ -718,15 +718,15 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="yPosDro">
+                        <div class="dro" id="yPosDro" onclick="onDroClick('y')">
                           <div class="float-left fg-green">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-green" data-fa-transform="right-3">Y</span>
-                              <span class="fa-layers-text fg-green" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
+                              <span class="fa-layers-text fg-green" id="Ywork" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
                             </span>
                           </div>
                           <div class="float-right fg-green" id="yPos" data-editable>0.000</div>
-                          <input id="yPosInput" class="m-0 p-0 droInput float-right fg-green" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="yPosInput" class="m-0 p-0 droInput float-right fg-green" data-editable="true" onkeydown="onDroKeydown('y', event)" onblur="onDroBlur('y')"/>
                         </div>
                       </td>
                       <td>
@@ -745,7 +745,7 @@ Restore previous origins from history.">
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn setzero" id="setZeroZ" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-blue" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Z</span>
@@ -754,15 +754,15 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="zPosDro">
+                        <div class="dro" id="zPosDro" onclick="onDroClick('z')">
                           <div class="float-left fg-blue">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-blue" data-fa-transform="right-3">Z</span>
-                              <span class="fa-layers-text fg-blue" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
+                              <span class="fa-layers-text fg-blue" id="Zwork" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
                             </span>
                           </div>
                           <div class="float-right fg-blue" id="zPos" data-editable>0.000</div>
-                          <input id="zPosInput" class="m-0 p-0 droInput float-right fg-blue" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="zPosInput" class="m-0 p-0 droInput float-right fg-blue" data-editable="true" onkeydown="onDroKeydown('z', event)" onblur="onDroBlur('z')"/>
                         </div>
                       </td>
                       <td>
@@ -782,7 +782,7 @@ Restore previous origins from history.">
 
                     <tr class="4thaxis-active" style="display: none;">
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero A</b>'); sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn setzero" id="setZeroA" onclick="captureWcsHistory('Modified by <b>Set Zero A</b>'); sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-orange" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">A</span>
@@ -791,15 +791,15 @@ Restore previous origins from history.">
                         </button>
                       </td>
                       <td>
-                        <div class="dro" id="aPosDro">
+                        <div class="dro" id="aPosDro" onclick="onDroClick('a')">
                           <div class="float-left fg-orange">
                             <span class="fa-layers fa-fw">
                               <span class="fa-layers-text fg-orange" data-fa-transform="right-3">A</span>
-                              <span class="fa-layers-text fg-orange" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
+                              <span class="fa-layers-text fg-orange" id="Awork" data-fa-transform="left-18 rotate-270" style="font-family: Arial; font-size: 8px;">WORK</span>
                             </span>
                           </div>
                           <div class="float-right fg-orange" id="aPos" data-editable>0.000</div>
-                          <input id="aPosInput" class="m-0 p-0 droInput float-right fg-orange" data-editable="true" title="Enter to Go, Shift+Enter to Set" />
+                          <input id="aPosInput" class="m-0 p-0 droInput float-right fg-orange" data-editable="true" onkeydown="onDroKeydown('a', event)" onblur="onDroBlur('a')"/>
                         </div>
                       </td>
                       <td>
@@ -816,7 +816,7 @@ Restore previous origins from history.">
 
                     <tr>
                       <td>
-                        <button class="button light jogbtn" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
+                        <button class="button light jogbtn setzero" id="setZeroXYZ" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-18"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-2" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -854,7 +854,6 @@ Restore previous origins from history.">
                             <span class="fa-layers fa-fw">
                               <i class="fas fa-layer-group fg-openbuilds" data-fa-transform="shrink-2 up-3"></i>
                               <i class="fas fa-caret-down fg-openbuilds" data-fa-transform="down-8"></i>
-                              <!-- <span class="fa-layers-text fg-grayBlue" data-fa-transform="up-8 " style="font-weight:900; font-family: Arial; font-size: 12px;">gotozero</span> -->
                             </span>
                           </button>
                           <ul class="d-menu context drop-shadow drop-right" data-role="dropdown">
@@ -981,15 +980,15 @@ Restore previous origins from history.">
                       <td colspan='5'>
                         <table style="width: 100%;">
                           <tr>
-                            <td><span class="text-small">Incremental Jog</span>
+                            <td><span class="text-small jogbtn">Incremental Jog</span>
                             </td>
                             <td class="pb-1">
                               <label class="toggle">
-                                <input type="checkbox" id="jogTypeContinuous" />
+                                <input class=" jogbtn" type="checkbox" id="jogTypeContinuous" />
                                 <div>app-notification</div>
                               </label>
                             </td>
-                            <td><span class="text-small">Continuous Jog</span>
+                            <td><span class="text-small jogbtn">Continuous Jog</span>
                             </td>
                           </tr>
                         </table>
@@ -999,10 +998,8 @@ Restore previous origins from history.">
                       <td class="4thaxis-active" style="display: none;">
 
                         <div class="pos-relative">
-                          <button class="button light jogbtn metricbtn distbtn" id="distAAxis" style="width: 100%; height: 25px; line-height: 25px;">
-                            <span class=" fa-layers fa-fw">
-                              <span id="distAAxislabel" class="fa-layers-text fg-openbuilds jogdistA" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">A: 10&deg;</span>
-                            </span>
+                          <button class="button light jogbtn distbtn" id="distAAxis" style="width: 100%; height: 25px; line-height: 25px;">
+                            <span id="distAAxislabel" class="fg-openbuilds jogdistA" style="font-weight:900; font-family: Arial; font-size: 12px;">A: 10&deg;</span>
                           </button>
                           <ul class="d-menu context drop-shadow drop-bottom" data-role="dropdown">
                             <li><a href="#" onclick="setADist('0.1')">0.1&deg;</a></li>
@@ -1022,31 +1019,23 @@ Restore previous origins from history.">
 
                       </td>
                       <td>
-                        <button class="button light jogbtn metricbtn distbtn" id="dist01" style="width: 100%; height: 25px; line-height: 25px;">
-                          <span class=" fa-layers fa-fw">
-                            <span id="dist01label" class="fa-layers-text fg-gray jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">0.1mm</span>
-                          </span>
+                        <button class="button light jogbtn distbtn" id="dist01" style="width: 100%; height: 25px; line-height: 25px;">
+                          <span id="dist01label" class="fg-gray" style="font-weight:900; font-family: Arial; font-size: 12px;">0.1mm</span>
                         </button>
                       </td>
                       <td>
-                        <button class="button light jogbtn metricbtn distbtn" id="dist1" style="width: 100%; height: 25px; line-height: 25px;">
-                          <span class=" fa-layers fa-fw">
-                            <span id="dist1label" class="fa-layers-text fg-gray jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">1mm</span>
-                          </span>
+                        <button class="button light jogbtn distbtn" id="dist1" style="width: 100%; height: 25px; line-height: 25px;">
+                          <span id="dist1label" class="fg-gray" style="font-weight:900; font-family: Arial; font-size: 12px;">1mm</span>
                         </button>
                       </td>
                       <td>
-                        <button class="button light jogbtn distbtn metricbtn bd-openbuilds" id="dist10" style="width: 100%; height: 25px; line-height: 25px;">
-                          <span class=" fa-layers fa-fw">
-                            <span id="dist10label" class="fa-layers-text fg-openbuilds jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">10mm</span>
-                          </span>
+                        <button class="button light jogbtn distbtn bd-openbuilds" id="dist10" style="width: 100%; height: 25px; line-height: 25px;">
+                          <span id="dist10label" class="fg-gray" style="font-weight:900; font-family: Arial; font-size: 12px;">10mm</span>
                         </button>
                       </td>
                       <td>
-                        <button class="button light jogbtn distbtn metricbtn" id="dist100" style="width: 100%; height: 25px; line-height: 25px;">
-                          <span class=" fa-layers fa-fw">
-                            <span id="dist100label" class="fa-layers-text fg-gray jogdistXYZ" data-fa-transform="" style="font-weight:900; font-family: Arial; font-size: 12px;">100mm</span>
-                          </span>
+                        <button class="button light jogbtn distbtn" id="dist100" style="width: 100%; height: 25px; line-height: 25px;">
+                          <span id="dist100label" class="fg-gray" style="font-weight:900; font-family: Arial; font-size: 12px;">100mm</span>
                         </button>
                       </td>
                     </tr>
@@ -1057,20 +1046,20 @@ Restore previous origins from history.">
                   <button class="button light mini mb-1" onclick="jogOverride(100);">reset</button>
                   <input id="jro" data-on-stop="jogOverride(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="true" data-size="180" data-min="1" data-max="100" data-value="100" data-hint="true" data-hint-always="true"
                     data-hint-position="bottom" data-hint-mask="Jog: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realJog" style="display:none"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realJog" style="display:none;"></span>
                 </div>
 
                 <div class="cell border-left bd-gray" id="frocell">
                   <button class="button light mini mb-1" onclick="feedOverride(100);">reset</button>
                   <input id="fro" data-on-stop="feedOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Feed: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed" style="width:64px; height:fit-content; vertical-align:top; margin-top:2px;"></span>
                 </div>
                 <div class="cell border-left bd-gray" id="trocell">
                   <button class="button light mini  mb-1" onclick="spindleOverride(100);">reset</button>
                   <input id="tro" data-on-stop="spindleOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Tool: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed" style="width:64px; height:fit-content; vertical-align:top; margin-top:2px;"></span>
                 </div>
               </div>
             </div>
@@ -1092,7 +1081,7 @@ Restore previous origins from history.">
                     <div class="fixed-bottom m-3 mb-9">
                       <form class="inline-form" id="commandform" autocomplete="off">
                         <input title="Tip: Press F6 anywhere on the CONTROL window to quickly jump to this input" data-prepend="&nbsp;<i class='fas fa-terminal'></i>" data-role="input" data-clear-button="false" data-role="input" id="command"
-                          type="text" autocomplete="on" class=" dark needs-connection" style="width: calc(100vw - 170px);" data-editable="true" placeholder="Enter GCODE/Serial commands here to send it to your machine" />
+                          type="text" autocomplete="on" class=" dark needs-connection" style="width:800px;" data-editable="true" placeholder="Enter GCODE/Serial commands here to send it to your machine" />
                         <button id="sendCommand" class="button dark needs-connection" type="button" title="Execute command">
                           <i class="fa fa-play" style="margin-right: 10px;"></i> Send
                         </button>
@@ -1122,77 +1111,77 @@ Restore previous origins from history.">
                   </div>
                   <div class="section" id="tab-three">
                     <div id="renderArea"></div>
-
-
-                    <div style="position: absolute; top: 10px; right: 10px; z-index: 1; display:flex; flex-direction:column; align-items:flex-end;">
-                      <button title="3D View settings" class="button dark dropdown-toggle">
-                        <i class="fas fa-eye"></i> View
+                    <div id="renderToolbar" class="toolbar no-divider" style="height:39px; position:absolute; padding:0px; margin:6px;">
+                      <div>
+                        <button title="3D View settings" class="button dark dropdown-toggle">
+                          <i class="fas fa-eye"></i> View
+                        </button>
+                        <table id="viewSettingsTable" class="ribbon-dropdown" data-role="dropdown" style="display:none; width:max-content;">
+                          <tr onclick="event.stopPropagation()">
+                            <td style="vertical-align:middle;">
+                              <label class="toggle"><input type="checkbox" id="viewGridSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                            </td>
+                            <td style="vertical-align:middle;">
+                              <span class="text-small" style="padding: 6px; display:inline-block;">Grid</span>
+                            </td>
+                          </tr>
+                          <tr onclick="event.stopPropagation()">
+                            <td style="vertical-align:middle;">
+                              <label class="toggle"><input type="checkbox" id="viewRulerSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                            </td>
+                            <td style="vertical-align:middle;">
+                              <span class="text-small" style="padding: 6px; display:inline-block;">Ruler</span>
+                            </td>
+                          </tr>
+                          <tr onclick="event.stopPropagation()">
+                            <td style="vertical-align:middle;">
+                              <label class="toggle"><input type="checkbox" id="viewToolpathSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                            </td>
+                            <td style="vertical-align:middle;">
+                              <span class="text-small" style="padding: 6px; display:inline-block;">Toolpath</span>
+                            </td>
+                          </tr>
+                          <tr onclick="event.stopPropagation()">
+                            <td style="vertical-align:middle;">
+                              <label class="toggle"><input type="checkbox" id="viewToolSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                            </td>
+                            <td style="vertical-align:middle;">
+                              <span class="text-small" style="padding: 6px; display:inline-block;">Tool marker</span>
+                            </td>
+                          </tr>
+                          <tr onclick="event.stopPropagation()">
+                            <td style="vertical-align:middle;">
+                              <label class="toggle"><input type="checkbox" id="viewMachineSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                            </td>
+                            <td style="vertical-align:middle;">
+                              <span class="text-small" style="padding: 6px; display:inline-block;">Machine Extents</span>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                      <button id="resetViewBtn" style="margin-left:3px;" title="Resets camera angle and zoom" class="button dark" onclick="resetView(object)">
+                        <i class="fas fa-undo"></i> Reset
                       </button>
-                      <table id="viewSettings" class="ribbon-dropdown" data-role="dropdown" style="display: none; margin-top:4px; position:relative;">
-                        <tr onclick="event.stopPropagation()">
-                          <td style="vertical-align:middle;">
-                            <label class="toggle"><input type="checkbox" id="viewGridSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
-                          </td>
-                          <td style="vertical-align:middle;">
-                            <span class="text-small" style="padding: 6px; display:inline-block;">Grid</span>
-                          </td>
-                        </tr>
-                        <tr onclick="event.stopPropagation()">
-                          <td style="vertical-align:middle;">
-                            <label class="toggle"><input type="checkbox" id="viewRulerSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
-                          </td>
-                          <td style="vertical-align:middle;">
-                            <span class="text-small" style="padding: 6px; display:inline-block;">Ruler</span>
-                          </td>
-                        </tr>
-                        <tr onclick="event.stopPropagation()">
-                          <td style="vertical-align:middle;">
-                            <label class="toggle"><input type="checkbox" id="viewToolpathSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
-                          </td>
-                          <td style="vertical-align:middle;">
-                            <span class="text-small" style="padding: 6px; display:inline-block;">Toolpath</span>
-                          </td>
-                        </tr>
-                        <tr onclick="event.stopPropagation()">
-                          <td style="vertical-align:middle;">
-                            <label class="toggle"><input type="checkbox" id="viewToolSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
-                          </td>
-                          <td style="vertical-align:middle;">
-                            <span class="text-small" style="padding: 6px; display:inline-block;">Tool marker</span>
-                          </td>
-                        </tr>
-                        <tr onclick="event.stopPropagation()">
-                          <td style="vertical-align:middle;">
-                            <label class="toggle"><input type="checkbox" id="viewMachineSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
-                          </td>
-                          <td style="vertical-align:middle;">
-                            <span class="text-small" style="padding: 6px; display:inline-block;">Machine Extents</span>
-                          </td>
-                        </tr>
-                         <tr>
-                          <td colspan="2">
-                            <button id="resetViewBtn" style="margin-left: 5px; margin-right: 5px; margin-top: 5px; margin-bottom: 5px; width: calc(100% - 10px);"
-                               title="Resets camera angle and zoom" class="button dark drop-shadow" onclick="resetView(object)"><i class="fas fa-undo"></i> Reset View</button>
-                          </td>
-                        </tr>
-                      </table>
                     </div>
+
 
                     <div style="position: absolute; top: 10px; right:10px; z-index: 1; max-width: 100px; max-width: 100px;" id="overlayimg">
                       <!-- <img src="img/mch/acro55.png" style="max-width:100%; max-height:100%;">
                     <span style="position: absolute; top: 3px; right:3px; z-index: 1;" class="fas fa-cogs"></span> -->
                     </div>
-                    <div class="fixed-bottom m-3 mb-9" style="display: flex; flex-direction: row; align-items: self-end; justify-content: flex-end; padding-right: 10px;">
-                      <div class="content-holder" id="simControls" style="display:none; height: auto; padding:5px;  margin-right:6px; border: 1px solid;">
+                    <div class="fixed-bottom" style="position:absolute; left:10px; bottom:0px; display:flex; flex-direction:row; align-items:self-end; justify-content:flex-start;">
+                      <button id="runSimBtn" style="margin-right:11px; margin-bottom:10px;" title="Run simulation" class="button dark" onclick="sim(0, true)"><i class="fas fa-fighter-jet"></i> Simulate</button>
+                      <div class="content-holder" id="simControls" style="display:none; height: auto; padding:5px;  margin-left:-6px; margin-bottom:4px; border: 1px solid;">
                         <input id="simProgress" class="thin cycle-marker" data-on-start="simDragStart()" data-on-stop="simDragStop()" data-on-change="if (typeof simSetProgress == 'function') simSetProgress(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-size="100%" data-min="0" data-max="100" data-value="0" data-hint="true"
                          data-hint-position="top" data-hint-always="true" data-hint-mask="$1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                        <button id="simBackBtn" style="margin-right: 5px;" disabled title="Previous Line" class="button dark drop-shadow" onclick="simStepBack()"><i class="fas fa-caret-square-left" data-fa-transform="grow-8"></i></button>
-                        <button id="pauseSimBtn" style="margin-right:5px;" title="Pause Sim" class="button dark drop-shadow" onclick="simpause()"><i class="fas fa-pause"></i></button>
-                        <button id="resumeSimBtn" style="margin-right:5px;" title="Play Sim" class="button dark drop-shadow" onclick="simresume()"><i class="fas fa-play"></i></button>
-                        <button id="simForwardBtn" style="margin-right:5px;" disabled title="Next Line" class="button dark drop-shadow" onclick="simStepForward()"><i class="fas fa-caret-square-right" data-fa-transform="grow-8"></i></button>
-                        <div class="pos-relative" style="display:inline-block; margin-right:5px;">
-                          <button class="button dark drop-shadow" title="Select Speed" style=""><span class="icon"><span class="fas fa-tachometer-alt"></span></span> <span class="caption"><span id="simspeedval">1</span>x</span></button>
-                          <ul class="d-menu context drop-shadow drop-up" id="simSpeedMenu" data-role="dropdown" data-duration="100" style="margin-bottom:5px;">
+                        <button id="stopSimBtn" title="Stop Sim" class="button dark" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>
+                        <button id="simBackBtn" disabled title="Previous Line" class="button dark" onclick="simStepBack()"><i class="fas fa-angle-double-left" data-fa-transform="grow-8"></i></button>
+                        <button id="pauseSimBtn" title="Pause Sim" class="button dark" onclick="simpause()"><i class="fas fa-pause"></i></button>
+                        <button id="resumeSimBtn" title="Play Sim" class="button dark" onclick="simresume()"><i class="fas fa-play"></i></button>
+                        <button id="simForwardBtn" disabled title="Next Line" class="button dark" onclick="simStepForward()"><i class="fas fa-angle-double-right" data-fa-transform="grow-8"></i></button>
+                        <div class="pos-relative" style="display:inline-block; margin-right:1px;">
+                          <button class="button dark" title="Select Speed" style=""><span class="icon"><span class="fas fa-tachometer-alt"></span></span> <span class="caption"><span id="simspeedval">1</span>x</span></button>
+                          <ul class="d-menu context drop-up" id="simSpeedMenu" data-role="dropdown" data-duration="100" style="margin-bottom:5px;">
                             <li onclick="simSpeed(0.1)"><a href="#">0.1x</a></li>
                             <li onclick="simSpeed(1)"><a href="#">1x</a></li>
                             <li onclick="simSpeed(10)"><a href="#">10x</a></li>
@@ -1200,11 +1189,12 @@ Restore previous origins from history.">
                             <li onclick="simSpeed(1000)"><a href="#">1000x</a></li>
                           </ul>
                         </div>
-                        <button id="stopSimBtn" title="Stop Sim" class="button dark drop-shadow" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>
                       </div>
-                      <button id="runSimBtn" style="margin-right:11px; margin-bottom:6px;" title="Run simulation" class="button dark drop-shadow" onclick="sim(0, true)"><i class="fas fa-fighter-jet"></i> Simulate</button>
+                      <div class="content-holder" id="simText" style="display:none; height:auto; padding:5px; margin-left:2px; margin-bottom:4px; border: 1px solid; z-index:100;">
+                        <span style="display:block; height:auto; text-align:left; line-height:1; font-size:0.75rem; font-weight:600;"></span>
+                      </div>
                     </div>
-                    <div id="conetext" style="position:absolute;bottom:5px;left:0px; padding: 0px; display:none; z-index:100;"></div>
+                    <div id="conetext" style="position:absolute; top:0px; left:0px; padding:2px; display:none; z-index:100;"></div>
                   </div>
                   <div class="section" id="tab-four">
                     <div id="macros"></div>
@@ -1311,94 +1301,6 @@ Restore previous origins from history.">
 
               </div>
               <div class="cell p-0 m-0">
-
-                <!-- <div class="card">
-                  <div class="card-header  p-1 m-0">
-                    <i class="fas fa-fw fa-microchip"></i>Firmware Compiled with Parameters
-                  </div>
-                  <div class="card-content" style="height: calc(100vh - 680px); min-height: 120px; overflow-x: auto;">
-                    <table class="table striped compact">
-                      <thead>
-                        <tr>
-                          <th style="width: 80%;">Value</th>
-                          <th style="width: 20%;">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Variable Spindle</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enVariableSpindle">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Laser Mode Enabled ($32 Setting)</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enLaser">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Grbl-Servo Installed</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enServo">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Line Numbers Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enLineNumbers">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Mist Cooling Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enMisting">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">CoreXY Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enCoreXY">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Parking Motion Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enParking">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Homing Force Origin Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enHomingOrigin">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Single Axis Homing</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enSingleAxisHome">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Two Limit Switches on Axis Enabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enTwoLimits">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Allow Feed Override in Probe</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enFeedOVProbe">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Restore EEPROM $-settings Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enEepromSettingsDisable">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Restore EEPROM parameter Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enEepromParamsDisable">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Build Info Write Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enBuildInfoDisabled">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Force Sync on EEPROM write Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enForceSyncEeprom">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Force Sync on WCO Disabled</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enForceSyncWco">OFF</span></td>
-                        </tr>
-                        <tr>
-                          <td class="pt-1 mt-0 pb-0 pt-0">Homing Init Lock</td>
-                          <td class="pt-1 mt-0 pb-0 pt-0"><span class="tally alert" id="enHomingInitLock">OFF</span></td>
-                        </tr>
-
-                      </tbody>
-                    </table>
-                  </div>
-                </div> -->
-
                 <div class="card">
                   <div class="card-header p-1 m-0">
                     <i class="fas fa-fw fa-tty"></i>&nbsp;Communications

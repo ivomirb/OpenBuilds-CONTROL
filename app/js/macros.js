@@ -496,7 +496,7 @@ const macroFileFilters = [
 ];
 
 function backupMacro(index) {
-  var blob = new Blob([JSON.stringify(buttonsarray[index])], {
+  var blob = new Blob([JSON.stringify(buttonsarray[index], null, 2)], {
     type: "plain/text"
   });
 
