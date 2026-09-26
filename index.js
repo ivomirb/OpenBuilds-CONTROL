@@ -826,7 +826,6 @@ function onParserData(data) {
   }
 
   // [PRB:0.000,0.000,0.000:0]
-  //if (data.indexOf("[PRB:") === 0 && command != "$#" && command != undefined) {
   if (data.indexOf("[PRB:") === 0) {
     debug_log(data)
     var prbLen = data.substr(5).search(/\]/);
@@ -836,21 +835,24 @@ function onParserData(data) {
     status.machine.probe.y = prbData[1];
     status.machine.probe.z = prbData[2].split(':')[0];
     status.machine.probe.state = success;
-    if (success > 0) {
-      var output = {
-        'command': '[ PROBE ]',
-        'response': "Probe Completed.",
-        'type': 'success'
+    if (command != "$#" && command != undefined) {
+      if (success > 0) {
+        var output = {
+          'command': '[ PROBE ]',
+          'response': "Probe Completed.",
+          'type': 'success'
+        }
+        io.sockets.emit('data', output);
+      } else {
+        var output = {
+          'command': '[ PROBE ]',
+          'response': "Probe move ERROR - probe did not make contact within specified distance",
+          'type': 'error'
+        }
+        io.sockets.emit('data', output);
       }
-      io.sockets.emit('data', output);
-    } else {
-      var output = {
-        'command': '[ PROBE ]',
-        'response': "Probe move ERROR - probe did not make contact within specified distance",
-        'type': 'error'
-      }
-      io.sockets.emit('data', output);
     }
+
     io.sockets.emit('prbResult', status.machine.probe);
   };
 

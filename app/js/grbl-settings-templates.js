@@ -76,7 +76,7 @@ var grblSettingsTemplate = {
         <span class="text-small">Reversed</span>
     </div>
 </div>
-<div class="4thaxis-active">
+<div class="4thaxis-present">
     <div class="row">
         <div class="cell">
             <span class="text-small">A</span>
@@ -238,7 +238,7 @@ var grblSettingsTemplate = {
         <span class="text-small">Max</span>
     </div>
 </div>
-<div class="4thaxis-active">
+<div class="4thaxis-present">
     <div class="row">
         <div class="cell">
             <span class="text-small">A</span>
