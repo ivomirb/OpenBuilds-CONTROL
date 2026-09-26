@@ -1116,7 +1116,7 @@ Restore previous origins from history.">
                         <button title="3D View settings" class="button dark dropdown-toggle">
                           <i class="fas fa-eye"></i> View
                         </button>
-                        <table class="ribbon-dropdown" data-role="dropdown" style="display:none; width:max-content;">
+                        <table id="viewSettingsTable" class="ribbon-dropdown" data-role="dropdown" style="display:none; width:max-content;">
                           <tr onclick="event.stopPropagation()">
                             <td style="vertical-align:middle;">
                               <label class="toggle"><input type="checkbox" id="viewGridSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
@@ -1174,11 +1174,11 @@ Restore previous origins from history.">
                       <div class="content-holder" id="simControls" style="display:none; height: auto; padding:5px;  margin-left:-6px; margin-bottom:4px; border: 1px solid;">
                         <input id="simProgress" class="thin cycle-marker" data-on-start="simDragStart()" data-on-stop="simDragStop()" data-on-change="if (typeof simSetProgress == 'function') simSetProgress(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-size="100%" data-min="0" data-max="100" data-value="0" data-hint="true"
                          data-hint-position="top" data-hint-always="true" data-hint-mask="$1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                        <button id="stopSimBtn" style="margin-right:1px;" title="Stop Sim" class="button dark" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>
-                        <button id="simBackBtn" style="margin-right:1px;" disabled title="Previous Line" class="button dark" onclick="simStepBack()"><i class="fas fa-angle-double-left" data-fa-transform="grow-8"></i></button>
-                        <button id="pauseSimBtn" style="margin-right:1px;" title="Pause Sim" class="button dark" onclick="simpause()"><i class="fas fa-pause"></i></button>
-                        <button id="resumeSimBtn" style="margin-right:1px;" title="Play Sim" class="button dark" onclick="simresume()"><i class="fas fa-play"></i></button>
-                        <button id="simForwardBtn" style="margin-right:1px;" disabled title="Next Line" class="button dark" onclick="simStepForward()"><i class="fas fa-angle-double-right" data-fa-transform="grow-8"></i></button>
+                        <button id="stopSimBtn" title="Stop Sim" class="button dark" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>
+                        <button id="simBackBtn" disabled title="Previous Line" class="button dark" onclick="simStepBack()"><i class="fas fa-angle-double-left" data-fa-transform="grow-8"></i></button>
+                        <button id="pauseSimBtn" title="Pause Sim" class="button dark" onclick="simpause()"><i class="fas fa-pause"></i></button>
+                        <button id="resumeSimBtn" title="Play Sim" class="button dark" onclick="simresume()"><i class="fas fa-play"></i></button>
+                        <button id="simForwardBtn" disabled title="Next Line" class="button dark" onclick="simStepForward()"><i class="fas fa-angle-double-right" data-fa-transform="grow-8"></i></button>
                         <div class="pos-relative" style="display:inline-block; margin-right:1px;">
                           <button class="button dark" title="Select Speed" style=""><span class="icon"><span class="fas fa-tachometer-alt"></span></span> <span class="caption"><span id="simspeedval">1</span>x</span></button>
                           <ul class="d-menu context drop-up" id="simSpeedMenu" data-role="dropdown" data-duration="100" style="margin-bottom:5px;">

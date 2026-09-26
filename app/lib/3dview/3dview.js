@@ -160,6 +160,7 @@ function simSpeed(speed) {
   if (simTween) {
     simTween.timeScale(timefactor);
   }
+	simUpdateProgress();
 }
 
 function runSimFrom(startindex) {
