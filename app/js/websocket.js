@@ -660,12 +660,12 @@ function initSocket() {
         $('#tro').data('slider').val(status.machine.overrides.spindleOverride)
     }
 
-    if (unit == "mm") {
-      $("#realFeed").html(status.machine.overrides.realFeed + " mm/min");
-    } else if (unit == "in") {
-      $("#realFeed").html((status.machine.overrides.realFeed / 25.4).toFixed(0) + " in/min");
+    if (unit == "in") {
+      $("#realFeed").html((status.machine.overrides.realFeed / 25.4).toFixed(0) + "<br>in/min");
+    } else {
+      $("#realFeed").html(status.machine.overrides.realFeed.toFixed(0) + "<br>mm/min");
     }
-    $("#realSpeed").html( status.machine.overrides.realSpindle + " rpm");
+    $("#realSpeed").html( status.machine.overrides.realSpindle.toFixed(0) + "<br>rpm");
 
 
     // Windows Power Management
@@ -815,18 +815,9 @@ function initSocket() {
       updateWcsHistory(status.machine.modals.coordinatesys);
     }
 
-
     // Enable or disable 4th axis UI elements
-    if (status.machine.has4thAxis) {
-      $('#disable4thAxisTick').show();
-      if (disable4thAxis)
-        $(".4thaxis-active").hide();
-      else
-        $(".4thaxis-active").show();
-    } else {
-      $('#disable4thAxisTick').hide();
-      $(".4thaxis-active").hide();
-    }
+    $(".4thaxis-present").toggle(status.machine.has4thAxis);
+    $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
 
     if ((!laststatus || laststatus.interface.autoStart != status.interface.autoStart) &&
         !isJogWidget && typeof process !== "undefined" && process.platform == 'win32') {
