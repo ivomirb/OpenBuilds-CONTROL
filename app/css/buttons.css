@@ -36,6 +36,10 @@
   border: 1px solid lightgray;
 }
 
+#simControls button {
+  border: 1px solid lightgray;
+}
+
 .jogbtn:disabled {
   pointer-events: none;
 }

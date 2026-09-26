@@ -199,8 +199,13 @@ function sim(fromLine, paused) {
     simstop()
   } else {
     simIdx = fromLine;
-    $("#conetext").css('left', "1px").css('bottom', "5px");
-    $("#conetext").show();
+    if (simDisplayType == 1) {
+      $("#simText").show();
+      $("#simText > span").html("");
+    } else {
+      $("#conetext").css('left', "0px").css('top', "0px");
+      $("#conetext").show();
+    }
     resetConePosition();
     if (!viewSettings.tool) { // force-show
       viewSettings.tool = true;
@@ -493,6 +498,7 @@ function simstop() {
   $('#simspeedval').text(timefactor);
   editor.gotoLine(0)
   $("#conetext").hide();
+  $("#simText").hide();
   if (simDisplayType == 0)
     $('#gcodesent').html("&nbsp;");
   clearSceneFlag = true;
@@ -540,13 +546,11 @@ function simAnimate() {
     } else {
       if (simIdx >= 0 && simIdx < object.userData.linePoints.length) {
         var srcLine = object.userData.linePoints[simIdx].src;
-        $("#conetext").html(`<span class="tally success drop-shadow" style="text-align:left; margin-left:5px; padding:3px 6px; height:auto;">Line ` +
-          (srcLine+1) + `: ` + editor.session.getLine(srcLine) +
-          `<br>X:` + posx.toFixed(2) + `&nbsp;&nbsp;&nbsp;Y:` + posy.toFixed(2) + `&nbsp;&nbsp;&nbsp;Z:` + posz.toFixed(2) + `</span>`);
+        var html = "Line " + (srcLine+1) + ": " + editor.session.getLine(srcLine);
       } else {
-        $("#conetext").html(`<span class="tally success drop-shadow" style="text-align:left; margin-left:5px; padding:3px 6px; height:auto;">&lt;END&gt;` +
-          `<br>X:` + posx.toFixed(2) + `&nbsp;&nbsp;&nbsp;Y:` + posy.toFixed(2) + `&nbsp;&nbsp;&nbsp;Z:` + posz.toFixed(2) + `</span>`);
+        var html = "&lt;END&gt;";
       }
+      $("#simText > span").html(html + "<br>X:" + posx.toFixed(2) + "&nbsp;&nbsp;&nbsp;Y:" + posy.toFixed(2) + "&nbsp;&nbsp;&nbsp;Z:" + posz.toFixed(2));
     }
     if (!simPaused)
       simUpdateProgress();

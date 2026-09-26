@@ -97,8 +97,8 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   color: #FFF;
 }
 
-.theme_dark .dropdown-toggle:not(.success) {
-  border: 1px solid #333;
+.theme_dark .dialog-content .dropdown-toggle:not(.success) {
+  border: 1px solid #555;
 }
 
 .theme_dark .dropdown-toggle::before {
