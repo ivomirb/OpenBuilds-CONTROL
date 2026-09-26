@@ -48,6 +48,7 @@ config.aggressiveHomeReset = true;
 var persistentConfig = {
   autoStart: true,
   defaultPaths: {},
+  persistDisplayMode: false,
 };
 
 var express = require("express");
@@ -71,7 +72,7 @@ const {
 
 function savePersistentConfig() {
   try {
-    var text = JSON.stringify(persistentConfig);
+    var text = JSON.stringify(persistentConfig, null, 2);
     fs.writeFileSync(configFilePath, text, 'utf8');
   } catch (err) {}
 }
@@ -1285,6 +1286,7 @@ io.on("connection", function(socket) {
       if (!result.canceled) {
         persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePath);
         persistentConfig.defaultPaths["last"] = path.dirname(result.filePath);
+        savePersistentConfig();
       }
       callback(result.filePath);
     }).catch(err => {
@@ -1304,6 +1306,7 @@ io.on("connection", function(socket) {
       if (!result.canceled && result.filePaths.length > 0) {
         persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePaths[0]);
         persistentConfig.defaultPaths["last"] = path.dirname(result.filePaths[0]);
+        savePersistentConfig();
         callback(result.filePaths[0]);
       }
     }).catch(err => {
@@ -1858,11 +1861,6 @@ io.on("connection", function(socket) {
   socket.on('jogXY', function(data) {
     debug_log('Jog XY' + data);
     if (status.comms.connectionStatus > 0) {
-      // var data = {
-      //   x: xincrement,
-      //   y: yincrement,
-      //   feed: feed
-      // }
       var xincrement = parseFloat(data.x);
       var yincrement = parseFloat(data.y);
       var feed = parseFloat(data.feed)
@@ -3002,6 +3000,8 @@ if (isElectron()) {
       }
 
       foceShowGui = uploadedgcode.length > 1 || process.argv.indexOf("-showGui") > 0;
+      if (process.argv.indexOf("-resetSize") > 0)
+        BrowserWindow.clearPersistedState('main-window');
       if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !persistentConfig.autoStart)) {
         showJogWindow();
       }
@@ -3169,6 +3169,7 @@ if (isElectron()) {
         resizable: true,
         maximizable: true,
         title: "OpenBuilds CONTROL ",
+        name: "main-window", // name for the persisted state
         frame: false,
         autoHideMenuBar: true,
         //icon: '/app/favicon.png',
@@ -3183,6 +3184,10 @@ if (isElectron()) {
         webPreferences: {
           nodeIntegration: true,
           contextIsolation: false
+        },
+        windowStatePersistence: {
+          bounds: true,
+          displayMode: persistentConfig.persistDisplayMode
         }
       });
 

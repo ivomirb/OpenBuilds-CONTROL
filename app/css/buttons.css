@@ -36,6 +36,10 @@
   border: 1px solid lightgray;
 }
 
+#simControls .slider button {
+  border: 1px solid lightgray;
+}
+
 .jogbtn:disabled {
   pointer-events: none;
 }
@@ -87,6 +91,10 @@
   outline: none;
   display: none;
   padding-right: 20px;
+}
+
+.droMCS, .droMCS .droInput {
+  background-color: #f3ff84 !important;
 }
 
 .glossybtn:link, .glossybtn:visited {
@@ -195,4 +203,24 @@
 /* Custom size button for Macros */
 .command-button-macro {
   height: 70px;
+}
+
+hr {
+  background-color: #dadbcd;
+}
+
+/* Blanket graying out of directly or indirectly disabled elements*/
+.disabled:not(.success, .alert, .warning, .info, .secondary),
+[disabled]:not(.success, .alert, .warning, .info, .secondary),
+.disabled *:not(.success, .alert, .warning, .info, .secondary),
+[disabled] *:not(.success, .alert, .warning, .info, .secondary) {
+  color: #999 !important;
+}
+
+.disabled.fg-openbuilds:not(.success, .info),
+.fg-openbuilds[disabled]:not(.success, .info),
+.disabled .fg-openbuilds:not(.success, .info),
+[disabled] .fg-openbuilds:not(.success, .info),
+{
+  color: #999 !important;
 }

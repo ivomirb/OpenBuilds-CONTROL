@@ -1356,9 +1356,15 @@ window.UpdateHeightmapMenu =function()
 	EnableMenuItem('#revertGCode', editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1 && laststatus.comms.connectionStatus != 3);
 }
 
-const heightmapBtnHtml = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 6px 9px;">
-	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark drop-shadow"><i class="fas fa-layer-group"></i> Heightmap</button>
-	<ul class="ribbon-dropdown drop-up" id="heightmapMenu" data-role="dropdown" role="menu" style="margin-bottom:5px;">
+const heightmapBtnHtml1a = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 6px 9px;">
+	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark dropdown-toggle"><i class="fas fa-layer-group"></i> Heightmap</button>
+	<ul class="ribbon-dropdown drop-up" id="heightmapMenu" data-role="dropdown" role="menu" style="margin-bottom:5px;">`;
+
+const heightmapBtnHtml1b = `<div>
+	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" style="margin-left:3px;" class="button dark dropdown-toggle"><i class="fas fa-layer-group"></i> Heightmap</button>
+	<ul class="ribbon-dropdown drop-down" id="heightmapMenu" data-role="dropdown" role="menu">`;
+
+const heightmapBtnHtml2 = `
 		<style>#heightmapMenu > li {text-align: left;}</style>
 		<li onclick="EditHeightmapSettings()" id="editHeightmapSettings"><a href="#">Heightmap Settings</a></li>
 		<li class="divider"></li>
@@ -1381,14 +1387,15 @@ $(document).ready(function()
 {
 	CleanupOldVersion();
 
-	if ($('#simControls').length > 0)
+	if ($('#renderToolbar').length == 0)
 	{
-		$('#simControls').before(heightmapBtnHtml);
+		$('#resetViewBtn').after(heightmapBtnHtml1a + heightmapBtnHtml2);
 	}
 	else
 	{
-		$('#resetViewBtn').after(heightmapBtnHtml);
+		$('#renderToolbar').append(heightmapBtnHtml1b + heightmapBtnHtml2);
 	}
+
 	if (typeof invokeOpenDialog == 'function')
 	{
 		$('#loadHeightmapOld').remove();
