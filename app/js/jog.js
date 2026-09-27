@@ -388,7 +388,7 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    if (allowContinuousJog) { // startJog();
+    if (allowContinuousJog) {
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
         var minX = mcsX - 1000;

@@ -288,6 +288,9 @@ function initSocket() {
     showGrbl(true, data)
   });
 
+  socket.on("queueComplete", function(data) {
+  });
+
   socket.on("jobComplete", function(data) {
     if (isJogWidget) return;
 
@@ -623,10 +626,7 @@ function initSocket() {
       if (doorType == 3) {
         doorMsg += "Re-energising"
       }
-      $('#runStatus').html("Door : " + doorMsg);
-      var icon = ''
-      var source = "door"
-      var printLogCls = "fg-dark"
+      $('#runStatus').html("Door: " + doorMsg);
     } else {
       $('#runStatus').html("Controller: " + status.comms.runStatus);
     }
