@@ -199,10 +199,7 @@ const {
 electronApp.commandLine.appendSwitch('ignore-gpu-blacklist')
 electronApp.commandLine.appendSwitch('enable-gpu-rasterization')
 electronApp.commandLine.appendSwitch('enable-zero-copy')
-
-if (isElectron()) {
-  debug_log("Local User Data: " + electronApp.getPath('userData'))
-}
+debug_log("Local User Data: " + electronApp.getPath('userData'))
 
 const BrowserWindow = electron.BrowserWindow;
 const Tray = electron.Tray;
@@ -216,7 +213,7 @@ var autoUpdater
 
 
 var updateIsDownloading = false;
-if (isElectron()) {
+{
   autoUpdater = require("electron-updater").autoUpdater
   var availversion = '0.0.0'
 
@@ -289,17 +286,11 @@ if (isElectron()) {
     }, 1000 * 60 * 60 * 8) // 8hrs before alerting again if it was snoozed
     updateIsDownloading = false;
   });
-} else {
-  debug_log("Running outside Electron: Disabled AutoUpdater")
 }
 
-if (isElectron()) {
-  var uploadsDir = electronApp.getPath('userData') + '/upload/';
-  var configDir = electronApp.getPath('userData');
-} else {
-  var uploadsDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
-  var configDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
-}
+var uploadsDir = electronApp.getPath('userData') + '/upload/';
+var configDir = electronApp.getPath('userData');
+
 var jobStartTime = false;
 var jobIsJob = false;
 var jobStatusInternal = 0; // 0 - no job, 1 - running, 2 - jog job running, 3 - wait for idle, 4 - jog job waiting for idle
@@ -1387,41 +1378,6 @@ io.on("connection", function(socket) {
       shell
     } = require('electron')
     shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
-  });
-
-  socket.on("openbuildspartstore", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
-  });
-
-  socket.on("carveco", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://carveco.com/carveco-software-range/?ref=openbuilds')
-  });
-
-  socket.on("fabber", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://www.getfabber.com/')
-  });
-
-  socket.on("lightburn", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://lightburnsoftware.com/')
-  });
-
-  socket.on("vectric", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://www.vectric.com/')
   });
 
   socket.on("opencam", function(data) {
@@ -2955,20 +2911,10 @@ function showJogWindow() {
   jogWindow.setAlwaysOnTop(false);
 }
 
-// Electron
-function isElectron() {
-  if (typeof window !== 'undefined' && window.process && window.process.type === 'renderer') {
-    return true;
-  }
-  if (typeof process !== 'undefined' && process.versions && !!process.versions.electron) {
-    return true;
-  }
-  return false;
-}
-
 loadPersistentConfig();
 
-if (isElectron()) {
+// Electron
+{
   const gotTheLock = electronApp.requestSingleInstanceLock()
   var lauchGUI = true;
   if (!gotTheLock) {
@@ -3301,16 +3247,6 @@ if (isElectron()) {
       })
     }
   }
-} else { // if its not running under Electron, lets get Chrome up.
-  var isPi = require('detect-rpi');
-  if (isPi()) {
-    DEBUG = true;
-    debug_log('Running on Raspberry Pi!');
-    status.driver.operatingsystem = 'rpi'
-    startChrome();
-  } else {
-    debug_log("Running under NodeJS...");
-  }
 }
 
 function isJson(item) {
@@ -3329,21 +3265,6 @@ function isJson(item) {
   }
 
   return false;
-}
-
-function startChrome() {
-  if (status.driver.operatingsystem == 'rpi') {
-    const {
-      spawn
-    } = require('child_process');
-    const chrome = spawn('chromium-browser', [`-app=http://127.0.0.1:${config.webPort}`]);
-    chrome.on('close', (code) => {
-      debug_log(`Chromium process exited with code ${code}`);
-      process.exit(0);
-    });
-  } else {
-    debug_log('Not a Raspberry Pi. Please use Electron Instead');
-  }
 }
 
 // Interface Programming
