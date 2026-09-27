@@ -130,7 +130,7 @@ function initDiagnostics() {
 
 function toggleAutoStart() {
   if (typeof process !== "undefined" && process.platform == 'win32') {
-    socket.emit('autoStart', !laststatus.interface.autoStart);
+    socket.emit('autoStart', !laststatus.misc.autoStart);
   }
 }
 

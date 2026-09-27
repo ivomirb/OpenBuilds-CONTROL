@@ -301,8 +301,9 @@ if (isElectron()) {
   var configDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
 }
 var jobStartTime = false;
+var jobIsJob = false;
+var jobStatusInternal = 0; // 0 - no job, 1 - running, 2 - jog job running, 3 - wait for idle, 4 - jog job waiting for idle
 var jobCompletedMsg = ""; // message sent when job is done
-var jobStatus = 0; // 0 - no job, 1 - running, 2 - wait for idle
 var uploadedgcode = ""; // var to store uploaded gcode
 var uploadedworkspace = ""; // var to store uploaded OpenBuildsCAM Workspace
 
@@ -376,7 +377,7 @@ function checkPowerSettings() {
 function setAutoStart(enabled) {
   if (enabled != persistentConfig.autoStart) {
     persistentConfig.autoStart = enabled;
-    status.interface.autoStart = enabled;
+    status.misc.autoStart = enabled;
     savePersistentConfig();
     electronApp.setLoginItemSettings({
       openAtLogin: enabled,
@@ -526,8 +527,11 @@ var status = {
       installedVersion: "",
     },
     connected: false,
+  },
+  misc: { // information to pass to the frontend
+    jobStatus: 0, // 0 - no job, 1 - running, 2 - jog job running (can't be paused)
     autoStart: true,
-  }
+  },
 };
 
 
@@ -981,8 +985,8 @@ function onParserData(data) {
       send1Q();
     } else if (sentBuffer.length == 0) {
       clearGcodeQueue(true);
-      if (jobStatus == 1) {
-        jobStatus = 2; // last command was accepted, just wait for idle
+      if (jobStatusInternal == 1 || jobStatusInternal == 2) {
+        jobStatusInternal += 2; // last command was accepted, just wait for idle
       }
     }
   } else if (data.indexOf('ALARM') === 0) {
@@ -1834,6 +1838,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('jog', function(data) {
     debug_log('Jog ' + data);
     if (status.comms.connectionStatus > 0) {
@@ -1865,6 +1870,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('jogXY', function(data) {
     debug_log('Jog XY' + data);
     if (status.comms.connectionStatus > 0) {
@@ -1893,6 +1899,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('jogTo', function(data) { // data = {x:xVal, y:yVal, z:zVal, mode:0(absulute)|1(relative), feed:fVal}
     debug_log('JogTo ' + JSON.stringify(data));
     if (status.comms.connectionStatus > 0) {
@@ -1919,6 +1926,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('setZero', function(data) {
     debug_log('setZero(' + data + ')');
     if (status.comms.connectionStatus > 0) {
@@ -1947,6 +1955,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('gotoZero', function(data) {
     debug_log('gotoZero(' + data + ')');
     if (status.comms.connectionStatus > 0) {
@@ -1975,6 +1984,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('setPosition', function(data) {
     debug_log('setPosition(' + JSON.stringify(data) + ')');
     if (status.comms.connectionStatus > 0) {
@@ -1990,6 +2000,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('probe', function(data) {
     debug_log('probe(' + JSON.stringify(data) + ')');
     if (status.comms.connectionStatus > 0) {
@@ -2352,13 +2363,12 @@ function addLinesToQueue(data) {
 
 function runJob(object) {
   jobStartTime = false;
-  var data = object.data
+  var data = object.data;
 
-  if (object.isJob) {
-    if (data.length < 20000) {
-      uploadedgcode = data;
-    }
-    jobStartTime = new Date().getTime();
+  jobIsJob = object.isJob;
+  jobStartTime = new Date().getTime();
+  if (object.isJob && data.length < 20000) {
+    uploadedgcode = data;
   }
 
   if (object.completedMsg) {
@@ -2370,7 +2380,7 @@ function runJob(object) {
     debug_log('ERROR: Machine connection not open!');
     return;
   }
-  if (jobStatus > 0) {
+  if (jobStatusInternal > 0) {
     debug_log('ERROR: Another job still in progress.');
     return;
   }
@@ -2382,9 +2392,11 @@ function runJob(object) {
         jogWindow.setProgressBar(queuePointer / gcodeQueue.length)
       }
     }, 500);
+console.log("JOBSTATUS", 1);
+    jobStatusInternal = 1;
+    status.misc.jobStatus = 1;
     send1Q(); // send first line
     status.comms.connectionStatus = 3;
-    jobStatus = 1;
   }
 }
 
@@ -2423,8 +2435,8 @@ function parseFeedback(data) {
   var state = data.substring(1, data.search(/(,|\|)/));
   status.comms.runStatus = state
   if (state == "Idle") {
-    if (jobStatus == 2) {
-      finalizeJob(true);
+    if (jobStatusInternal >= 3 && (new Date().getTime()) > jobStartTime + 100) {
+      finalizeJob(true); // Idle after at least 100ms after the "ok" for the last line, declare the job as done
     }
   } else if (state == "Alarm") {
     // debug_log("ALARM:  " + data)
@@ -2741,6 +2753,11 @@ function send1Q() {
           // Do we have enough space in the buffer?
           if (gcodeQueue[queuePointer].length < spaceLeft) {
             const gcode = gcodeQueue[queuePointer];
+            if (jobStatusInternal == 1 && gcode.startsWith("$J")) {
+console.log("JOBSTATUS", 2);
+              jobStatusInternal = 2;
+              status.misc.jobStatus = 2;
+            }
             queuePointer++;
             sentBuffer.push(gcode);
             machineSend(gcode + '\n');
@@ -2781,25 +2798,26 @@ function clearGcodeQueue(success) {
 
   if (!success) {
     finalizeJob(false); // on failure, also finalize the job right now
-  } else if (jobStatus == 0) {
+  } else if (jobStatusInternal == 0) {
     status.comms.connectionStatus = 2; // finished non-job queue
   }
 }
 
 // If a job is currently in progress, sends the jobComplete message
 function finalizeJob(success) {
-  if (jobStatus > 0) {
+  if (jobStatusInternal > 0) {
     var data = {
       completed: true, // always true, kept for backwards compatibility
       failed: !success,
       jobCompletedMsg: jobCompletedMsg,
-      jobStartTime: jobStartTime,
+      jobStartTime: jobIsJob ? jobStartTime : false,
       jobEndTime: new Date().getTime()
     }
     io.sockets.emit('jobComplete', data);
     jobCompletedMsg = "";
     jobStartTime = false;
-    jobStatus = 0;
+    jobStatusInternal = 0;
+    status.misc.jobStatus = 0;
     status.comms.connectionStatus = 2;
   }
 }
@@ -3004,7 +3022,7 @@ if (isElectron()) {
     // Module to create native browser window.
 
     function createApp() {
-      status.interface.autoStart = persistentConfig.autoStart;
+      status.misc.autoStart = persistentConfig.autoStart;
       if (process.platform != 'win32' || persistentConfig.autoStart)
         createTrayIcon();
       if (process.platform == 'darwin') {
