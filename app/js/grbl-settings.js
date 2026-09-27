@@ -9,30 +9,29 @@ function loadGrblBackupFile() {
     id: "settings",
     title: "Restore Settings",
     filters: backupFileFilters,
+    showErrorDlg: true,
   };
 
-  invokeOpenDialogReadFile(loadFileParams).then(({err, data}) => {
-    if (!err) {
-      var data = data.split("\n");
-      for (var i = 0; i < data.length; i++) {
-        var parts = data[i].split('=');
-        if (data[i].indexOf("$I=") == 0) {
-          setMachineButton(parts[1])
-        } else {
-          var key = parts[0].substring(1);
-          var value = parts[1];
-          if (grblSettingsTemplate[key] == undefined || grblSettingsTemplate[key].type == "text")
-            $("#val-" + key + "-input").val(value); // treat unknown properties like strings
-          else
-            $("#val-" + key + "-input").val(parseFloat(value));
-        }
-      };
-
-      checkifchanged();
-      displayDirInvert();
-      displayProbeDirInvert();
-      $("#grblSettingsAdvTab").click();
+  invokeOpenDialogReadFile(loadFileParams).then((data) => {
+    var data = data.split("\n");
+    for (var i = 0; i < data.length; i++) {
+      var parts = data[i].split('=');
+      if (data[i].indexOf("$I=") == 0) {
+        setMachineButton(parts[1])
+      } else {
+        var key = parts[0].substring(1);
+        var value = parts[1];
+        if (grblSettingsTemplate[key] == undefined || grblSettingsTemplate[key].type == "text")
+          $("#val-" + key + "-input").val(value); // treat unknown properties like strings
+        else
+          $("#val-" + key + "-input").val(parseFloat(value));
+      }
     }
+
+    checkifchanged();
+    displayDirInvert();
+    displayProbeDirInvert();
+    $("#grblSettingsAdvTab").click();
   });
 }
 

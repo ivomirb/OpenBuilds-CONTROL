@@ -691,6 +691,7 @@ window.LoadHeightmapNew = function()
 		id: "heightmap",
 		title: "Load Heightmap",
 		filters: heightmapFilters,
+		showErrorDlg: false,
 	};
 
 	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>

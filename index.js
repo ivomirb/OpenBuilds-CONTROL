@@ -1317,10 +1317,29 @@ io.on("connection", function(socket) {
   })
 
   // generic function for reading a text file
-  socket.on("readTextFile", function(filePath, callback) {
+  socket.on("readTextFile", function(filePath, params, callback) {
     fs.readFile(filePath, 'utf8',
       function(err, data) {
-        callback(err ? err.toString() : "", data);
+        if (params.showErrorDlg) {
+          if (err) {
+            dialog.showMessageBox(jogWindow, {
+              type: 'error',
+              buttons: ['OK'],
+              message: err.toString()
+            });
+          } else {
+            if (params.setJobStorage) {
+              jobStorage = data;
+            }
+            callback(data);
+          }
+        }
+        else {
+          if (params.setJobStorage) {
+            jobStorage = data;
+          }
+          callback(err ? err.toString() : "", data);
+        }
       });
   })
 

@@ -594,6 +594,7 @@ window.ImportAllNew = function()
 		id: "macros",
 		title: "Import All",
 		filters: macroFileFilters,
+		showErrorDlg: false,
 	};
 
 	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>

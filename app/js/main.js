@@ -311,11 +311,11 @@ function jobNeedsHoming() {
 }
 
 function loadJobFile() {
-	socket.emit('openFile');
+  socket.emit('openFile');
 }
 
 function reloadJobFile() {
-	socket.emit('reopenFile');
+  socket.emit('reopenFile');
 }
 
 function versionCompare(v1, v2, options) {
@@ -479,12 +479,12 @@ function saveGcode() {
 }
 
 function clearGcode() {
-	editor.execCommand('selectall');
-	editor.execCommand('del');
-	parseGcodeInWebWorker("");
-	loadedFileName = '';
-	gcode = false;
-	setWindowTitle();
+  editor.execCommand('selectall');
+  editor.execCommand('del');
+  parseGcodeInWebWorker("");
+  loadedFileName = '';
+  gcode = false;
+  setWindowTitle();
 }
 
 function saveBlobToDisk(blob, filePath, showErrorDlg) {
@@ -540,9 +540,15 @@ function invokeOpenDialog(params) {
 function invokeOpenDialogReadFile(params) {
   return new Promise((resolve) => {
     socket.emit('openFileDialog', params, (filePath) => {
-      socket.emit('readTextFile', filePath, (err, data) => {
-        resolve({err, data});
-      });
+      if (params.showErrorDlg) {
+        socket.emit('readTextFile', filePath, params, (data) => {
+          resolve(data);
+        });
+      } else {
+        socket.emit('readTextFile', filePath, params, (err, data) => {
+          resolve({err, data});
+        });
+      }
     });
   });
 }

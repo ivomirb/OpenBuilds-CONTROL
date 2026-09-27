@@ -514,15 +514,14 @@ function importMacroBackupFile() {
     id: "macros",
     title: "Import Macro",
     filters: macroFileFilters,
+    showErrorDlg: true,
   };
 
-  invokeOpenDialogReadFile(loadFileParams).then(({err, data}) => {
-    if (!err) {
-      var newMacro = JSON.parse(data);
-      if (newMacro.title != undefined && newMacro.codetype != undefined) {
-        buttonsarray.push(newMacro)
-        populateMacroButtons();
-      }
+  invokeOpenDialogReadFile(loadFileParams).then((data) => {
+    var newMacro = JSON.parse(data);
+    if (newMacro.title != undefined && newMacro.codetype != undefined) {
+      buttonsarray.push(newMacro)
+      populateMacroButtons();
     }
   });
 }
