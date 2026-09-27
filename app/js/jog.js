@@ -17,16 +17,28 @@ var jogdistA = 10;
 var unit = "mm";
 
 function jogOverride(newVal) {
-  if (laststatus && (laststatus.comms.connectionStatus == 0 || grblParams.hasOwnProperty('$110'))) {
+  if (laststatus && laststatus.comms.connectionStatus > 0) {
     jogRate.x = (grblParams['$110'] * (newVal / 100)).toFixed(0);
     jogRate.y = (grblParams['$111'] * (newVal / 100)).toFixed(0);
     jogRate.z = (grblParams['$112'] * (newVal / 100)).toFixed(0);
+
+    if (grblParams.hasOwnProperty('$110')) {
+      jogRate.x = (grblParams['$110'] * (newVal / 100)).toFixed(0);
+    }
+    if (grblParams.hasOwnProperty('$111')) {
+      jogRate.y = (grblParams['$111'] * (newVal / 100)).toFixed(0);
+    }
+    if (grblParams.hasOwnProperty('$112')) {
+      jogRate.z = (grblParams['$112'] * (newVal / 100)).toFixed(0);
+    }
+    if (grblParams.hasOwnProperty('$113')) {
+      jogRate.a = (grblParams['$113'] * (newVal / 100)).toFixed(0);
+    }
+
     if ($('#jro').data('slider').val() != newVal)
       $('#jro').data('slider').val(newVal)
   }
-  if (grblParams.hasOwnProperty('$113')) {
-    jogRate.a = (grblParams['$113'] * (newVal / 100)).toFixed(0);
-  }
+
   localStorage.setItem('jogOverride', newVal);
 }
 
@@ -388,7 +400,7 @@ $(document).ready(function() {
       return
     }
     ev.preventDefault();
-    if (allowContinuousJog) { // startJog();
+    if (allowContinuousJog) {
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
         var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
         var minX = mcsX - 1000;
@@ -402,7 +414,7 @@ $(document).ready(function() {
         }
 
         if (minX < mcsX) {
-          socket.emit('runCommand', "$J=G53 G90 G21 X" + minX.toFixed(3) + " F" + jogRate.x + "\n");
+          sendGcode("$J=G53 G90 G21 X" + minX.toFixed(2) + " F" + jogRate.x);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xM').click();
@@ -411,7 +423,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('X', '-' + jogdistXYZ, jogRate.x);
+      sendGcode("$J=G91 G21 X" + (-jogdistXYZ).toFixed(2) + " F" + jogRate.x);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -443,7 +455,7 @@ $(document).ready(function() {
           }
         }
         if (maxX > mcsX) {
-          socket.emit('runCommand', "$J=G53 G90 G21 X" + maxX.toFixed(3) + " F" + jogRate.x + "\n");
+          sendGcode("$J=G53 G90 G21 X" + maxX.toFixed(2) + " F" + jogRate.x);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.xP').click();
@@ -452,7 +464,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('X', jogdistXYZ, jogRate.x);
+      sendGcode("$J=G91 G21 X" + jogdistXYZ.toFixed(2) + " F" + jogRate.x);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -485,7 +497,7 @@ $(document).ready(function() {
         }
 
         if (minY < mcsY) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Y" + minY.toFixed(3) + " F" + jogRate.y + "\n");
+          sendGcode("$J=G53 G90 G21 Y" + minY.toFixed(2) + " F" + jogRate.y);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.yM').click();
@@ -494,7 +506,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Y', '-' + jogdistXYZ, jogRate.y);
+      sendGcode("$J=G91 G21 Y" + (-jogdistXYZ).toFixed(2) + " F" + jogRate.y);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -525,7 +537,7 @@ $(document).ready(function() {
           }
         }
         if (maxY > mcsY) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Y" + maxY.toFixed(3) + " F" + jogRate.y + "\n");
+          sendGcode("$J=G53 G90 G21 Y" + maxY.toFixed(2) + " F" + jogRate.y);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('#yP').click();
@@ -534,7 +546,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Y', jogdistXYZ, jogRate.y);
+      sendGcode("$J=G53 G90 G21 Y" + jogdistXYZ.toFixed(2) + " F" + jogRate.y);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -566,7 +578,7 @@ $(document).ready(function() {
         }
 
         if (minZ < mcsZ) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Z" + minZ.toFixed(3) + " F" + jogRate.z + "\n");
+          sendGcode("$J=G53 G90 G21 Z" + minZ.toFixed(2) + " F" + jogRate.z);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zM').click();
@@ -575,7 +587,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Z', '-' + jogdistXYZ, jogRate.z);
+      sendGcode("$J=G91 G21 Z" + (-jogdistXYZ).toFixed(2) + " F" + jogRate.z);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -606,7 +618,7 @@ $(document).ready(function() {
           }
         }
         if (maxZ > mcsZ) {
-          socket.emit('runCommand', "$J=G53 G90 G21 Z" + maxZ.toFixed(3) + " F" + jogRate.z + "\n");
+          sendGcode("$J=G53 G90 G21 Z" + maxZ.toFixed(2) + " F" + jogRate.z);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.zP').click();
@@ -615,7 +627,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('Z', jogdistXYZ, jogRate.z);
+      sendGcode("$J=G91 G21 Z" + jogdistXYZ.toFixed(2) + " F" + jogRate.z);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -648,7 +660,7 @@ $(document).ready(function() {
         }
 
         if (minA < mcsA) {
-          socket.emit('runCommand', "$J=G53 G90 G21 A" + minA.toFixed(3) + " F" + jogRate.a + "\n");
+          sendGcode("$J=G53 G90 G21 A" + minA.toFixed(3) + " F" + jogRate.a);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aM').click();
@@ -657,7 +669,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('A', '-' + jogdistA, jogRate.a);
+      sendGcode("$J=G91 G21 A" + (-jogdistA).toFixed(3) + " F" + jogRate.a);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -689,7 +701,7 @@ $(document).ready(function() {
           }
         }
         if (maxA > mcsA) {
-          socket.emit('runCommand', "$J=G53 G90 G21 A" + maxA.toFixed(3) + " F" + jogRate.a + "\n");
+          sendGcode("$J=G53 G90 G21 A" + maxA.toFixed(3) + " F" + jogRate.a);
           continuousJogRunning = true;
           waitingForStatus = true;
           $('.aP').click();
@@ -698,7 +710,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      jog('A', jogdistA, jogRate.a);
+      sendGcode("$J=G91 G21 A" + jogdistA.toFixed(3) + " F" + jogRate.a);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -751,12 +763,8 @@ function changeStepSize(dir) {
   setJogDist(Math.min(Math.max(jogDistIndex + dir, 0), jogDistArray.length - 1));
 }
 
-function jog(dir, dist, feed = null) {
-  if (feed) {
-    socket.emit('jog', dir + ',' + dist + ',' + feed);
-  } else {
-    socket.emit('jog', dir + ',' + dist);
-  }
+function jog(dir, dist, feed) {
+  sendGcode("$J=G91 G21 " + dir + dist.toFixed(3) + " F" + feed);
 }
 
 function jogXY(xincrement, yincrement, feed = null) {
@@ -770,9 +778,9 @@ function jogXY(xincrement, yincrement, feed = null) {
 
 function home() {
   if (laststatus != undefined && laststatus.machine.firmware.type == 'grbl') {
-    sendGcode('$H')
+    sendGcode('$H');
   } else if (laststatus != undefined && laststatus.machine.firmware.type == 'smoothie') {
-    sendGcode('G28')
+    sendGcode('G28');
   }
 }
 

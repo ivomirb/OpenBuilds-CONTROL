@@ -331,7 +331,7 @@ function bindKeys() {
     if (keyboardShortcuts.playpause.length) {
       $(document).bind('keydown', keyboardShortcuts.playpause, function(e) {
         e.preventDefault();
-        if (laststatus.comms.connectionStatus == 1 || laststatus.comms.connectionStatus == 2) {
+        if (laststatus.comms.connectionStatus == 2) {
           runJobFile();
         } else if (laststatus.comms.connectionStatus == 3) {
           socket.emit('pause', true);
