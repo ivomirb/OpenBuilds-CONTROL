@@ -115,8 +115,8 @@ function setControlBar(val, status) {
     // Show the Resume button only if paused. Enable if the door is closed
     $('#resumeBtn').toggle(val == 4).attr('disabled', doorOpen);
 
-    // Show the Pause button only if running
-    $('#pauseBtn').toggle(val == 3);
+    // Show the Pause button only if running. Disable if the job uses $J commands, as they can't be paused
+    $('#pauseBtn').toggle(val == 3).attr('disabled', status.misc.jobStatus == 2);
 
     // Enable the Stop button if running or paused
     $('#stopBtn').show().attr('disabled', !activeJob);

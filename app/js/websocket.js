@@ -432,7 +432,7 @@ function initSocket() {
 
     setTimeout(function() {
       $(".closeAlarmBtn").focus();
-    }, 200, )
+    }, 200)
     //
   });
 
@@ -460,7 +460,7 @@ function initSocket() {
     openDialogs.push(dialog);
     setTimeout(function() {
       $(".closeErrorBtn").focus();
-    }, 200, )
+    }, 200)
     //
   });
 
@@ -819,10 +819,10 @@ function initSocket() {
     $(".4thaxis-present").toggle(status.machine.has4thAxis);
     $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
 
-    if ((!laststatus || laststatus.interface.autoStart != status.interface.autoStart) &&
+    if ((!laststatus || laststatus.misc.autoStart != status.misc.autoStart) &&
         !isJogWidget && typeof process !== "undefined" && process.platform == 'win32') {
-      $('#mainCloseBtn').attr( "title", status.interface.autoStart ? "Close to Tray" : "Close");
-      if (status.interface.autoStart) {
+      $('#mainCloseBtn').attr( "title", status.misc.autoStart ? "Close to Tray" : "Close");
+      if (status.misc.autoStart) {
         $('#disableAutoStartTick').removeClass("checked");
       } else {
         $('#disableAutoStartTick').addClass("checked");
