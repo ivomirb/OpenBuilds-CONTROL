@@ -107,19 +107,6 @@ $(document).ready(function() {
     init3D();
   }
 
-  // File Open Button compatible with Node 19+ dialogs
-
-  if (navigator.userAgent.indexOf('Electron') >= 0) {
-    console.log("Native Dialog Button Enabled")
-    $("#openGcodeBtn").hide()
-    $("#openGcodeBtnElectron19").show()
-  } else {
-    console.log("Native Dialog Button Disabled")
-    $("#openGcodeBtn").show()
-    $("#openGcodeBtnElectron19").hide()
-  }
-
-
   if (typeof ace !== 'undefined') {
     editor = ace.edit("editor");
     editor.$blockScrolling = Infinity;
@@ -159,13 +146,6 @@ $(document).ready(function() {
       // alert('success! - rightclicked line ' + (editor.getSelectionRange().start.row + 1));
     }, false);
   }
-
-
-  var fileOpen = document.getElementById('file');
-  if (fileOpen) {
-    fileOpen.addEventListener('change', readFile, false);
-  }
-
 
   $.get("/gcode").done(function(data) {
     // console.log(data.length)
@@ -330,6 +310,14 @@ function jobNeedsHoming() {
   }
 }
 
+function loadJobFile() {
+	socket.emit('openFile');
+}
+
+function reloadJobFile() {
+	socket.emit('reopenFile');
+}
+
 function versionCompare(v1, v2, options) {
   var lexicographical = options && options.lexicographical,
     zeroExtend = options && options.zeroExtend,
@@ -488,6 +476,15 @@ function saveGcode() {
     });
     saveBlobToDisk(blob, filePath);
   });
+}
+
+function clearGcode() {
+	editor.execCommand('selectall');
+	editor.execCommand('del');
+	parseGcodeInWebWorker("");
+	loadedFileName = '';
+	gcode = false;
+	setWindowTitle();
 }
 
 function saveBlobToDisk(blob, filePath, showErrorDlg) {
