@@ -301,6 +301,8 @@ if (isElectron()) {
   var configDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
 }
 var jobStartTime = false;
+var jobIsJob = false;
+var jobStatusInternal = 0; // 0 - no job, 1 - running, 2 - jog job running, 3 - wait for idle, 4 - jog job waiting for idle
 var jobCompletedMsg = ""; // message sent when job is done
 var uploadedgcode = ""; // var to store uploaded gcode
 var uploadedworkspace = ""; // var to store uploaded OpenBuildsCAM Workspace
@@ -375,7 +377,7 @@ function checkPowerSettings() {
 function setAutoStart(enabled) {
   if (enabled != persistentConfig.autoStart) {
     persistentConfig.autoStart = enabled;
-    status.interface.autoStart = enabled;
+    status.misc.autoStart = enabled;
     savePersistentConfig();
     electronApp.setLoginItemSettings({
       openAtLogin: enabled,
@@ -468,8 +470,6 @@ var status = {
       coolantstate: "M9", // M7, M8, M9
       homedRecently: false
       // tool: "0",
-      // spindle: "0",
-      // feedrate: "0"
     },
     probe: {
       x: 0.00,
@@ -507,11 +507,10 @@ var status = {
   },
   comms: {
     connectionStatus: 0, //0 = not connected, 1 = opening, 2 = connected, 3 = playing, 4 = paused, 5 = alarm, 6 = firmware upgrade
-    runStatus: "Pending", // 0 = init, 1 = idle, 2 = alarm, 3 = stop, 4 = run, etc?
+    runStatus: "Pending",
     queue: 0,
     blocked: false,
     paused: false,
-    controllerBuffer: 0, // Seems like you are tracking available buffer?  Maybe nice to have in frontend?
     interfaces: {
       type: "",
       ports: "",
@@ -522,14 +521,17 @@ var status = {
   },
   interface: {
     diskdrive: false,
-    lastFilePath: "",
     firmware: {
       availVersion: "",
       installedVersion: "",
     },
     connected: false,
+  },
+  misc: { // information to pass to the frontend
+    jobStatus: 0, // 0 - no job, 1 - running, 2 - jog job running (can't be paused)
     autoStart: true,
-  }
+    lastFilePath: "",
+  },
 };
 
 
@@ -982,11 +984,13 @@ function onParserData(data) {
     if (queuePointer < gcodeQueue.length) {
       send1Q();
     } else if (sentBuffer.length == 0) {
-      clearGcodeQueue();
+      clearGcodeQueue(true);
+      if (jobStatusInternal == 1 || jobStatusInternal == 2) {
+        jobStatusInternal += 2; // last command was accepted, just wait for idle
+      }
     }
-  } else if (data.indexOf('ALARM') === 0) { //} || data.indexOf('HALTED') === 0) {
+  } else if (data.indexOf('ALARM') === 0) {
     debug_log("ALARM:  " + data)
-    status.comms.connectionStatus = 5;
     switch (status.machine.firmware.type) {
       case 'grbl':
         var alarmCode = parseInt(data.split(':')[1]);
@@ -1014,11 +1018,14 @@ function onParserData(data) {
         io.sockets.emit('data', output);
         break;
     }
+    clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
-  } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1) { //} || data.indexOf('HALTED') === 0) {
+  } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1) {
+    clearGcodeQueue(false);
     status.comms.connectionStatus = 2;
-  } else if (data.indexOf('Emergency Stop Requested') != -1) { //} || data.indexOf('HALTED') === 0) {
+  } else if (data.indexOf('Emergency Stop Requested') != -1) {
     debug_log("Emergency Stop Requested")
+    clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
   } else if (data.indexOf('wait') === 0) { // Got wait from Repetier -> ignore
     // do nothing
@@ -1043,6 +1050,7 @@ function onParserData(data) {
     }
     debug_log("error;")
     sentBuffer.shift();
+    clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
   } else if (data === ' ') {
     // nothing
@@ -1051,6 +1059,7 @@ function onParserData(data) {
   }
 
   if (data.indexOf("[MSG:Reset to continue]") === 0) {
+    clearGcodeQueue(false);
     switch (status.machine.firmware.type) {
       case 'grbl':
         debug_log("[MSG:Reset to continue] -> Sending Reset")
@@ -1353,9 +1362,9 @@ io.on("connection", function(socket) {
   })
 
   socket.on("reopenFile", function() {
-    if (status.interface.lastFilePath !== "") {
-      debug_log("path" + status.interface.lastFilePath);
-      readFile(status.interface.lastFilePath);
+    if (status.misc.lastFilePath !== "") {
+      debug_log("path" + status.misc.lastFilePath);
+      readFile(status.misc.lastFilePath);
     }
   })
 
@@ -1829,6 +1838,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('jog', function(data) {
     debug_log('Jog ' + data);
     if (status.comms.connectionStatus > 0) {
@@ -1860,6 +1870,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('jogXY', function(data) {
     debug_log('Jog XY' + data);
     if (status.comms.connectionStatus > 0) {
@@ -1888,6 +1899,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('jogTo', function(data) { // data = {x:xVal, y:yVal, z:zVal, mode:0(absulute)|1(relative), feed:fVal}
     debug_log('JogTo ' + JSON.stringify(data));
     if (status.comms.connectionStatus > 0) {
@@ -1914,6 +1926,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('setZero', function(data) {
     debug_log('setZero(' + data + ')');
     if (status.comms.connectionStatus > 0) {
@@ -1942,6 +1955,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('gotoZero', function(data) {
     debug_log('gotoZero(' + data + ')');
     if (status.comms.connectionStatus > 0) {
@@ -1970,6 +1984,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('setPosition', function(data) {
     debug_log('setPosition(' + JSON.stringify(data) + ')');
     if (status.comms.connectionStatus > 0) {
@@ -1985,6 +2000,7 @@ io.on("connection", function(socket) {
     }
   });
 
+  // Unused, kept for backwards compatibility
   socket.on('probe', function(data) {
     debug_log('probe(' + JSON.stringify(data) + ')');
     if (status.comms.connectionStatus > 0) {
@@ -2280,7 +2296,7 @@ function readFile(filePath) {
               }
               io.sockets.emit('gcodeupload', payload);
               uploadedgcode = data;
-              status.interface.lastFilePath = filePath;
+              status.misc.lastFilePath = filePath;
               return data
             }
           }
@@ -2346,15 +2362,13 @@ function addLinesToQueue(data) {
 }
 
 function runJob(object) {
-
   jobStartTime = false;
-  var data = object.data
+  var data = object.data;
 
-  if (object.isJob) {
-    if (data.length < 20000) {
-      uploadedgcode = data;
-    }
-    jobStartTime = new Date().getTime();
+  jobIsJob = object.isJob;
+  jobStartTime = new Date().getTime();
+  if (object.isJob && data.length < 20000) {
+    uploadedgcode = data;
   }
 
   if (object.completedMsg) {
@@ -2362,23 +2376,26 @@ function runJob(object) {
   }
 
   // debug_log('Run Job (' + data.length + ')');
-  if (status.comms.connectionStatus > 0) {
-    if (data && addLinesToQueue(data)) {
-      // Add a 0 pause to delay the job completion until the last move is finished
-      addQToEnd("G4 P0.");
-
-      // Start interval for qCount messages to socket clients
-      queueCounter = setInterval(function() {
-        status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
-        if (jogWindow) {
-          jogWindow.setProgressBar(queuePointer / gcodeQueue.length)
-        }
-      }, 500);
-      send1Q(); // send first line
-      status.comms.connectionStatus = 3;
-    }
-  } else {
+  if (status.comms.connectionStatus == 0) {
     debug_log('ERROR: Machine connection not open!');
+    return;
+  }
+  if (jobStatusInternal > 0) {
+    debug_log('ERROR: Another job still in progress.');
+    return;
+  }
+  if (data && addLinesToQueue(data)) {
+    // Start interval for qCount messages to socket clients
+    queueCounter = setInterval(function() {
+      status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
+      if (jogWindow) {
+        jogWindow.setProgressBar(queuePointer / gcodeQueue.length)
+      }
+    }, 500);
+    jobStatusInternal = 1;
+    status.misc.jobStatus = 1;
+    send1Q(); // send first line
+    status.comms.connectionStatus = 3;
   }
 }
 
@@ -2416,7 +2433,11 @@ function parseFeedback(data) {
   //debug_log(data)
   var state = data.substring(1, data.search(/(,|\|)/));
   status.comms.runStatus = state
-  if (state == "Alarm") {
+  if (state == "Idle") {
+    if (jobStatusInternal >= 3 && (new Date().getTime()) > jobStartTime + 100) {
+      finalizeJob(true); // Idle after at least 100ms after the "ok" for the last line, declare the job as done
+    }
+  } else if (state == "Alarm") {
     // debug_log("ALARM:  " + data)
     status.comms.connectionStatus = 5;
   } else if (state == "Hold:0") {
@@ -2580,6 +2601,7 @@ const planeCommands = ["G17", "G18", "G19"];
 const distanceModeCommands = ["G90", "G91"];
 const feedrateModeCommands = ["G93", "G94"];
 const unitModeCommands = ["G20", "G21"];
+const tloModeCommands = ["G49", "G43.1"];
 const spindleStateCommands = ["M3", "M4", "M5"];
 const coolantStateCommands = ["M7", "M8", "M9"];
 
@@ -2625,12 +2647,8 @@ function gotModals(data) {
       status.machine.modals.radiuscomp = data[i];
     }
 
-    //   status.machine.modals.tlomode = "G49"; // G43.1, G49
-    if (data[i] == "G49") {
-      status.machine.modals.tlomode =  data[i];
-    }
-    if (data[i] == "G43.1") {
-      status.machine.modals.tlomode =  data[i];
+    if (tloModeCommands.includes(data[i])) {
+      status.machine.modals.tlomode = data[i]; // handle G49, G43.1
     }
 
     if (spindleStateCommands.includes(data[i])) {
@@ -2734,6 +2752,10 @@ function send1Q() {
           // Do we have enough space in the buffer?
           if (gcodeQueue[queuePointer].length < spaceLeft) {
             const gcode = gcodeQueue[queuePointer];
+            if (jobStatusInternal == 1 && gcode.startsWith("$J")) {
+              jobStatusInternal = 2;
+              status.misc.jobStatus = 2;
+            }
             queuePointer++;
             sentBuffer.push(gcode);
             machineSend(gcode + '\n');
@@ -2752,34 +2774,50 @@ function send1Q() {
   // console.timeEnd('send1Q');
 }
 
-// Clears the queue and generates a jobComplete event if necessry
-function clearGcodeQueue()
-{
+// Clears the queue and generates a queueComplete event
+function clearGcodeQueue(success) {
   if (gcodeQueue.length > 0) {
-    const queueLeft = parseInt((gcodeQueue.length - queuePointer + sentBuffer.length))
-    const queueTotal = parseInt(gcodeQueue.length)
-    io.sockets.emit("queueCount", [queueLeft, queueTotal]);
-
     var data = {
-      completed: true,
-      failed: queuePointer < gcodeQueue.length,
-      jobCompletedMsg: jobCompletedMsg,
-      jobStartTime: jobStartTime,
-      jobEndTime: new Date().getTime()
+      failed: !success,
     }
-    io.sockets.emit('jobComplete', data);
+    io.sockets.emit('queueComplete', data);
+    const queueLeft = gcodeQueue.length - queuePointer + sentBuffer.length;
+    const queueTotal = gcodeQueue.length;
+    io.sockets.emit("queueCount", [queueLeft, queueTotal]);
   }
 
   clearInterval(queueCounter);
   if (jogWindow) {
     jogWindow.setProgressBar(0);
   }
-  status.comms.connectionStatus = 2; // finished
   status.comms.queue = 0;
   gcodeQueue.length = 0; // Dump the Queue
   queuePointer = 0;
-  jobCompletedMsg = "";
-  jobStartTime = false;
+
+  if (!success) {
+    finalizeJob(false); // on failure, also finalize the job right now
+  } else if (jobStatusInternal == 0) {
+    status.comms.connectionStatus = 2; // finished non-job queue
+  }
+}
+
+// If a job is currently in progress, sends the jobComplete message
+function finalizeJob(success) {
+  if (jobStatusInternal > 0) {
+    var data = {
+      completed: true, // always true, kept for backwards compatibility
+      failed: !success,
+      jobCompletedMsg: jobCompletedMsg,
+      jobStartTime: jobIsJob ? jobStartTime : false,
+      jobEndTime: new Date().getTime()
+    }
+    io.sockets.emit('jobComplete', data);
+    jobCompletedMsg = "";
+    jobStartTime = false;
+    jobStatusInternal = 0;
+    status.misc.jobStatus = 0;
+    status.comms.connectionStatus = 2;
+  }
 }
 
 var modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M4', 'M5', 'M7', 'M8', 'M9']
@@ -2858,7 +2896,7 @@ function stop(data) {
     sentBuffer.length = 0; // Dump the queue
     status.comms.blocked = false;
     status.comms.paused = false;
-    clearGcodeQueue();
+    clearGcodeQueue(false);
   } else {
     debug_log('ERROR: Machine connection not open!');
   }
@@ -2982,7 +3020,7 @@ if (isElectron()) {
     // Module to create native browser window.
 
     function createApp() {
-      status.interface.autoStart = persistentConfig.autoStart;
+      status.misc.autoStart = persistentConfig.autoStart;
       if (process.platform != 'win32' || persistentConfig.autoStart)
         createTrayIcon();
       if (process.platform == 'darwin') {
@@ -3006,6 +3044,8 @@ if (isElectron()) {
         BrowserWindow.clearPersistedState('main-window');
       if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !persistentConfig.autoStart)) {
         showJogWindow();
+      if (process.argv.indexOf("-debug") > 0)
+        jogWindow.webContents.openDevTools();
       }
 
     }
