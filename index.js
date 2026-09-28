@@ -42,12 +42,14 @@ config.posDecimals = process.env.DRO_DECIMALS || 3;
 config.grblWaitTime = 0.5;
 config.singleCommandMode = true; // set to false to send as many commands as will fit in the RX buffer
 config.aggressiveHomeReset = true;
+config.maxRecentFiles = 10;
 
 // Individual settings are stored and restores wholesale.
 // If you add a new sub-field to the initial settings, it will be destroyed on load
 var persistentConfig = {
   autoStart: true,
   defaultPaths: {},
+  recentFiles: [],
   persistDisplayMode: false,
 };
 
@@ -680,7 +682,7 @@ app.post('/upload', function(req, res) {
   form.on('file', function(name, file) {
     debug_log('Uploaded ' + file.filepath);
     showJogWindow()
-    readFile(file.filepath)
+    readFile(file.filepath, true)
   });
 
   form.on('aborted', function() {
@@ -1347,9 +1349,9 @@ io.on("connection", function(socket) {
     var defaultPath = persistentConfig.defaultPaths["gcode"] || persistentConfig.defaultPaths["last"];
 
     dialog.showOpenDialog(jogWindow, {
-      title: "Open GCODE",
+      title: "Open G-code",
       filters: [
-        {name: "GCODE files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
+        {name: "G-code files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
         {name: "All files", extensions: ["*"]},
       ],
       defaultPath: defaultPath,
@@ -1363,7 +1365,7 @@ io.on("connection", function(socket) {
         persistentConfig.defaultPaths["last"] = path.dirname(openFilePath);
         savePersistentConfig();
         debug_log("path" + openFilePath);
-        readFile(openFilePath);
+        readFile(openFilePath, true, addRecentFile);
       }
 
     }).catch(err => {
@@ -1371,12 +1373,15 @@ io.on("connection", function(socket) {
     })
   })
 
-  socket.on("reopenFile", function() {
-    if (status.misc.lastFilePath !== "") {
-      debug_log("path" + status.misc.lastFilePath);
-      readFile(status.misc.lastFilePath);
+  socket.on("reopenFile", function(filePath) {
+    filePath = filePath || status.misc.lastFilePath;
+    if (filePath !== "") {
+      debug_log("path" + filePath);
+      readFile(filePath, true, addRecentFile);
     }
   })
+
+  socket.on("clearRecentFiles", clearRecentFiles);
 
   socket.on("openInterfaceDir", function(data) {
     dialog.showOpenDialog(jogWindow, {
@@ -2239,25 +2244,35 @@ io.on("connection", function(socket) {
     io.sockets.emit('captureWcsHistory', data);
   });
 
+  socket.on('refreshGui', function() {
+    if (uploadedgcode) {
+      var payload = {
+        gcode: uploadedgcode,
+        filename: path.basename(status.misc.lastFilePath)
+      }
+      io.sockets.emit('gcodeupload', payload);
+    }
+    io.sockets.emit('recentFiles', persistentConfig.recentFiles);
+  });
+
 });
 
-function readFile(filePath) {
+function readFile(filePath, showErrorDlg, onSuccess) {
   if (filePath) {
     if (filePath.length > 1) {
-      var filename = path.parse(filePath)
-      filename = filename.name + filename.ext
       debug_log('readfile: ' + filePath)
       fs.readFile(filePath, 'utf8',
         function(err, data) {
           if (err) {
-            debug_log(err);
-            var output = {
-              'command': '',
-              'response': "ERROR: File Upload Failed"
+            if (showErrorDlg) {
+              dialog.showMessageBox(jogWindow, {
+                type: 'error',
+                buttons: ['OK'],
+                message: err.toString()
+              });
             }
-            uploadedgcode = "";
-          }
-          if (data) {
+            debug_log(err);
+          } else if (data) {
             if (filePath.endsWith('.obc')) { // OpenBuildsCAM Workspace
               uploadedworkspace = data;
               const {
@@ -2265,19 +2280,43 @@ function readFile(filePath) {
               } = require('electron')
               shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
             } else { // GCODE
-              var payload = {
-                gcode: data,
-                filename: filename
-              }
-              io.sockets.emit('gcodeupload', payload);
               uploadedgcode = data;
               status.misc.lastFilePath = filePath;
-              return data
+              var payload = {
+                gcode: uploadedgcode,
+                filename: path.basename(status.misc.lastFilePath)
+              }
+              io.sockets.emit('gcodeupload', payload);
+              if (onSuccess) {
+                onSuccess(filePath, data);
+              }
             }
           }
         });
     }
   }
+}
+
+function addRecentFile(filePath) {
+  var file_path = filePath.toLowerCase();
+  var index = persistentConfig.recentFiles.findIndex(x => x.toLowerCase() == file_path);
+  if (index == 0 && persistentConfig.recentFiles[0] == filePath) return;
+
+  if (index >= 0) {
+    persistentConfig.recentFiles.splice(index, 1);
+  }
+  persistentConfig.recentFiles.unshift(filePath);
+  if (persistentConfig.recentFiles.length > config.maxRecentFiles) {
+    persistentConfig.recentFiles.length = config.maxRecentFiles;
+  }
+  savePersistentConfig();
+  io.sockets.emit('recentFiles', persistentConfig.recentFiles);
+}
+
+function clearRecentFiles() {
+  persistentConfig.recentFiles = [];
+  savePersistentConfig();
+  io.sockets.emit('recentFiles', persistentConfig.recentFiles);
 }
 
 function machineSendRealtime(gcode) {
@@ -2342,7 +2381,7 @@ function runJob(object) {
 
   jobIsJob = object.isJob;
   jobStartTime = new Date().getTime();
-  if (object.isJob && data.length < 20000) {
+  if (object.isJob) {
     uploadedgcode = data;
   }
 
@@ -2957,7 +2996,7 @@ loadPersistentConfig();
 
       var openFilePath = commandLine.find(checkFileType);
       if (openFilePath !== "") {
-        readFile(openFilePath);
+        readFile(openFilePath, false);
         if (openFilePath !== undefined) {
           if (openFilePath.endsWith('.obc')) {
             lauchGUI = false;
@@ -2999,7 +3038,7 @@ loadPersistentConfig();
           var openFilePath = process.argv[1];
           if (openFilePath !== "") {
            debug_log("path" + openFilePath);
-            readFile(openFilePath);
+            readFile(openFilePath, false);
           }
         }
       }
@@ -3161,6 +3200,7 @@ loadPersistentConfig();
         electronApp.dock.setMenu(dockMenu)
       };
 
+      console.log("Created tray icon");
     }
 
     function createJogWindow() {

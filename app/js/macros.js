@@ -180,7 +180,7 @@ function edit(i, evt) {
           <div class="cell-sm-9">
             <div id="macroGcodeEditField">
               <textarea  wrap="off" id="macrogcode" type="text" value="` + gcode + `" style="overflow-y: auto; height: 200px; max-height: 200px; resize: none;" rows="4"  data-editable="true"></textarea>
-              <span class="text-small">Enter GCODE to execute</span>
+              <span class="text-small">Enter G-code to execute</span>
             </div>
             <div id="macroJavascriptEditField" style="display:none;" >
               <span class="text-small">Enter Javascript to execute</span><br>

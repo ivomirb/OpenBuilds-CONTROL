@@ -276,3 +276,11 @@ select {
 .step-list>li::before {
   color: #111 !important;
 }
+
+.ribbon-dropdown.no-checkmarks li {
+  padding-left: 0px;
+}
+
+.ribbon-dropdown.no-checkmarks a {
+  border-left: none;
+}

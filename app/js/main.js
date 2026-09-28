@@ -1,5 +1,6 @@
 var gcode;
 var loadedFileName = "";
+var savedFileName = "";
 var editor;
 var isJogWidget = false;
 var lastJobStartTime = false;
@@ -113,7 +114,7 @@ $(document).ready(function() {
     editor.session.setMode("ace/mode/cncpro");
     editor.setTheme('ace/theme/sqlserver')
     editor.setAutoScrollEditorIntoView(true);
-    editor.session.setValue('; No GCODE yet - please Load a GCODE file from the Open GCODE button'); // from samplefile.js
+    editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
     editor.setShowPrintMargin(false);
 
     // The editor doesn't update when its text changes, unless it is visible.
@@ -146,28 +147,6 @@ $(document).ready(function() {
       // alert('success! - rightclicked line ' + (editor.getSelectionRange().start.row + 1));
     }, false);
   }
-
-  $.get("/gcode").done(function(data) {
-    // console.log(data.length)
-    if (data.length > 2) {
-      if (data.length > 10000000) {
-        gcode = this.result
-        editor.session.setValue("GCODE is too large (" + (data.length / 1024).toFixed(0) + "kB) to load into the GCODE Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it ");
-      } else {
-        editor.session.setValue(data);
-        gcode = false;
-      }
-      parseGcodeInWebWorker(data)
-      $('#controlTab').click()
-      if (!webgl) {
-        $('#gcodeviewertab').click();
-      } else {
-        $('#gcodeeditortab').click()
-      }
-      jobNeedsHoming();
-    }
-
-  });
 
   getChangelog()
 
@@ -205,7 +184,7 @@ $(document).ready(function() {
       console.log('%c  isJob: false,', 'font-weight: regular; font-size: 12px;color: black; ');
       console.log('%c  completedMsg: "message displayed upon completion ",', 'font-weight: regular; font-size: 12px;color: black; ');
       console.log('%c});', 'font-weight: regular; font-size: 12px;color: black; ');
-      console.log('%c; Send the GCODE string to the controller, ideal for single commands', 'font-weight: bold; font-size: 12px;color: black; ');
+      console.log('%c; Send the G-code string to the controller, ideal for single commands', 'font-weight: bold; font-size: 12px;color: black; ');
       console.log('%csendGcode("gcode-string")', 'font-weight: regular; font-size: 12px;color: black; ');
     }
   });
@@ -232,71 +211,22 @@ function runJobFile() {
   xhr.open('POST', '/runjob', true);
   xhr.send(formData);
   if (gcode) {
-    printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File (from memory) sent to backend </span>`);
+    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
   } else {
-    printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File (from gcode editor) sent to backend </span>`);
+    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from gcode editor) sent to backend </span>`);
   }
 
-  lastJobStartTime = new Date().getTime()
-
-}
-
-function readFile(evt) {
-  console.group("New FileOpen Event:");
-  console.log(evt);
-  console.groupEnd();
-  // Close the menu
-  $("#drop1").dropdown("toggle");
-
-  // Files
-  var files = evt.target.files || evt.dataTransfer.files;
-
-  for (var i = 0; i < files.length; i++) {
-    loadFile(files[i]);
-  }
-  document.getElementById('file').value = '';
-}
-
-// load file
-function loadFile(f) {
-  // Filereader
-  if (f) {
-    var r = new FileReader();
-    // if (f.name.match(/.gcode$/i)) {
-    r.readAsText(f);
-    r.onload = function(event) {
-      if (this.result.length > (20 * 1024 * 1024)) {
-        gcode = this.result
-        editor.session.setValue("File " + f.name + " is too large (" + (this.result.length / 1024).toFixed(0) + "kB) to load into the GCODE Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it ");
-      } else {
-        editor.session.setValue(this.result);
-        gcode = false;
-      }
-      loadedFileName = f.name;
-      if (isJogWidget) {
-        setWindowTitle()
-      }
-      if (webgl) {
-        printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File Loaded, please wait while we render a preview... </span>`);
-      } else {
-        printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File Loaded </span>`);
-      }
-      parseGcodeInWebWorker(this.result)
-      jobNeedsHoming();
-    };
-    // }
-  }
+  lastJobStartTime = new Date().getTime();
 }
 
 function jobNeedsHoming() {
-
   if (editor.getValue().lastIndexOf("G53") != -1 || editor.getValue().lastIndexOf("g53") != -1) {
     if (laststatus !== undefined) {
       if (laststatus.machine.modals.homedRecently == false) {
         var dialog = Metro.dialog.create({
           clsDialog: 'dark',
           title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates:",
-          content: "<i class='fas fa-exclamation-triangle fg-darkRed'></i> Tip: The GCODE file you loaded contains G53 commands. Please make sure to HOME the machine to establish the Machine Coordinate (G53) System properly to prevent crashes.",
+          content: "<i class='fas fa-exclamation-triangle fg-darkRed'></i> Tip: The G-code file you loaded contains G53 commands. Please make sure to HOME the machine to establish the Machine Coordinate (G53) System properly to prevent crashes.",
           actions: [{
             caption: "Close",
             cls: "js-dialog-close",
@@ -314,8 +244,8 @@ function loadJobFile() {
   socket.emit('openFile');
 }
 
-function reloadJobFile() {
-  socket.emit('reopenFile');
+function reloadJobFile(filePath) {
+  socket.emit('reopenFile', filePath);
 }
 
 function versionCompare(v1, v2, options) {
@@ -463,18 +393,23 @@ var webgl = (function() {
 function saveGcode() {
   var saveFileParams = {
     id: "gcode",
-    title: "Save GCODE",
+    title: "Save G-code",
     filters: [
-      {name: "GCODE files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
+      {name: "G-code files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
       {name: "All files", extensions: ["*"]},
     ],
+    fileName: savedFileName || loadedFileName,
   };
 
   socket.emit('saveFileDialog', saveFileParams, (filePath) => {
     var blob = new Blob([gcode || editor.getValue()], {
       type: 'text/plain'
     });
-    saveBlobToDisk(blob, filePath);
+    saveBlobToDisk(blob, filePath, true).then((err) => {
+			if (!err) {
+				savedFileName = path.basename(filePath);
+			}
+		});
   });
 }
 
