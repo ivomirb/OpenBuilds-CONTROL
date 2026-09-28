@@ -538,7 +538,6 @@ function makeSprite(rendererType, vals) {
     opacity: Theme.SPRITE_OPACITY
   });
   material.transparent = true;
-  //var textObject = new THREE.Sprite(material);
   var textObject = new THREE.Object3D();
   textObject.position.x = vals.x;
   textObject.position.y = vals.y;

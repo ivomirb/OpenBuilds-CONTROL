@@ -534,7 +534,7 @@ function RunProbe()
 
 	socket.off('prbResult');
 	socket.on('prbResult', OnProbeResult);
-	socket.emit('runJob', {data: gcode, isJob: true, fileName: ""});
+	socket.emit('runJob', {data: gcode, isJob: false, fileName: ""});
 }
 
 function ShowHeightmapError(error)
@@ -691,6 +691,7 @@ window.LoadHeightmapNew = function()
 		id: "heightmap",
 		title: "Load Heightmap",
 		filters: heightmapFilters,
+		showErrorDlg: false,
 	};
 
 	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>
