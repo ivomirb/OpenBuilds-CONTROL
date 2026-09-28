@@ -6,7 +6,7 @@ const ENABLE_SINGLE_AXIS_HOMING = true; // set to false to disable the feature
 
 const homeSingleMenu = `
 <div style="display:none">
-  <button id="homeSingleMenu" class="ribbon-button dropdown-toggle" style="padding:10px;" title="Home single axis">
+  <button id="homeSingleMenu" class="ribbon-button dropdown-toggle" style="padding-left:10px; height:78px; margin-left:-4px;" title="Home single axis">
   </button>
   <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
     <li onclick="sendGcode('$HX');"><a href="#"><span class="fg-red" style="font-weight:900;padding-right:5px;">X</span> Home X axis</a></li>

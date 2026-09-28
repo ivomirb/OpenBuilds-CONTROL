@@ -3,29 +3,20 @@
 // Thanks @rlwoodjr
 
 function recoverCrashedJob() {
-  if (localStorage.getItem('gcodeLineNumber')) {
-    var lineNumber = localStorage.getItem('gcodeLineNumber')
-    if (lineNumber > editor.session.getLength()) { // Wrong file
-      lineNumber = 1;
-    }
-  } else {
-    var lineNumber = 1;
-  }
-
   var resumeTemplate = `
   <form>
     Enter the starting line to recover the job from:
     <br>
-    <span class="text-small">(Make sure you opened the GCODE first)</span>
+    <span class="text-small">(Make sure you opened the G-code first)</span>
     <hr>
-    <input id="selectedLineNumber" data-prepend="<i class='fas fa-list-ol'></i> Start from line: " type="number" data-role="input"  data-clear-button="false" value="` + lineNumber + `" data-editable="true"></input>
+    <input id="selectedLineNumber" data-prepend="<i class='fas fa-list-ol'></i> Start from line: " type="number" data-role="input"  data-clear-button="false" value="1" data-editable="true"></input>
   </form>
   <div class="remark success">
-  Tip: You can pick the line from the GCODE Editor tab using the right-click context menu too.</span>
+  Tip: You can pick the line from the G-code Editor tab using the right-click context menu too.</span>
   </div>
   <hr>
   <div class="remark warning">
-    NOTE: Use this tool at your own risk. Recovering GCODE is a risky operation. You are also responsible for ensuring that work origin is correctly set.  Use at your own risk.
+    NOTE: Use this tool at your own risk. Recovering G-code is a risky operation. You are also responsible for ensuring that work origin is correctly set.  Use at your own risk.
   </div>
   `
   Metro.dialog.create({
@@ -70,9 +61,9 @@ function startFromHere(lineNumber) {
 
   var error = undefined;
   if (gcode)
-    error = "The GCODE is too large to be edited.";
+    error = "The G-code is too large to be edited.";
   else if (editor.session.getLength() <= 1)
-    error = "No GCODE program is currently loaded.";
+    error = "No G-code program is currently loaded.";
   else if (lineNumber < 1 || lineNumber > editor.session.getLength())
     error = "The line number " + lineNumber + " is out of range.";
 
@@ -177,7 +168,7 @@ console.log(error);
 
   if (error != undefined) {
     Metro.dialog.create({
-      title: "<i class='fas fa-exclamation-triangle'></i> GCODE parsing error",
+      title: "<i class='fas fa-exclamation-triangle'></i> G-code parsing error",
       content: error,
       width: '400',
       clsDialog: 'dark',
@@ -209,7 +200,7 @@ console.log(error);
   var resumeFileTemplate = `
     <form>
       <div>
-        The Recovery strategy will modify the currently loaded GCODE accordingly:
+        The Recovery strategy will modify the currently loaded G-code accordingly:
         <hr>
           <ul>
             <li>Keep the first <span class="tally dark" id="preserveLines"></span> lines of the file as header. It assumes that the header</li>
@@ -218,16 +209,16 @@ console.log(error);
               <li>Raises Z to a safe height</li>
               <li>Turns on the spindle</li>
             </ul>
-            <li>Move to entry position with GCODE: <span class="tally dark" id="resumeXYA"></span></li>
-            <li>Plunge to cutting height with GCODE: <span class="tally dark" id="resumeZ"></span></li>
+            <li>Move to entry position with G-code: <span class="tally dark" id="resumeXYA"></span></li>
+            <li>Plunge to cutting height with G-code: <span class="tally dark" id="resumeZ"></span></li>
             <li>Restore the parser context with: <span class="tally dark" id="context"></span></li>
-            <li>Run GCODE starting at line <span class="tally dark" id="resumeLastLine"></span> and continue with the job</li>
+            <li>Run G-code starting at line <span class="tally dark" id="resumeLastLine"></span> and continue with the job</li>
           </ul>
         Review the recovery strategy and click 'Proceed' to update the loaded gcode to reflect the changes, and update the 3D view.
       </div>
     </form>
     <div class="remark warning">
-      NOTE: Use this tool at your own risk. Recovering GCODE is a risky operation. You are also responsible for ensuring that work origin is correctly set</span>.  Use at your own risk.
+      NOTE: Use this tool at your own risk. Recovering G-code is a risky operation. You are also responsible for ensuring that work origin is correctly set</span>.  Use at your own risk.
     </div>
     `
 
@@ -261,7 +252,7 @@ console.log(error);
 
 function redoJob() {
   var line = "";
-  var gcode = "; Recovered GCODE. Use at your OWN RISK\n;===== Original header\n";
+  var gcode = "; Recovered G-code. Use at your OWN RISK\n;===== Original header\n";
 
   var preserveLines = $('#preserveLines').html();
   var XYAGcode = $('#resumeXYA').html();

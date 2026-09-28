@@ -77,11 +77,6 @@ $("#probeunitxyz").change(function() {
 });
 
 
-// still beta, lets hide it from users
-// if (!enableBetaFeatures) {
-//   $(".needsXYZProbe").hide();
-// }
-
 function initProbeDialog() {
   Metro.dialog.open("#xyzProbeWindow");
   $('#confirmNewProbeBtn')[0].innerHTML = "Confirm Probe Position";
@@ -525,6 +520,8 @@ function runProbeNew() {
     var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
     var zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
 
+    captureWcsHistory('Modified by <b>Probe X</b>');
+
     var xmacro = `
     ; Header
     G21 ; mm mode
@@ -552,6 +549,7 @@ function runProbeNew() {
     var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
     var zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
 
+    captureWcsHistory('Modified by <b>Probe Y</b>');
     var ymacro = `
     ; Header
     G21 ; mm mode
@@ -575,6 +573,8 @@ function runProbeNew() {
     var xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
     var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
     var zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
+
+    captureWcsHistory('Modified by <b>Probe Z</b>');
 
     var zmacro = `
     G21
@@ -602,6 +602,8 @@ function runProbeNew() {
       zoffset = thickness; // custom value from Advanced
     }
 
+    captureWcsHistory('Modified by <b>Probe Z</b>');
+
     var zmacro = `
     ; Header
     G21 ; mm mode
@@ -628,6 +630,8 @@ function runProbeNew() {
     var xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
     var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
     var zoffset = parseFloat(probemode.probe.zoffset) // not *-1 as its offset in z pos
+
+    captureWcsHistory('Modified by <b>Probe XYZ</b>');
 
     var xyzmacro = `
     ; Header

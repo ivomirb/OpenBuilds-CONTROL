@@ -50,7 +50,7 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   box-shadow: 2px 2px 2px 0 rgb(40 40 40 / 70%);
 }
 
-.theme_dark .ribbon-dropdown a {
+.theme_dark .ribbon-dropdown::not(.no-checkmarks) a {
   border-left: solid 1px #333;
 }
 
@@ -97,8 +97,8 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   color: #FFF;
 }
 
-.theme_dark .dropdown-toggle:not(.success) {
-  border: 1px solid #333;
+.theme_dark .dialog-content .dropdown-toggle:not(.success) {
+  border: 1px solid #555;
 }
 
 .theme_dark .dropdown-toggle::before {
@@ -382,12 +382,24 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   background: #555 !important;
 }
 
+.theme_dark .v-menu>li.group-title,
 .theme_dark .d-menu>li.group-title {
   background: #222 !important;
 }
 
+.theme_dark .v-menu>li:hover,
+.theme_dark .d-menu>li:hover {
+  background: #444;
+}
+
 .theme_dark .d-menu {
   border: 1px solid #222;
+}
+
+.theme_dark .v-menu .menu-title,
+.theme_dark .d-menu .menu-title,
+.theme_dark .ribbon-dropdown .menu-title {
+  background: #222 !important;
 }
 
 .theme_dark .drop-container {
@@ -416,12 +428,29 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   border: 1px solid #555;
 }
 
+.theme_dark .droMCS {
+  background-color: #454922 !important;
+}
+
+.theme_dark .droMCS .droInput {
+  background-color: #333711 !important;
+}
+
 /* as per https://github.com/OpenBuilds/OpenBuilds-CONTROL/issues/291  */
-.theme_dark .disabled {
+.theme_dark .disabled, .theme_dark [disabled] {
+  color: #999 !important;
+}
+
+.theme_dark .disabled .fg-openbuilds, .theme_dark [disabled] .fg-openbuilds {
   color: #999 !important;
 }
 
 .theme_dark .button:focus {
   -webkit-box-shadow: 0 0 0 3px rgba(48, 48, 48, .45);
   box-shadow: 0 0 0 3px rgba(48, 48, 48, .45);
+}
+
+.theme_dark .jogcursorbtn:disabled,
+.dro[disconnected="true"] {
+  opacity:50%;
 }

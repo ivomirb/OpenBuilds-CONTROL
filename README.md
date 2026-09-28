@@ -5,17 +5,23 @@ This is a fork by Ivo Beltchev with multiple improvements.
 
 ### Workflow
 
-* Remembers the last used COM port and auto-selects it on startup
 * New option to reload the last gcode file
 * More reliable jogging features, better compatibilty with different firmware and homing settings
+* Ability to view and set machine coordinates
+* Stores a history of work origins and allows for rolling back to a previous one
 * Corrected the math and improved the safety of the "goto zero" buttons
+* The Pause and Stop buttons remain available until the very end of the job
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
+* A new setting to hide the 4th axis controls if the controller supports it but it is not used
 
 ### User Interface
 
-* **Windows only:** A setting to disable the autostart and the tray icon, making it behave like a regular Windows app
+* **Windows only:** A new setting to disable the autostart and the tray icon, making it behave like a regular Windows app
 * Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
+* The dialogs for opening and saving files have independent default directories for gcode, macros and grbl settings
+* The position of the main window is preserved between runs
 * Fix for dragging sliders with the mouse (bug in the external Metro UI library)
+* Improved readability for Light and Dark themes
 
 ### 3D View
 
@@ -46,34 +52,17 @@ The Javascript macros and the open UI architecture of OpenBuilds make it easy to
 Over the years I have created multiple useful macros.
 You can find them in the [Useful Macros folder](UsefulMacros/UsefulMacros.md).
 
-Most of them are compatible with the stock software.
+Most of them are compatible with the original software.
 The most notable examples are:
 
 * Macro manager that lets you organize macros into groups
-* Heightmap support, similar to the one in Candle
+* Heightmap support, similar to the one in Candle (work in progress, not yet fully tested)
 * Disable the Z jog buttons for large step sizes
 * Remove the dropdown from the file open button
+* Smart Home macro that prevents accidental homing and allows homing single axis if supported
 
+## Download
 
-## Download the updated software
+At this time there is no binary build available for download.
 
-I plan to publish an installer for the updated version. Few caveats:
-
-* It is only for Windows. I don't have the skills or the hardware to support other OSes
-* The binaries are not signed. Signing certificates are very expensive
-* The version is still 1.0.390 like the original software. You will need to manually uninstall the old build first
-
-## Download the original software
-
-#### Latest Version
-Click to download latest version:  [![Latest Version](https://img.shields.io/github/package-json/v/openbuilds/openbuilds-control.svg)](https://github.com/OpenBuilds/OpenBuilds-CONTROL/releases/latest)
-
-#### Older Versions
-Click to see all past releases:  [![Downloads](https://img.shields.io/github/downloads/openbuilds/sw-machine-drivers/total.svg)](https://github.com/OpenBuilds/OpenBuilds-CONTROL/releases)
-
-# Development:
-
-### Build Status (Windows, Linux, Mac):
-[![Build/release](https://github.com/OpenBuilds/OpenBuilds-CONTROL/actions/workflows/build.yml/badge.svg)](https://github.com/OpenBuilds/OpenBuilds-CONTROL/actions/workflows/build.yml)
-
-![Screenshot](https://raw.githubusercontent.com/OpenBuilds/OpenBuilds-CONTROL/master/docs/control.PNG)
+You can get the original OpenBuilds software from here: https://github.com/OpenBuilds/OpenBuilds-CONTROL#download

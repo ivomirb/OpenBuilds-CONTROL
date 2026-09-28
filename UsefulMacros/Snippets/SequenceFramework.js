@@ -1,3 +1,4 @@
+///////////////////////////////////////////
 // Program sequence framework /////////////
 //
 // This framework helps with creating multi-step G-code execution sequences, where some code logic needs to run after each step.
@@ -9,20 +10,22 @@
 //
 // The second parameter is optional. It is a function that is called at the very end to clean up.
 
-var g_StartCheckJobTimeout;
-var g_CheckJobTimer;
 var g_OnStep;
 var g_OnClose;
 var g_CurrentStep;
+var g_JobStarted;
 
 function ExecuteNextStep()
 {
 	g_CurrentStep++;
 	var gcode = g_OnStep(g_CurrentStep);
-	if (gcode != undefined && gcode != "")
+	if (gcode)
 	{
-		console.log("ExecuteNextStep", gcode);
-		socket.emit('runJob', {data: gcode, isJob: false, completedMsg: "ProgramSequence", fileName: ""});
+		socket.emit('runJob', {data: gcode});
+
+		// Due to the async nature of the gcode sending, it is not possible to know when exactly the code starts executing.
+		// Let's wait for 1000ms to ensure grbl has started, and then wait until it is idle
+		setTimeout(() => g_JobStarted = true, 1000);
 	}
 	else
 	{
@@ -30,46 +33,29 @@ function ExecuteNextStep()
 	}
 }
 
-function CheckJobCompleted()
+function HandleStatus(status)
 {
-	console.log("CheckJobCompleted", g_CheckJobTimer, laststatus.comms.runStatus, laststatus.comms.connectionStatus);
-
-	if (laststatus.comms.connectionStatus == 5 || laststatus.comms.runStatus == "Alarm")
+	if (status.comms.connectionStatus == 5 || status.comms.runStatus == "Alarm")
 	{
 		// Alarm detected
 		CloseProgramSequence();
+		return;
 	}
-	else if (laststatus.comms.runStatus == "Idle")
+
+	if (status.comms.runStatus == "Idle")
 	{
 		// runStatus=="Idle" is not enough. During a G4 command the status is temporarily set to idle. Also check the connectionStatus
-		if (laststatus.comms.connectionStatus == 2)
+		if (g_JobStarted && status.comms.connectionStatus == 2)
 		{
 			// Idle reached
-			clearInterval(g_CheckJobTimer);
-			g_CheckJobTimer = undefined;
+			g_JobStarted = false;
 			ExecuteNextStep();
 		}
 	}
-	else if (laststatus.comms.runStatus != "Jog" && laststatus.comms.runStatus != "Run" && laststatus.comms.runStatus != "Running")
+	else if (status.comms.runStatus != "Jog" && status.comms.runStatus != "Run" && status.comms.runStatus != "Running")
 	{
 		// some other unexpected state
 		CloseProgramSequence();
-	}
-}
-
-function HandleJobComplete(data)
-{
-	if (data.jobCompletedMsg == "ProgramSequence")
-	{
-		console.log("HandleJobComplete", data.jobCompletedMsg);
-		data.jobCompletedMsg = "";
-
-		// HandleJobComplete is called when all commands have been sent to the machine, not when they are finished executing.
-		// The machine may not yet have started doing anything and still be Idle.
-		// To reliably detect when the execution is finished, wait 1000ms and then start checking for Idle state every 100ms.
-		g_StartCheckJobTimeout = setTimeout(
-			() => g_CheckJobTimer = setInterval(CheckJobCompleted, 100),
-			1000);
 	}
 }
 
@@ -77,28 +63,16 @@ function RunProgramSequence(onStep, onClose)
 {
 	g_OnStep = onStep;
 	g_OnClose = onClose;
-	g_CheckJobTimer = undefined;
-	g_StartCheckJobTimeout = undefined;
-	socket._callbacks["$jobComplete"].splice(0,0, HandleJobComplete); // hack to inject our callback first to stop OpenBuilds from showing the job completed popup
+	g_JobStarted = false;
+	socket.on('status', HandleStatus);
 	g_CurrentStep = -1;
 	ExecuteNextStep();
 }
 
 function CloseProgramSequence()
 {
-	console.log("CloseProgramSequence");
-	if (g_StartCheckJobTimeout != undefined)
-	{
-		clearTimeout(g_StartCheckJobTimeout);
-		g_StartCheckJobTimeout = undefined;
-	}
-	if (g_CheckJobTimer != undefined)
-	{
-		clearInterval(g_CheckJobTimer);
-		g_CheckJobTimer = undefined;
-	}
 	g_OnStep = undefined;
-	socket.off('jobComplete', HandleJobComplete);
+	socket.off('status', HandleStatus);
 	if (g_OnClose)
 	{
 		g_OnClose();

@@ -127,7 +127,7 @@ function parseGcodeInWebWorker(gcode) {
               //console.log(timeConvert(timeremain));
               // output formattedTime to UI here
               $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-              printLog("<span class='fg-red'>[ GCODE Parser ]</span><span class='fg-darkGreen'> GCODE Preview Rendered Succesfully: Total lines: <b>" + object.userData.linePoints.length + "</b> / Estimated GCODE Run Time: <b>" + timeConvert(timeremain) + "</b>")
+              printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Total lines: <b>" + object.userData.linePoints.length + "</b> / Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
             }
           }, 200);
           $('#3dviewicon').removeClass('fa-pulse');
@@ -160,6 +160,7 @@ function simSpeed(speed) {
   if (simTween) {
     simTween.timeScale(timefactor);
   }
+	simUpdateProgress();
 }
 
 function runSimFrom(startindex) {
@@ -194,13 +195,18 @@ function resetConePosition() {
 
 function sim(fromLine, paused) {
   if (typeof(object) == 'undefined' || object.userData.linePoints.length == 0) {
-    var message = `No Gcode in Preview yet: Please load GCODE from the Open GCODE button first before running simulation`
+    var message = `No Gcode in Preview yet: Please load G-code from the Open G-code button first before running simulation`
     Metro.toast.create(message, null, 3000, 'bg-red');
     simstop()
   } else {
     simIdx = fromLine;
-    $("#conetext").css('left', "1px").css('bottom', "5px");
-    $("#conetext").show();
+    if (simDisplayType == 1) {
+      $("#simText").show();
+      $("#simText > span").html("");
+    } else {
+      $("#conetext").css('left', "0px").css('top', "0px");
+      $("#conetext").show();
+    }
     resetConePosition();
     if (!viewSettings.tool) { // force-show
       viewSettings.tool = true;
@@ -493,6 +499,7 @@ function simstop() {
   $('#simspeedval').text(timefactor);
   editor.gotoLine(0)
   $("#conetext").hide();
+  $("#simText").hide();
   if (simDisplayType == 0)
     $('#gcodesent').html("&nbsp;");
   clearSceneFlag = true;
@@ -540,13 +547,11 @@ function simAnimate() {
     } else {
       if (simIdx >= 0 && simIdx < object.userData.linePoints.length) {
         var srcLine = object.userData.linePoints[simIdx].src;
-        $("#conetext").html(`<span class="tally success drop-shadow" style="text-align:left; margin-left:5px; padding:3px 6px; height:auto;">Line ` +
-          (srcLine+1) + `: ` + editor.session.getLine(srcLine) +
-          `<br>X:` + posx.toFixed(2) + `&nbsp;&nbsp;&nbsp;Y:` + posy.toFixed(2) + `&nbsp;&nbsp;&nbsp;Z:` + posz.toFixed(2) + `</span>`);
+        var html = "Line " + (srcLine+1) + ": " + editor.session.getLine(srcLine);
       } else {
-        $("#conetext").html(`<span class="tally success drop-shadow" style="text-align:left; margin-left:5px; padding:3px 6px; height:auto;">&lt;END&gt;` +
-          `<br>X:` + posx.toFixed(2) + `&nbsp;&nbsp;&nbsp;Y:` + posy.toFixed(2) + `&nbsp;&nbsp;&nbsp;Z:` + posz.toFixed(2) + `</span>`);
+        var html = "&lt;END&gt;";
       }
+      $("#simText > span").html(html + "<br>X:" + posx.toFixed(2) + "&nbsp;&nbsp;&nbsp;Y:" + posy.toFixed(2) + "&nbsp;&nbsp;&nbsp;Z:" + posz.toFixed(2));
     }
     if (!simPaused)
       simUpdateProgress();
