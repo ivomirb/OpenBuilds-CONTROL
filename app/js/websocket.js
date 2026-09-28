@@ -775,6 +775,7 @@ function initSocket() {
 
     // Only allow jogging during idle
     $('.jogbtn').attr('disabled', status.comms.connectionStatus != 2);
+    $('.dro').attr('disconnected', status.comms.connectionStatus < 2 || status.comms.connectionStatus == 6);
 
     // Allow typing on the console only during idle or alarm
     $("#command, #sendCommand").attr('disabled', status.comms.connectionStatus != 2 && status.comms.connectionStatus != 5);

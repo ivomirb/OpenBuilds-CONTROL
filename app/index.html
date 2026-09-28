@@ -810,7 +810,7 @@ Restore previous origins from history.">
                           <ul class="d-menu context drop-shadow" data-role="dropdown">
                             <li onclick="sendGcode('G0 G90 G21 X0 Y0')"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto XY Zero (Work Coord) (G0 X0 Y0)</a></li>
                             <li class="divider fg-gray bg-gray bd-gray"></li>
-                            <li class="disabled"><a href="#"><span style="font-size: 14px; font-weight: 800; color: orangered;">These commands can plunge down unsafely (use with caution)</span></a></li>
+                            <li class="disabled"><a href="#"><span style="font-size: 14px; font-weight: 800; color: orangered !important;">These commands can plunge down unsafely (use with caution)</span></a></li>
                             <li id="gotozeroWPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Work Coord) (G0 Z5, G0 X0 Y0, G0 Z0) (Retract Z to Work Coord Z5)</a></li>
                             <li id="gotozeroZmPosXYwPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Z Machine Coord, XY Work Coord) (G0 G53 Z<span class="coord">0</span>, G0 X0 Y0, G0 Z0) (Retract Z to Machine Coord)</a></li>
                             <li id="gotozeroMPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Machine Coord) (<span class="gcode">G0 G53 Z0, G0 G53 X0 Y0</span>)</a></li>
@@ -1022,13 +1022,13 @@ Restore previous origins from history.">
                   <button class="button light mini mb-1" onclick="feedOverride(100);">reset</button>
                   <input id="fro" data-on-stop="feedOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Feed: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed" style="width:64px; height:fit-content; vertical-align:top; margin-top:2px;"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed" style="width:64px; height:fit-content; vertical-align:top; padding-bottom:3px; margin-top:2px;"></span>
                 </div>
                 <div class="cell border-left bd-gray" id="trocell">
                   <button class="button light mini  mb-1" onclick="spindleOverride(100);">reset</button>
                   <input id="tro" data-on-stop="spindleOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Tool: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed" style="width:64px; height:fit-content; vertical-align:top; margin-top:2px;"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed" style="width:64px; height:fit-content; vertical-align:top; padding-bottom:3px; margin-top:2px;"></span>
                 </div>
               </div>
             </div>
