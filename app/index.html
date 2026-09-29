@@ -254,7 +254,7 @@
                     </select>
 
                     <button class="button small success float-right" onclick="selectPort()" id="connectBtn" type="button" style="margin-top:5px;" disabled>Connect</button>
-                    <button class="button small alert" style="display:none;" onclick="closePort()" id="disconnectBtn" type="button" style="margin: 5px;">Disconnect</button>
+                    <button class="button small alert" style="display:none; padding:0px 14px; margin:0 3px;" onclick="closePort()" id="disconnectBtn" type="button">Disconnect</button>
                     <button class="button small secondary disabled" disabled style="display:none; margin:5px;" id="flashBtn" type="button">Flashing: please wait...</button>
                     <button class="button small outline success float-right" onclick="scanNetwork();" id="scanBtn" type="button" style="margin:5px;">Scan Network</button>
 
@@ -276,54 +276,33 @@
               </div>
 
               <div class="group">
+                <button id="openGcodeBtn" onclick="loadJobFile()" class="ribbon-button" title="Open a G-code file">
+                  <span class="icon">
+                    <span class="fas fa-folder-open fg-amber"></span>
+                  </span>
+                  <span class="caption">Open<br>G-code</span>
+                </button>
+                <button id="reloadGcodeBtn" onclick="reloadJobFile()" class="ribbon-button disabled" title="Reload last G-Code file">
+                  <span class="icon">
+                    <span class="fas fa-undo-alt"></span>
+                  </span>
+                  <span class="caption">Reload<br>G-code</span>
+                </button>
                 <div>
-                  <!-- Still used with browser based Open - don't delete -->
-                  <button id="openGcodeBtn" class="ribbon-button dropdown-toggle" title="Open a GCODE file">
-                    <span class="icon">
-                      <span class="far fa-folder-open fg-amber"></span>
-                    </span>
-                    <span class="caption">Open<br>G-CODE</span>
+                  <button id="recentFilesBtn" class="ribbon-button dropdown-toggle" style="padding-left:10px; height:78px; margin-left:-4px;" title="Open recent G-code file">
                   </button>
-                  <ul class="ribbon-dropdown" data-role="dropdown" data-duration="100">
-                    <li class="btn-file"><a href="#"><input class="btn-file" id="file" type="file" accept=".gcode, .gc, .tap, .nc, .cnc" /><i class="far fa-folder-open fa-fw"></i> <b>Open GCODE</b> from File (*.gcode, *.gc, *.tap, *.nc, *.cnc)</a>
-                    <li class="disabled" id="reloadFile" onclick="socket.emit('reopenFile')"><a href="#"><i class="fas fa-undo-alt fa-fw"></i> Reload GCODE file</a> </li>
+                  <ul class="ribbon-dropdown drop-shadow no-checkmarks" data-role="dropdown" style="width:max-content; min-width:130px;">
+                    <li class="menu-title" id="recentFilesList" style2="height:26px;">Recent files
+                      <button id="clearRecentBtn" class="button small light" style="position:absolute; right:0px; height:100%; pointer-events:all;" title="Clear recent files list" onclick="socket.emit('clearRecentFiles')">
+                        <span class="fa fa-trash" style="vertical-align: baseline;"></span>
+                      </button>
                     </li>
-                    <li class="divider fg-gray"></li>
-
-                    <li class="" onclick="socket.emit('opencam', true);"><a href="#"><img width="16" src="img/openbuilds.svg"> OpenBuilds CAM</a></li>
-                    <li class="" onclick="socket.emit('lightburn', true);"><a href="#"><img width="16" src="affiliates/lightburn/lightburn.png"> Lightburn</a></li>
-                    <li class="" onclick="socket.emit('vectric', true);"><a href="#"><img width="16" src="affiliates/vectric/vectric.svg"> Vectric</a></li>
-
-                  </ul>
-                </div>
-
-                <div>
-                  <!-- Used in Electron only -->
-                  <button id="openGcodeBtnElectron19" class="ribbon-button dropdown-toggle" title="Open a GCODE file">
-                    <span class="icon">
-                      <span class="far fa-folder-open fg-amber"></span>
-                    </span>
-                    <span class="caption">Open<br>G-CODE</span>
-                  </button>
-                  <ul class="ribbon-dropdown" data-role="dropdown" data-duration="100">
-                    <li onclick="socket.emit('openFile')"><a href="#"><i class="far fa-folder-open fa-fw"></i> <b>Open GCODE</b> from File (*.gcode, *.gc, *.tap, *.nc, *.cnc)</a> </li>
-                    <li class="disabled" id="reloadFile19" onclick="socket.emit('reopenFile')"><a href="#"><i class="fas fa-undo-alt fa-fw"></i> Reload GCODE file</a> </li>
-                    <li class="divider fg-gray"></li>
-
-                    <li class="" onclick="socket.emit('opencam', true);"><a href="#"><img width="16" src="img/openbuilds.svg"> OpenBuilds CAM</a></li>
-                    <li class="" onclick="socket.emit('lightburn', true);"><a href="#"><img width="16" src="affiliates/lightburn/lightburn.png"> Lightburn</a></li>
-                    <li class="" onclick="socket.emit('vectric', true);"><a href="#"><img width="16" src="affiliates/vectric/vectric.svg"> Vectric</a></li>
-
                   </ul>
                 </div>
                 <span class="title">File</span>
               </div>
 
-
-
-
               <div class="group" id="controlBtnGrp">
-
 
                 <button id="runBtn" class="ribbon-button" onclick="runJobFile()" title="Run a Job">
                   <span class="icon">
@@ -547,7 +526,7 @@
                     <li onclick="disable3Dskybox = !disable3Dskybox; saveDiagnostics(); location.reload();" id="disable3DskyboxTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer Skybox/Fog</a></li>
                     <li onclick="disable3Drealtimepos = !disable3Drealtimepos; saveDiagnostics(); location.reload();" id="disable3DrealtimeposTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer Realtime Job Position
                         Indicator</a></li>
-                    <li onclick="disable3Dgcodepreview = !disable3Dgcodepreview; saveDiagnostics(); location.reload();" id="disable3DgcodepreviewTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer GCODE Preview</a></li>
+                    <li onclick="disable3Dgcodepreview = !disable3Dgcodepreview; saveDiagnostics(); location.reload();" id="disable3DgcodepreviewTick"><a href="#"><i class="mif-3d-rotation fa-fw"></i> Disable 3D Viewer G-code Preview</a></li>
                     <li class="divider"></li>
                     <li onclick="disableSerialLog = !disableSerialLog; saveDiagnostics(); location.reload();" id="disableSerialLogTick"><a href="#"><i class="fas fa-fw fa-terminal"></i> Disable Serial Log</a></li>
                     <li onclick="disableDROupdates = !disableDROupdates; saveDiagnostics(); location.reload();" id="disableDROupdatesTick"><a href="#"><i class="fas fa-fw fa-list-ol"></i> Disable DRO/Status Updates</a></li>
@@ -841,7 +820,7 @@ Restore previous origins from history.">
                           <ul class="d-menu context drop-shadow" data-role="dropdown">
                             <li onclick="sendGcode('G0 G90 G21 X0 Y0')"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto XY Zero (Work Coord) (G0 X0 Y0)</a></li>
                             <li class="divider fg-gray bg-gray bd-gray"></li>
-                            <li class="disabled"><a href="#"><span style="font-size: 14px; font-weight: 800; color: orangered;">These commands can plunge down unsafely (use with caution)</span></a></li>
+                            <li class="disabled"><a href="#"><span style="font-size: 14px; font-weight: 800; color: orangered !important;">These commands can plunge down unsafely (use with caution)</span></a></li>
                             <li id="gotozeroWPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Work Coord) (G0 Z5, G0 X0 Y0, G0 Z0) (Retract Z to Work Coord Z5)</a></li>
                             <li id="gotozeroZmPosXYwPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Z Machine Coord, XY Work Coord) (G0 G53 Z<span class="coord">0</span>, G0 X0 Y0, G0 Z0) (Retract Z to Machine Coord)</a></li>
                             <li id="gotozeroMPos"><a href="#"><span class="fas fa-chart-line fg-openbuilds icon"></span>Goto Zero (Machine Coord) (<span class="gcode">G0 G53 Z0, G0 G53 X0 Y0</span>)</a></li>
@@ -1053,13 +1032,13 @@ Restore previous origins from history.">
                   <button class="button light mini mb-1" onclick="feedOverride(100);">reset</button>
                   <input id="fro" data-on-stop="feedOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Feed: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed" style="width:64px; height:fit-content; vertical-align:top; margin-top:2px;"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realFeed" style="width:64px; height:fit-content; vertical-align:top; padding-bottom:3px; margin-top:2px;"></span>
                 </div>
                 <div class="cell border-left bd-gray" id="trocell">
                   <button class="button light mini  mb-1" onclick="spindleOverride(100);">reset</button>
                   <input id="tro" data-on-stop="spindleOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Tool: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
-                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed" style="width:64px; height:fit-content; vertical-align:top; margin-top:2px;"></span>
+                  <span class="tally text-small bg-openbuilds fg-white" id="realSpeed" style="width:64px; height:fit-content; vertical-align:top; padding-bottom:3px; margin-top:2px;"></span>
                 </div>
               </div>
             </div>
@@ -1072,7 +1051,7 @@ Restore previous origins from history.">
                   <li><a href="#tab-three" id="gcodeviewertab" onclick="fixRenderSize();"><i class="mif-3d-rotation fa-fw fg-darkCobalt" id="3dviewicon"></i><span id="3dviewlabel"> 3D View</span></a></li>
                   <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Log / Serial Console</a></li>
                   <li><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
-                  <li><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> GCODE Editor</a></li>
+                  <li><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
                 </ul>
 
                 <div class="content-holder">
@@ -1081,7 +1060,7 @@ Restore previous origins from history.">
                     <div class="fixed-bottom m-3 mb-9">
                       <form class="inline-form" id="commandform" autocomplete="off">
                         <input title="Tip: Press F6 anywhere on the CONTROL window to quickly jump to this input" data-prepend="&nbsp;<i class='fas fa-terminal'></i>" data-role="input" data-clear-button="false" data-role="input" id="command"
-                          type="text" autocomplete="on" class=" dark needs-connection" style="width:800px;" data-editable="true" placeholder="Enter GCODE/Serial commands here to send it to your machine" />
+                          type="text" autocomplete="on" class=" dark needs-connection" style="width:800px;" data-editable="true" placeholder="Enter G-code/Serial commands here to send it to your machine" />
                         <button id="sendCommand" class="button dark needs-connection" type="button" title="Execute command">
                           <i class="fa fa-play" style="margin-right: 10px;"></i> Send
                         </button>
@@ -1096,15 +1075,15 @@ Restore previous origins from history.">
 
                     <div class="fixed-bottom m-3 mb-9">
                       <!-- <form class="inline-form"> -->
-                      <button title="Update the 3D View with the edited GCODE" class="button success" onclick="parseGcodeInWebWorker(editor.getValue())"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
-                      <button title="Save GCODE to file" class="button primary" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
+                      <button title="Update the 3D View with the edited G-code" class="button success" onclick="parseGcodeInWebWorker(editor.getValue())"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
+                      <button title="Save G-code to file" class="button primary" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
                       <button title="Find and Replace" class="button dark" onclick="editor.execCommand('replace')"><i class="fas fa-search"></i> Find/Replace</button>&nbsp;
                       <button title="Select All" class="button dark" onclick="editor.execCommand('selectall')"><i class="far fa-check-square"></i> Select All</button>&nbsp;
                       <button title="Undo" class="button dark" onclick="editor.execCommand('undo')"><i class="fas fa-undo"></i> Undo</button>&nbsp;
                       <button title="Redo" class="button dark" onclick="editor.execCommand('redo')"><i class="fas fa-redo"></i> Redo</button>&nbsp;
                       <button title="Go to End" class="button dark" onclick="editor.execCommand('gotoend')"><i class="fas fa-chevron-down"></i></button>&nbsp;
                       <button title="Go to Start" class="button dark" onclick="editor.execCommand('gotostart')"><i class="fas fa-chevron-up"></i></button>&nbsp;
-                      <button title="Clear Editor" class="button dark" onclick="editor.execCommand('selectall'); editor.execCommand('del'); parseGcodeInWebWorker(editor.getValue()); loadedFileName = ''; setWindowTitle()"><i class="fas fa-eraser"></i>
+                      <button title="Clear Editor" class="button dark" onclick="clearGcode()"><i class="fas fa-eraser"></i>
                         Clear</button>&nbsp;
                       <!-- </form> -->
                     </div>
@@ -1182,11 +1161,11 @@ Restore previous origins from history.">
                         <div class="pos-relative" style="display:inline-block; margin-right:1px;">
                           <button class="button dark" title="Select Speed" style=""><span class="icon"><span class="fas fa-tachometer-alt"></span></span> <span class="caption"><span id="simspeedval">1</span>x</span></button>
                           <ul class="d-menu context drop-up" id="simSpeedMenu" data-role="dropdown" data-duration="100" style="margin-bottom:5px;">
-                            <li onclick="simSpeed(0.1)"><a href="#">0.1x</a></li>
-                            <li onclick="simSpeed(1)"><a href="#">1x</a></li>
-                            <li onclick="simSpeed(10)"><a href="#">10x</a></li>
-                            <li onclick="simSpeed(100)"><a href="#">100x</a></li>
-                            <li onclick="simSpeed(1000)"><a href="#">1000x</a></li>
+                            <li onclick="simSpeed(0.1)"><a style="padding:0px 26px;line-height:24px;height:24px;" href="#">0.1x</a></li>
+                            <li onclick="simSpeed(1)"><a style="padding:0px 26px;line-height:24px;height:24px;" href="#">1x</a></li>
+                            <li onclick="simSpeed(10)"><a style="padding:0px 26px;line-height:24px;height:24px;" href="#">10x</a></li>
+                            <li onclick="simSpeed(100)"><a style="padding:0px 26px;line-height:24px;height:24px;" href="#">100x</a></li>
+                            <li onclick="simSpeed(1000)"><a style="padding:0px 26px;line-height:24px;height:24px;" href="#">1000x</a></li>
                           </ul>
                         </div>
                       </div>

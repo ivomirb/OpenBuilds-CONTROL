@@ -50,7 +50,7 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   box-shadow: 2px 2px 2px 0 rgb(40 40 40 / 70%);
 }
 
-.theme_dark .ribbon-dropdown a {
+.theme_dark .ribbon-dropdown::not(.no-checkmarks) a {
   border-left: solid 1px #333;
 }
 
@@ -448,4 +448,14 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
 .theme_dark .button:focus {
   -webkit-box-shadow: 0 0 0 3px rgba(48, 48, 48, .45);
   box-shadow: 0 0 0 3px rgba(48, 48, 48, .45);
+}
+
+.theme_dark .jogcursorbtn:disabled,
+.dro[disconnected="true"] {
+  opacity:50%;
+}
+
+.theme_dark #grblSettingsTableView th {
+  background: #222;
+  box-shadow: inset 0 -2px 0 #aaa;
 }

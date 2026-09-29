@@ -127,7 +127,7 @@ function parseGcodeInWebWorker(gcode) {
               //console.log(timeConvert(timeremain));
               // output formattedTime to UI here
               $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-              printLog("<span class='fg-red'>[ GCODE Parser ]</span><span class='fg-darkGreen'> GCODE Preview Rendered Succesfully: Total lines: <b>" + object.userData.linePoints.length + "</b> / Estimated GCODE Run Time: <b>" + timeConvert(timeremain) + "</b>")
+              printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Total lines: <b>" + object.userData.linePoints.length + "</b> / Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
             }
           }, 200);
           $('#3dviewicon').removeClass('fa-pulse');
@@ -195,7 +195,7 @@ function resetConePosition() {
 
 function sim(fromLine, paused) {
   if (typeof(object) == 'undefined' || object.userData.linePoints.length == 0) {
-    var message = `No Gcode in Preview yet: Please load GCODE from the Open GCODE button first before running simulation`
+    var message = `No Gcode in Preview yet: Please load G-code from the Open G-code button first before running simulation`
     Metro.toast.create(message, null, 3000, 'bg-red');
     simstop()
   } else {

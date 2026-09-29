@@ -9,6 +9,9 @@ var bellstate = false;
 var waitingForStatus = false;
 var openDialogs = [];
 
+const MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
+
+var path = require("path");
 
 $(document).ready(function() {
   initSocket();
@@ -22,6 +25,8 @@ $(document).ready(function() {
   $("form").submit(function() {
     return false;
   });
+
+  socket.emit('refreshGui');
 });
 
 function showGrbl(bool, firmware) {
@@ -153,12 +158,12 @@ function initSocket() {
 
   socket.on('gcodeupload', function(data) {
     if (isJogWidget) return;
-    printLogModern('', "api", "Received new GCODE from API", "fg-darkGreen");
+    printLogModern('', "api", "Received new G-code from API", "fg-darkGreen");
     printLogModern('', "api", "API called window into focus", "fg-darkGreen");
 
-    if (data.gcode.length > 10000000) {
+    if (data.gcode.length > MAX_GCODE_IN_EDITOR) {
       gcode = data.gcode
-      editor.session.setValue("GCODE " + data.filename + " is too large (" + (data.gcode.length / 1024).toFixed(0) + "kB) to load into the GCODE Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it ");
+      editor.session.setValue("G-code " + data.filename + " is too large (" + (data.gcode.length / (1024*1024)).toFixed(1) + " MB) to load into the G-code Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it");
     } else {
       editor.session.setValue(data.gcode);
       gcode = false;
@@ -167,8 +172,8 @@ function initSocket() {
     loadedFileName = data.filename;
 
     setWindowTitle()
-    $('#reloadFile,#reloadFile19').attr('title', "Reload " + loadedFileName);
-    $('#reloadFile,#reloadFile19').removeClass('disabled');
+    $('#reloadGcodeBtn').attr('title', "Reload " + loadedFileName);
+    $('#reloadGcodeBtn').removeClass('disabled');
     parseGcodeInWebWorker(data.gcode)
     $('#controlTab').click()
     if (webgl) {
@@ -202,7 +207,7 @@ function initSocket() {
     // 0 = not connected
     // 1 = Connected, but not Playing yet
     // 2 = Connected, but not Playing yet
-    // 3 = Busy Streaming GCODE
+    // 3 = Busy Streaming G-code
     // 4 = Paused
     // 5 = Alarm State
     // 6 = Firmware Upgrade State
@@ -775,6 +780,7 @@ function initSocket() {
 
     // Only allow jogging during idle
     $('.jogbtn').attr('disabled', status.comms.connectionStatus != 2);
+    $('.dro').attr('disconnected', status.comms.connectionStatus < 2 || status.comms.connectionStatus == 6);
 
     // Allow typing on the console only during idle or alarm
     $("#command, #sendCommand").attr('disabled', status.comms.connectionStatus != 2 && status.comms.connectionStatus != 5);
@@ -921,6 +927,20 @@ function initSocket() {
   socket.on('captureWcsHistory', function(data) {
     if (!isJogWidget) {
      captureWcsHistoryInternal(data.position, data.wcs, data.name, data.tooltip, data.isRunJob);
+    }
+  });
+
+  socket.on('recentFiles', function(data) {
+    if (!isJogWidget) {
+      $('#recentFilesList').nextAll().remove();
+
+      var elements = ``;
+      for (var i = 0; i < data.length; i++) {
+        elements += `<li title="` + data[i] +`"><a href="#" onclick="reloadJobFile('` + data[i].replaceAll('\\', '\\\\') + 
+          `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + path.basename(data[i]) + `</a></li>\n`;
+      }
+      $('#recentFilesList').after(elements);
+      EnableViaClass('#clearRecentBtn', data.length > 0);
     }
   });
 

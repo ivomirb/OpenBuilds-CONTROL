@@ -68,6 +68,10 @@
   cursor: pointer;
 }
 
+.dro[disconnected="true"] {
+  opacity:65%;
+}
+
 .droInput {
   display: block;
   text-decoration: none;
@@ -210,10 +214,10 @@ hr {
 }
 
 /* Blanket graying out of directly or indirectly disabled elements*/
-.disabled:not(.success, .alert, .warning, .info, .secondary),
-[disabled]:not(.success, .alert, .warning, .info, .secondary),
-.disabled *:not(.success, .alert, .warning, .info, .secondary),
-[disabled] *:not(.success, .alert, .warning, .info, .secondary) {
+.disabled:not(.success, .alert, .warning, .info, .secondary, .jogcursorbtn),
+[disabled]:not(.success, .alert, .warning, .info, .secondary, .jogcursorbtn),
+.disabled:not(.success, .alert, .warning, .info, .secondary, .jogcursorbtn) *:not(.success, .alert, .warning, .info, .secondary, .jogcursorbtn),
+[disabled]:not(.success, .alert, .warning, .info, .secondary, .jogcursorbtn) *:not(.success, .alert, .warning, .info, .secondary, .jogcursorbtn) {
   color: #999 !important;
 }
 
@@ -223,4 +227,9 @@ hr {
 [disabled] .fg-openbuilds:not(.success, .info),
 {
   color: #999 !important;
+}
+
+/* The default margin of 0.65rem rounds weird and causes misalignment */
+.ribbon-button.dropdown-toggle::before {
+    margin-left: -10px;
 }

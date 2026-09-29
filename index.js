@@ -42,12 +42,14 @@ config.posDecimals = process.env.DRO_DECIMALS || 3;
 config.grblWaitTime = 0.5;
 config.singleCommandMode = true; // set to false to send as many commands as will fit in the RX buffer
 config.aggressiveHomeReset = true;
+config.maxRecentFiles = 10;
 
 // Individual settings are stored and restores wholesale.
 // If you add a new sub-field to the initial settings, it will be destroyed on load
 var persistentConfig = {
   autoStart: true,
   defaultPaths: {},
+  recentFiles: [],
   persistDisplayMode: false,
 };
 
@@ -199,10 +201,7 @@ const {
 electronApp.commandLine.appendSwitch('ignore-gpu-blacklist')
 electronApp.commandLine.appendSwitch('enable-gpu-rasterization')
 electronApp.commandLine.appendSwitch('enable-zero-copy')
-
-if (isElectron()) {
-  debug_log("Local User Data: " + electronApp.getPath('userData'))
-}
+debug_log("Local User Data: " + electronApp.getPath('userData'))
 
 const BrowserWindow = electron.BrowserWindow;
 const Tray = electron.Tray;
@@ -216,7 +215,7 @@ var autoUpdater
 
 
 var updateIsDownloading = false;
-if (isElectron()) {
+{
   autoUpdater = require("electron-updater").autoUpdater
   var availversion = '0.0.0'
 
@@ -289,17 +288,11 @@ if (isElectron()) {
     }, 1000 * 60 * 60 * 8) // 8hrs before alerting again if it was snoozed
     updateIsDownloading = false;
   });
-} else {
-  debug_log("Running outside Electron: Disabled AutoUpdater")
 }
 
-if (isElectron()) {
-  var uploadsDir = electronApp.getPath('userData') + '/upload/';
-  var configDir = electronApp.getPath('userData');
-} else {
-  var uploadsDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
-  var configDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : '/var/local')
-}
+var uploadsDir = electronApp.getPath('userData') + '/upload/';
+var configDir = electronApp.getPath('userData');
+
 var jobStartTime = false;
 var jobIsJob = false;
 var jobStatusInternal = 0; // 0 - no job, 1 - running, 2 - jog job running, 3 - wait for idle, 4 - jog job waiting for idle
@@ -689,7 +682,7 @@ app.post('/upload', function(req, res) {
   form.on('file', function(name, file) {
     debug_log('Uploaded ' + file.filepath);
     showJogWindow()
-    readFile(file.filepath)
+    readFile(file.filepath, true)
   });
 
   form.on('aborted', function() {
@@ -1326,10 +1319,29 @@ io.on("connection", function(socket) {
   })
 
   // generic function for reading a text file
-  socket.on("readTextFile", function(filePath, callback) {
+  socket.on("readTextFile", function(filePath, params, callback) {
     fs.readFile(filePath, 'utf8',
       function(err, data) {
-        callback(err ? err.toString() : "", data);
+        if (params.showErrorDlg) {
+          if (err) {
+            dialog.showMessageBox(jogWindow, {
+              type: 'error',
+              buttons: ['OK'],
+              message: err.toString()
+            });
+          } else {
+            if (params.setJobStorage) {
+              jobStorage = data;
+            }
+            callback(data);
+          }
+        }
+        else {
+          if (params.setJobStorage) {
+            jobStorage = data;
+          }
+          callback(err ? err.toString() : "", data);
+        }
       });
   })
 
@@ -1337,9 +1349,9 @@ io.on("connection", function(socket) {
     var defaultPath = persistentConfig.defaultPaths["gcode"] || persistentConfig.defaultPaths["last"];
 
     dialog.showOpenDialog(jogWindow, {
-      title: "Open GCODE",
+      title: "Open G-code",
       filters: [
-        {name: "GCODE files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
+        {name: "G-code files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
         {name: "All files", extensions: ["*"]},
       ],
       defaultPath: defaultPath,
@@ -1353,7 +1365,7 @@ io.on("connection", function(socket) {
         persistentConfig.defaultPaths["last"] = path.dirname(openFilePath);
         savePersistentConfig();
         debug_log("path" + openFilePath);
-        readFile(openFilePath);
+        readFile(openFilePath, true, addRecentFile);
       }
 
     }).catch(err => {
@@ -1361,12 +1373,15 @@ io.on("connection", function(socket) {
     })
   })
 
-  socket.on("reopenFile", function() {
-    if (status.misc.lastFilePath !== "") {
-      debug_log("path" + status.misc.lastFilePath);
-      readFile(status.misc.lastFilePath);
+  socket.on("reopenFile", function(filePath) {
+    filePath = filePath || status.misc.lastFilePath;
+    if (filePath !== "") {
+      debug_log("path" + filePath);
+      readFile(filePath, true, addRecentFile);
     }
   })
+
+  socket.on("clearRecentFiles", clearRecentFiles);
 
   socket.on("openInterfaceDir", function(data) {
     dialog.showOpenDialog(jogWindow, {
@@ -1387,41 +1402,6 @@ io.on("connection", function(socket) {
       shell
     } = require('electron')
     shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
-  });
-
-  socket.on("openbuildspartstore", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CONTROL')
-  });
-
-  socket.on("carveco", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://carveco.com/carveco-software-range/?ref=openbuilds')
-  });
-
-  socket.on("fabber", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://www.getfabber.com/')
-  });
-
-  socket.on("lightburn", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://lightburnsoftware.com/')
-  });
-
-  socket.on("vectric", function(data) {
-    const {
-      shell
-    } = require('electron')
-    shell.openExternal('https://www.vectric.com/')
   });
 
   socket.on("opencam", function(data) {
@@ -2264,25 +2244,35 @@ io.on("connection", function(socket) {
     io.sockets.emit('captureWcsHistory', data);
   });
 
+  socket.on('refreshGui', function() {
+    if (uploadedgcode) {
+      var payload = {
+        gcode: uploadedgcode,
+        filename: path.basename(status.misc.lastFilePath)
+      }
+      io.sockets.emit('gcodeupload', payload);
+    }
+    io.sockets.emit('recentFiles', persistentConfig.recentFiles);
+  });
+
 });
 
-function readFile(filePath) {
+function readFile(filePath, showErrorDlg, onSuccess) {
   if (filePath) {
     if (filePath.length > 1) {
-      var filename = path.parse(filePath)
-      filename = filename.name + filename.ext
       debug_log('readfile: ' + filePath)
       fs.readFile(filePath, 'utf8',
         function(err, data) {
           if (err) {
-            debug_log(err);
-            var output = {
-              'command': '',
-              'response': "ERROR: File Upload Failed"
+            if (showErrorDlg) {
+              dialog.showMessageBox(jogWindow, {
+                type: 'error',
+                buttons: ['OK'],
+                message: err.toString()
+              });
             }
-            uploadedgcode = "";
-          }
-          if (data) {
+            debug_log(err);
+          } else if (data) {
             if (filePath.endsWith('.obc')) { // OpenBuildsCAM Workspace
               uploadedworkspace = data;
               const {
@@ -2290,19 +2280,43 @@ function readFile(filePath) {
               } = require('electron')
               shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
             } else { // GCODE
-              var payload = {
-                gcode: data,
-                filename: filename
-              }
-              io.sockets.emit('gcodeupload', payload);
               uploadedgcode = data;
               status.misc.lastFilePath = filePath;
-              return data
+              var payload = {
+                gcode: uploadedgcode,
+                filename: path.basename(status.misc.lastFilePath)
+              }
+              io.sockets.emit('gcodeupload', payload);
+              if (onSuccess) {
+                onSuccess(filePath, data);
+              }
             }
           }
         });
     }
   }
+}
+
+function addRecentFile(filePath) {
+  var file_path = filePath.toLowerCase();
+  var index = persistentConfig.recentFiles.findIndex(x => x.toLowerCase() == file_path);
+  if (index == 0 && persistentConfig.recentFiles[0] == filePath) return;
+
+  if (index >= 0) {
+    persistentConfig.recentFiles.splice(index, 1);
+  }
+  persistentConfig.recentFiles.unshift(filePath);
+  if (persistentConfig.recentFiles.length > config.maxRecentFiles) {
+    persistentConfig.recentFiles.length = config.maxRecentFiles;
+  }
+  savePersistentConfig();
+  io.sockets.emit('recentFiles', persistentConfig.recentFiles);
+}
+
+function clearRecentFiles() {
+  persistentConfig.recentFiles = [];
+  savePersistentConfig();
+  io.sockets.emit('recentFiles', persistentConfig.recentFiles);
 }
 
 function machineSendRealtime(gcode) {
@@ -2367,7 +2381,7 @@ function runJob(object) {
 
   jobIsJob = object.isJob;
   jobStartTime = new Date().getTime();
-  if (object.isJob && data.length < 20000) {
+  if (object.isJob) {
     uploadedgcode = data;
   }
 
@@ -2955,20 +2969,10 @@ function showJogWindow() {
   jogWindow.setAlwaysOnTop(false);
 }
 
-// Electron
-function isElectron() {
-  if (typeof window !== 'undefined' && window.process && window.process.type === 'renderer') {
-    return true;
-  }
-  if (typeof process !== 'undefined' && process.versions && !!process.versions.electron) {
-    return true;
-  }
-  return false;
-}
-
 loadPersistentConfig();
 
-if (isElectron()) {
+// Electron
+{
   const gotTheLock = electronApp.requestSingleInstanceLock()
   var lauchGUI = true;
   if (!gotTheLock) {
@@ -2992,7 +2996,7 @@ if (isElectron()) {
 
       var openFilePath = commandLine.find(checkFileType);
       if (openFilePath !== "") {
-        readFile(openFilePath);
+        readFile(openFilePath, false);
         if (openFilePath !== undefined) {
           if (openFilePath.endsWith('.obc')) {
             lauchGUI = false;
@@ -3034,7 +3038,7 @@ if (isElectron()) {
           var openFilePath = process.argv[1];
           if (openFilePath !== "") {
            debug_log("path" + openFilePath);
-            readFile(openFilePath);
+            readFile(openFilePath, false);
           }
         }
       }
@@ -3196,6 +3200,7 @@ if (isElectron()) {
         electronApp.dock.setMenu(dockMenu)
       };
 
+      console.log("Created tray icon");
     }
 
     function createJogWindow() {
@@ -3301,16 +3306,6 @@ if (isElectron()) {
       })
     }
   }
-} else { // if its not running under Electron, lets get Chrome up.
-  var isPi = require('detect-rpi');
-  if (isPi()) {
-    DEBUG = true;
-    debug_log('Running on Raspberry Pi!');
-    status.driver.operatingsystem = 'rpi'
-    startChrome();
-  } else {
-    debug_log("Running under NodeJS...");
-  }
 }
 
 function isJson(item) {
@@ -3329,21 +3324,6 @@ function isJson(item) {
   }
 
   return false;
-}
-
-function startChrome() {
-  if (status.driver.operatingsystem == 'rpi') {
-    const {
-      spawn
-    } = require('child_process');
-    const chrome = spawn('chromium-browser', [`-app=http://127.0.0.1:${config.webPort}`]);
-    chrome.on('close', (code) => {
-      debug_log(`Chromium process exited with code ${code}`);
-      process.exit(0);
-    });
-  } else {
-    debug_log('Not a Raspberry Pi. Please use Electron Instead');
-  }
 }
 
 // Interface Programming
