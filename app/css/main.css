@@ -287,33 +287,33 @@ select {
 
 /* Improvements to the settings table: allow adding a filter before the search box, scroll only the table rows  */
 #grblSettingsTableView .table-search-block {
-	flex: 1;
+  flex: 1;
 }
 
 #grblSettingsTableView .table-top {
-	display: flex;
-	flex-direction: row;
-	flex-wrap: nowrap;
-	column-gap: 15px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  column-gap: 15px;
 }
 
 #grblSettingsTableView .table-container {
-	overflow-y: scroll;
-	max-height: calc(100vh - 330px);
+  overflow-y: scroll;
+  max-height: calc(100vh - 330px);
 }
 
 #grblSettingsTableView thead {
-	border-bottom: 0px;
+  border-bottom: 0px;
 }
 
 #grblSettingsTableView th {
-	position: sticky;
-	top: 0px;
-	z-index: 1;
-	background: #fff;
-	box-shadow: inset 0 -2px 0 #ddd;
+  position: sticky;
+  top: 0px;
+  z-index: 1;
+  background: #fff;
+  box-shadow: inset 0 -2px 0 #ddd;
 }
 
 #grblSettingsTableView .table-bottom {
-	display: none;
+  display: none;
 }
