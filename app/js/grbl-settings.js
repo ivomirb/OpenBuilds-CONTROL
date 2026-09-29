@@ -1,5 +1,6 @@
 var settingsUIConstructed = false;
 var editedGrblParams = {};
+var settingsFilterIndex;
 const prioritySettings = ["$22"]; // change homing setting first because it can prevent soft limits from being set (grblHAL)
 
 const backupFileFilters = [
@@ -16,10 +17,10 @@ function loadGrblBackupFile() {
   };
 
   invokeOpenDialogReadFile(loadFileParams).then((data) => {
-		editedGrblParams = {};
-		$("#grblSettingsAdvTab").click();
-		$('#settingsModifiedFilter:checkbox').prop('checked', false);
-		toggleModifiedFilter(false);
+    editedGrblParams = {};
+    $("#grblSettingsAdvTab").click();
+    $('#settingsModifiedFilter:checkbox').prop('checked', false);
+    toggleModifiedFilter(false);
 
     var data = data.split("\n");
     for (var i = 0; i < data.length; i++) {
@@ -36,10 +37,10 @@ function loadGrblBackupFile() {
       }
     }
 
-		setTimeout( () => {
-		  updateDirSettingChecks();
-			checkifchanged();
-		}, 0);
+    setTimeout( () => {
+      updateDirSettingChecks();
+      checkifchanged();
+    }, 0);
   });
 }
 
@@ -109,9 +110,9 @@ function restoreAutoBackup(index) {
   // Retrieve grblParams from the backup
   const grblParamsBackup = selectedBackup.grblParams;
 
-	editedGrblParams = {};
+  editedGrblParams = {};
   $("#grblSettingsAdvTab").click();
-	$('#settingsModifiedFilter:checkbox').prop('checked', false);
+  $('#settingsModifiedFilter:checkbox').prop('checked', false);
   toggleModifiedFilter(false);
 
   // Iterate through the keys in the grblParams object and apply them using jQuery
@@ -140,10 +141,10 @@ function restoreAutoBackup(index) {
     }
   }
 
-		setTimeout( () => {
-		  updateDirSettingChecks();
-			checkifchanged();
-		}, 0);
+    setTimeout( () => {
+      updateDirSettingChecks();
+      checkifchanged();
+    }, 0);
 }
 
 
@@ -239,7 +240,7 @@ function grblSaveSettings() {
         clearInterval(sendInterval);
         grblParams = {};
         toSaveCommands = [];
-			  setTimeout(askToResetOnGrblSettingsChange, 1000); // Just to show settings was written
+        setTimeout(askToResetOnGrblSettingsChange, 1000); // Just to show settings was written
       }
     }, 400); // send another command every 400ms
   }
@@ -506,6 +507,8 @@ function grblPopulate() {
   </nav>
 </form>
     `
+
+  settingsFilterIndex = undefined;
   $('#grblconfig').append(template);
   settingsUIConstructed = false;
 
@@ -871,15 +874,13 @@ function setup_settings_table() {
   setTimeout(checkifchanged, 0);
 }
 
-var settingsFilterIndex;
-
 function toggleModifiedFilter(checked) {
   var table = $('#grblMetroTable').data('table');
   if (checked) {
     settingsFilterIndex = table.addFilter((row) => editedGrblParams.hasOwnProperty(row[0]), true);
   } else if (settingsFilterIndex != undefined) {
     table.removeFilter(settingsFilterIndex, true);
-		settingsFilterIndex = undefined;
+    settingsFilterIndex = undefined;
   }
 }
 
@@ -888,10 +889,10 @@ function onTableDraw() {
 }
 
 function onTableCreate() {
-	// add filter checkbox directly before the search bar
+  // add filter checkbox directly before the search bar
   $('#grblSettingsTableView .table-top').prepend(`
-			<input type="checkbox" data-role="switch" data-caption="Show Modified" id="settingsModifiedFilter"
-			style="padding-right:10px;" onchange="toggleModifiedFilter(this.checked)"/>`);
+      <input type="checkbox" data-role="switch" data-caption="Show Modified" id="settingsModifiedFilter"
+      style="padding-right:10px;" onchange="toggleModifiedFilter(this.checked)"/>`);
   setup_settings_table();
 }
 

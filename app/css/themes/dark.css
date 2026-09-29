@@ -456,6 +456,6 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
 }
 
 .theme_dark #grblSettingsTableView th {
-	background: #222;
-	box-shadow: inset 0 -2px 0 #aaa;
+  background: #222;
+  box-shadow: inset 0 -2px 0 #aaa;
 }
