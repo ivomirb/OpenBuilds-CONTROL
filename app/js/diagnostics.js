@@ -3,7 +3,7 @@ var disable3Dcontrols = false;
 var disable3Dskybox = false;
 var disable3Drealtimepos = false;
 var disable3Dgcodepreview = false;
-var disableSerialLog = false; // todo also hide tab when set to true
+var disableSerialLog = false;
 var disableDROupdates = false;
 var disableAggressiveHomeReset = false;
 var disable4thAxis = false;
@@ -84,8 +84,6 @@ function initDiagnostics() {
     if (JSON.parse(localStorage.getItem('disableSerialLog')) == true) {
       disableSerialLog = true;
       $('#disableSerialLogTick').addClass("checked");
-      $('#consoletab').hide()
-      $('#gcodeeditortab').click()
     }
   } else {
     disableSerialLog = false;

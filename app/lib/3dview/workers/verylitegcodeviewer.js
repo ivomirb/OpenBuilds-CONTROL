@@ -1,11 +1,56 @@
 self.addEventListener('message', function(e) {
-  // console.log("New message received by worker", e.data.data.length)
   importScripts("/lib/threejs/three.min.js");
-  var data = e.data;
-  var result = createObjectFromGCode(e.data.data)
-  result = result;
-  // console.log(result)
-  self.postMessage(JSON.stringify(result));
+  const object = createObjectFromGCode(e.data.data);
+
+  // use transferrable arrays for the raw data, which avoids serializing across threads
+  const gArray = new Int8Array(new ArrayBuffer(object.linePoints.length));
+  const srcArray = new Int32Array(new ArrayBuffer(object.linePoints.length * 4));
+  const offsetArray = new Int32Array(new ArrayBuffer(object.linePoints.length * 4));
+  const startArray = new Float32Array(new ArrayBuffer(object.linePoints.length * 4));
+  const durationArray = new Float32Array(new ArrayBuffer(object.linePoints.length * 4));
+  const xArray = new Float32Array(new ArrayBuffer(object.linePoints.length * 4));
+  const yArray = new Float32Array(new ArrayBuffer(object.linePoints.length * 4));
+  const zArray = new Float32Array(new ArrayBuffer(object.linePoints.length * 4));
+  const fakeArray = new Int8Array(new ArrayBuffer(object.linePoints.length));
+
+  for (var i = 0; i < object.linePoints.length; i++) {
+    const point = object.linePoints[i];
+    gArray[i] = point.g;
+    srcArray[i] = point.src;
+    offsetArray[i] = point.offset;
+    startArray[i] = point.startTime;
+    durationArray[i] = point.timeMins;
+    xArray[i] = point.x;
+    yArray[i] = point.y;
+    zArray[i] = point.z;
+    fakeArray[i] = point.fake ? 1 : 0;
+  }
+
+  var result = {
+    pointCount: object.linePoints.length,
+    inch: object.inch,
+    totalTime: object.totalTime,
+    gArray: gArray,
+    srcArray: srcArray,
+    offsetArray: offsetArray,
+    startArray: startArray,
+    durationArray: durationArray,
+    xArray: xArray,
+    yArray: yArray,
+    zArray: zArray,
+    fakeArray: fakeArray,
+  };
+
+  self.postMessage(result, [
+    gArray.buffer,
+    srcArray.buffer,
+    offsetArray.buffer,
+    startArray.buffer,
+    durationArray.buffer,
+    xArray.buffer,
+    yArray.buffer,
+    zArray.buffer,
+    fakeArray.buffer]);
 }, false);
 
 // This is a simplified and updated version of http://gcode.joewalnes.com/
@@ -42,8 +87,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
     this.lastFeedrate = null;
     this.isUnitsMm = true;
 
-    this.parseLine = function(text, info) {
-      // console.log("LINE: " + text)
+    this.parseLine = function(text, indx, offset) {
       var origtext = text;
       // remove line numbers if exist
       if (text.match(/^N/i)) {
@@ -70,7 +114,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
         // make sure to remove inline comments
         text = text.replace(/\(.*?\)/g, "");
       }
-      //console.log("gcode txt:", text);
 
       if (text && !isComment) {
         text = text.replace(/(;|\().*$/, ""); // ; or () trailing  // strip off end of line comment
@@ -108,20 +151,17 @@ GCodeParser = function(handlers, modecmdhandlers) {
             'cmd': cmd,
             'text': text,
             'origtext': origtext,
-            'indx': info,
+            'indx': indx,
+            'offset': offset,
             'isComment': isComment,
             'feedrate': null
           };
-          // console.log("args:", args);
           if (tokens.length > 1 && !isComment) {
             tokens.splice(1).forEach(function(token) {
-              //console.log("token:", token);
               if (token && token.length > 0) {
                 var key = token[0].toLowerCase();
                 var value = parseFloat(token.substring(1));
                 args[key] = value;
-              } else {
-                //console.log("couldn't parse token in foreach. weird:", token);
               }
             });
           }
@@ -129,11 +169,8 @@ GCodeParser = function(handlers, modecmdhandlers) {
           // don't save if saw a comment
           if (!args.isComment) {
             this.lastArgs = args;
-            //console.log("just saved lastArgs for next use:", this.lastArgs);
-          } else {
-            //console.log("this was a comment, so didn't save lastArgs");
           }
-          //console.log("calling handler: cmd:", cmd, "args:", args, "info:", info);
+
           if (handler) {
             // scan for feedrate
             if (args.text.match(/F([\d.]+)/i)) {
@@ -157,7 +194,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
             }
 
             if (args.text.match(/T([\d.]+)/i)) {
-              console.log("New Tool: ", args.text)
               // we have a new S-Value
               var tool = parseFloat(RegExp.$1);
               args.tool = tool;
@@ -166,8 +202,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
               // use tool from prior lines
               args.tool = this.lasttool;
             }
-            //console.log("about to call handler. args:", args, "info:", info, "this:", this);
-            return handler(args, info, this);
+            return handler(args, indx, this);
           } else {
             console.error("No handler for gcode command!!!");
           }
@@ -183,44 +218,50 @@ GCodeParser = function(handlers, modecmdhandlers) {
           'cmd': 'empty or comment',
           'text': text,
           'origtext': origtext,
-          'indx': info,
+          'indx': indx,
+          'offset': offset,
           'isComment': isComment
         };
         var handler = this.handlers['default'];
-        return handler(args, info, this);
+        return handler(args, indx, this);
       }
     }
 
     this.parse = function(gcode) {
-      // console.log(gcode)
+      var offset = 0;
+      var regex = /\r{0,1}\n/g;
+      var progress = 0;
+      var indx = 0;
+      while (true) {
+        regex.lastIndex = offset;
+        var end = regex.exec(gcode);
+        var line = gcode.slice(offset, end ? end.index : undefined);
 
-
-
-      var lines = gcode.split(/\r{0,1}\n/);
-      // var lines = gcode
-
-      for (var i = 0; i < lines.length; i++) {
-
-        if (i % 100 === 0) {
-          var progress = ((i / lines.length) * 100).toFixed(0)
-          self.postMessage({
-            progress: progress,
-          });
+        if (indx % 100 === 0) {
+          const p = Math.floor((offset / gcode.length) * 100);
+          if (p > progress) {
+            self.postMessage({
+              progress: p,
+            });
+            progress = p;
+          }
         }
 
-
-        if (this.parseLine(lines[i], i) === false) {
+        if (this.parseLine(line, indx, offset) === false || !end) {
           break;
         }
+        indx++;
+        offset = end.index + end[0].length;
       }
-
+      self.postMessage({
+        progress: 100,
+      });
     }
   },
   colorG0 = 0x00cc00, //bootstrap color
   colorG1 = 0xcc0000,
   colorG2 = 0x0000cc,
   createObjectFromGCode = function(gcode) {
-    // console.log(gcode)
 
     // Reset Starting Point
     lastLine = {
@@ -245,13 +286,8 @@ GCodeParser = function(handlers, modecmdhandlers) {
     }
 
     onUnitsChanged = function() {
-      //console.log("onUnitsChanged");
-      // we need to publish back the units
       var units = "mm";
       if (!this.isUnitsMm) units = "inch";
-      // $('.com-chilipeppr-widget-3dviewer-units-indicator').text(units);
-      // console.log("USING UNITS:" + units)
-
     }
     this.offsetG92 = {
       x: 0,
@@ -273,9 +309,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
     this.arcPlane = "G17";
 
     this.drawArc = function(aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
-      //console.log("drawArc:", aX, aY, aZ, aRadius, aStartAngle, aEndAngle, aClockwise);
       var ac = new THREE.ArcCurve(aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise);
-      //console.log("ac:", ac);
       var acmat = new THREE.LineBasicMaterial({
         color: colorG2,
         opacity: 0.5,
@@ -285,7 +319,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
       var ctr = 0;
       var points = []
       ac.getPoints(20).forEach(function(v) {
-        //console.log(v);
         var z = (((endaZ - aZ) / 20) * ctr) + aZ;
         switch (plane) {
           case "G18":
@@ -321,7 +354,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
         case "G18": { // ZX
           var radius = Math.sqrt(p1deltaX*p1deltaX + p1deltaZ*p1deltaZ);
           var radius2 = Math.sqrt(p2deltaX*p2deltaX + p2deltaZ*p2deltaZ);
-          //console.log("radius:", radius);
 
           if (Math.abs(radius - radius2) > 0.01)
             console.log("Radiuses not equal. r1:", radius, ", r2:", radius2, " with args:", args, "difference:", Math.abs(radius - radius2));
@@ -337,7 +369,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
         case "G19": { // YZ
           var radius = Math.sqrt(p1deltaY*p1deltaY + p1deltaZ*p1deltaZ);
           var radius2 = Math.sqrt(p2deltaY*p2deltaY + p2deltaZ*p2deltaZ);
-          //console.log("radius:", radius);
 
           if (Math.abs(radius - radius2) > 0.01)
             console.log("Radiuses not equal. r1:", radius, ", r2:", radius2, " with args:", args, "difference:", Math.abs(radius - radius2));
@@ -352,7 +383,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
         default: { // XY
           var radius = Math.sqrt(p1deltaX*p1deltaX + p1deltaY*p1deltaY);
           var radius2 = Math.sqrt(p2deltaX*p2deltaX+p2deltaY*p2deltaY);
-          //console.log("radius:", radius);
 
           if (Math.abs(radius - radius2) > 0.01)
             console.log("Radiuses not equal. r1:", radius, ", r2:", radius2, " with args:", args, "difference:", Math.abs(radius - radius2));
@@ -368,26 +398,17 @@ GCodeParser = function(handlers, modecmdhandlers) {
     };
 
     this.addSegment = function(p1, p2, args) {
-
-      // console.log(p1, p2, args)
-
        // replace NaNs with default values
        var vp2 = new THREE.Vector3(isNaN(p2.x) ? 0 : p2.x, isNaN(p2.y) ? 0 : p2.y, isNaN(p2.z) ? 0 : p2.z);
        var vp1 = new THREE.Vector3(isNaN(p1.x) ? vp2.x : p1.x, isNaN(p1.y) ? vp2.y : p1.y, isNaN(p1.z) ? vp2.z : p1.z);
 
       if (p2.arc) {
-        //console.log("");
-        //console.log("drawing arc. p1:", vp1, ", p2:", vp2);
-
         var vpArc;
 
         // if this is an R arc gcode command, we're given the radius, so we
         // don't have to calculate it. however we need to determine center
         // of arc
         if (args.r != null) {
-          //console.log("looks like we have an arc with R specified. args:", args);
-          //console.log("anglepArcp1:", anglepArcp1, "anglepArcp2:", anglepArcp2);
-
           radius = parseFloat(args.r);
 
           // First, find the point halfway between your two points.  We'll call it p3
@@ -448,7 +469,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
         } else {
           // this code deals with IJK gcode commands
           vpArc = new THREE.Vector3(p2.arci, p2.arcj, p2.arck);
-          //console.log("vpArc:", vpArc);
         }
 
         var threeObjArc = this.drawArcFrom2PtsAndCenter(vp1, vp2, vpArc, args);
@@ -483,6 +503,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
         if (linePoints.length == 0) {
           linePoints.push({
             src: args.indx,
+            offset: args.offset,
             x: threeObjArc.userData.points[0].x,
             y: threeObjArc.userData.points[0].y,
             z: threeObjArc.userData.points[0].z,
@@ -494,6 +515,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
         for (var i = 1; i < threeObjArc.userData.points.length; i++) {
           linePoints.push({
             src: args.indx,
+            offset: args.offset,
             x: threeObjArc.userData.points[i].x,
             y: threeObjArc.userData.points[i].y,
             z: threeObjArc.userData.points[i].z,
@@ -531,6 +553,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
           startTime: this.totalTime,
           timeMins: timeMinutes,
           src: args.indx,
+          offset: args.offset,
           x: p2.x,
           y: p2.y,
           z: p2.z,
@@ -572,6 +595,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
         startTime: this.totalTime,
         timeMins: 0,
         src: args.indx,
+        offset: args.offset,
         x: lastLine.x,
         y: lastLine.y,
         z: lastLine.z,
@@ -591,7 +615,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
             cofg.addFakeSegment(args);
             return;
           }
-          //console.log("G0", args);
           var newLine = {
             x: args.x !== undefined ? cofg.absolute(lastLine.x, args.x) + cofg.offsetG92.x : lastLine.x,
             y: args.y !== undefined ? cofg.absolute(lastLine.y, args.y) + cofg.offsetG92.y : lastLine.y,
@@ -603,7 +626,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
           };
           newLine.g0 = true;
           cofg.addSegment(lastLine, newLine, args);
-          //console.log("G0", lastLine, newLine, args, cofg.offsetG92);
           lastLine = newLine;
         },
         G1: function(args, indx) {
@@ -629,7 +651,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
           };
           newLine.g1 = true;
           cofg.addSegment(lastLine, newLine, args);
-          //console.log("G1", lastLine, newLine, args, cofg.offsetG92);
           lastLine = newLine;
         },
         G2: function(args, indx, gcp) {
@@ -637,7 +658,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
             cofg.addFakeSegment(args);
             return;
           }
-          //console.log(args, indx, gcp)
           /* this is an arc move from lastLine's xy to the new xy. we'll
           show it as a light gray line, but we'll also sub-render the
           arc itself by figuring out the sub-segments . */
@@ -655,8 +675,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
             arcr: args.r ? args.r : null,
           };
 
-          //console.log("G2 newLine:", newLine);
-          //newLine.g2 = true;
           newLine.arc = true;
           newLine.clockwise = true;
           if (args.clockwise === false) {
@@ -665,9 +683,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
             newLine.clockwise = true
           }
           cofg.addSegment(lastLine, newLine, args);
-          //console.log("G2", lastLine, newLine, args, cofg.offsetG92);
           lastLine = newLine;
-          //console.log("G2. args:", args);
         },
         G3: function(args, indx, gcp) {
           /* this is an arc move from lastLine's xy to the new xy. same
@@ -703,9 +719,7 @@ GCodeParser = function(handlers, modecmdhandlers) {
           cofg.addFakeSegment(args);
         },
 
-        'default': function(args, info) {
-          //if (!args.isComment)
-          //console.log('Unknown command:', args.cmd, args, info);
+        'default': function(args, indx) {
           cofg.addFakeSegment(args);
         },
       },
@@ -713,17 +727,14 @@ GCodeParser = function(handlers, modecmdhandlers) {
       // These take no arguments
       {
         G17: function() {
-//          console.log("SETTING XY PLANE");
           cofg.arcPlane = "G17";
         },
 
         G18: function() {
-//          console.log("SETTING XZ PLANE");
           cofg.arcPlane = "G18";
         },
 
         G19: function() {
-//          console.log("SETTING YZ PLANE");
           cofg.arcPlane = "G19";
         },
 
@@ -836,7 +847,6 @@ GCodeParser = function(handlers, modecmdhandlers) {
           // No-op
         },
       });
-    // console.log("GCODE LENGTH " + gcode.length)
 
     parser.parse(gcode);
 

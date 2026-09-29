@@ -1,7 +1,7 @@
-var gcode;
-var loadedFileName = "";
-var savedFileName = "";
+var currentGcode = ""; // this should always match what is in the 3d view, but the editor contents may be different
+var loadedFileName = ""; // name for the contents of the editor, usually the last loaded file
 var editor;
+var useEditor = false; // if false, currentGcode is used instead of the contents of the editor
 var isJogWidget = false;
 var lastJobStartTime = false;
 
@@ -15,22 +15,22 @@ function setWindowTitle(status) {
   var string = ""
 
   if (status) {
-    string += " v" + status.driver.version
+    string += " v" + status.driver.version;
   } else if (laststatus) {
-    string += " v" + laststatus.driver.version
+    string += " v" + laststatus.driver.version;
   }
 
 
   if (loadedFileName.length > 0) {
-    string += " / " + loadedFileName
+    string += " / " + loadedFileName;
   }
 
   if (!nostatusyet && laststatus.comms.interfaces.activePort) {
-    string += " / connected to " + laststatus.comms.interfaces.activePort
+    string += " / connected to " + laststatus.comms.interfaces.activePort;
   }
 
   $('#windowtitle').html(string)
-  document.title = "OpenBuilds CONTROL" + string
+  document.title = "OpenBuilds CONTROL" + string;
 
 }
 
@@ -106,49 +106,60 @@ $(document).ready(function() {
 
   if (!isJogWidget) {
     init3D();
+
+/*    if (typeof ace !== 'undefined') {
+      editor = ace.edit("editor");
+      editor.$blockScrolling = Infinity;
+      editor.session.setMode("ace/mode/cncpro");
+      editor.setTheme('ace/theme/sqlserver')
+      editor.setAutoScrollEditorIntoView(true);
+      editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
+      editor.setShowPrintMargin(false);
+      $('#editor').addClass("editorEnabled");
+
+      // The editor doesn't update when its text changes, unless it is visible.
+      // The observer forces an update when the editor becomes visible.
+      const observer = new IntersectionObserver(
+        () => { editor.resize(); },
+        {root: document.documentElement});
+      observer.observe(document.getElementById("editor"));
+
+      editor.container.addEventListener("contextmenu", function(e) {
+        var bodyOffsets = document.body.getBoundingClientRect();
+        $("#editorContextMenu").css({
+          display: 'block',
+          left: e.pageX,
+          top: e.pageY
+        });
+        e.preventDefault();
+        $('.linenumber').html((editor.getSelectionRange().start.row + 1));
+      }, false);
+    } else*/ {
+    $('#gcodeeditortab').hide();
+    }
+
+    if (!webgl) {
+      $('#gcodeviewertab').hide();
+    }
+
+    if (disableSerialLog) {
+      $('#consoletab').hide();
+    }
+
+    // determine the preferred starting tab
+    if (!webgl) {
+      if (!disableSerialLog) {
+        $('#consoletab').click();
+      } else if (editor) {
+        $('#gcodeeditortab').click();
+      }
+      else {
+        $('#macrostab').click();
+      }
+    }
   }
 
-  if (typeof ace !== 'undefined') {
-    editor = ace.edit("editor");
-    editor.$blockScrolling = Infinity;
-    editor.session.setMode("ace/mode/cncpro");
-    editor.setTheme('ace/theme/sqlserver')
-    editor.setAutoScrollEditorIntoView(true);
-    editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
-    editor.setShowPrintMargin(false);
-
-    // The editor doesn't update when its text changes, unless it is visible.
-    // The observer forces an update when the editor becomes visible.
-    const observer = new IntersectionObserver(
-      () => { editor.resize(); },
-      {root: document.documentElement});
-    observer.observe(document.getElementById("editor"));
-  }
-
-
-  function setposition(e) {
-    var bodyOffsets = document.body.getBoundingClientRect();
-    tempX = e.pageX //- bodyOffsets.left;
-    tempY = e.pageY;
-    // console.log(tempX);
-    var offset = $("#editorContextMenu").offset();
-    $("#editorContextMenu").css({
-      display: 'block',
-      left: e.pageX,
-      top: e.pageY
-    });
-  }
-
-  if (editor) {
-    editor.container.addEventListener("contextmenu", function(e) {
-      setposition(e);
-      e.preventDefault();
-      $('.linenumber').html((editor.getSelectionRange().start.row + 1));
-      // alert('success! - rightclicked line ' + (editor.getSelectionRange().start.row + 1));
-    }, false);
-  }
-
-  getChangelog()
+  getChangelog();
 
   setInterval(function() {
     setWindowTitle();
@@ -194,7 +205,7 @@ $(document).ready(function() {
 
 function runJobFile() {
   var formData = new FormData();
-  var blob = new Blob([gcode || editor.getValue()], {
+  var blob = new Blob([useEditor ? editor.getValue() : currentGcode], {
     type: 'text/plain'
   });
 
@@ -210,10 +221,10 @@ function runJobFile() {
   captureWcsHistory("", "", true);
   xhr.open('POST', '/runjob', true);
   xhr.send(formData);
-  if (gcode) {
-    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
-  } else {
+  if (useEditor) {
     printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from gcode editor) sent to backend </span>`);
+  } else {
+    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
   }
 
   lastJobStartTime = new Date().getTime();
@@ -390,6 +401,10 @@ var webgl = (function() {
 
 })();
 
+function previewGcode() {
+  parseGcodeInWebWorker(editor.getValue());
+}
+
 function saveGcode() {
   var saveFileParams = {
     id: "gcode",
@@ -398,18 +413,19 @@ function saveGcode() {
       {name: "G-code files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
       {name: "All files", extensions: ["*"]},
     ],
-    fileName: savedFileName || loadedFileName,
+    fileName: loadedFileName,
+    updateLastFilePath: true,
   };
 
   socket.emit('saveFileDialog', saveFileParams, (filePath) => {
-    var blob = new Blob([gcode || editor.getValue()], {
+  var blob = new Blob([editor.getValue()], {
       type: 'text/plain'
     });
-    saveBlobToDisk(blob, filePath, true).then((err) => {
-			if (!err) {
-				savedFileName = path.basename(filePath);
-			}
-		});
+    saveBlobToDisk(blob, filePath, saveFileParams).then((err) => {
+      if (!err) {
+        loadedFileName = path.basename(filePath);
+      }
+    });
   });
 }
 
@@ -418,15 +434,17 @@ function clearGcode() {
   editor.execCommand('del');
   parseGcodeInWebWorker("");
   loadedFileName = '';
-  gcode = false;
+  useEditor = true;
+  EnableViaClass('.editorEnabled', true);
   setWindowTitle();
 }
 
-function saveBlobToDisk(blob, filePath, showErrorDlg) {
+function saveBlobToDisk(blob, filePath, params) {
   var formData = new FormData();
   var fileOfBlob = new File([blob], filePath);
   formData.append("file", fileOfBlob);
-  formData.append("showErrorDlg", showErrorDlg ? "true" : "false");
+  formData.append("showErrorDlg", params.showErrorDlg ? "true" : "false");
+  formData.append("updateLastFilePath", params.updateLastFilePath ? "true" : "false");
   var xhr = new XMLHttpRequest();
   var promise = new Promise((resolve) => {
     xhr.onload = function() {
@@ -455,7 +473,7 @@ function invokeSaveAsDialogNew(blob, params) {
   }
 
   socket.emit('saveFileDialog', params, (filePath) => {
-    saveBlobToDisk(blob, filePath);
+    saveBlobToDisk(blob, filePath, params);
   });
 }
 

@@ -424,11 +424,7 @@ function init3D() {
     console.log('No WebGL Support found on this computer! Disabled 3D Viewer - Sorry!');
     printLog("<span class='fg-darkRed'>[ ERROR ]</span>  <span class='fg-darkRed'>No WebGL Support found on this computer! Disabled 3D Viewer - Sorry!</span>")
     printLog("<span class='fg-darkRed'>[ ERROR ]</span>  <span class='fg-darkRed'>" + getWebGLErrorMessage() + "</span>")
-    $('#gcodeviewertab').hide()
-    $('#consoletab').click()
-    return false;
-  };
-
+  }
 }
 
 function animate() {
@@ -586,7 +582,7 @@ $(window).on('resize', function() {
 });
 
 function resetView(object) {
-  if (object && object.userData.linePoints.length > 1) {
+  if (object && object.userData.pointCount > 1) {
     viewExtents(object);
   } else {
     viewExtents(gridsystem);

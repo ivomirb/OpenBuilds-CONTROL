@@ -10,14 +10,16 @@ var simTween = false;
 // if simDisplayType is 1, the current line and the XYZ values are at the top left corner
 var simDisplayType = 1;
 
-function convertParsedDataToObject(jsonData) {
-  var parsedData;
-  try {
-    parsedData = JSON.parse(jsonData)
-  } catch (e) {
-    console.log(e, jsonData); // error in the above string (in this case, yes)!
-    return;
-  }
+function convertParsedDataToObject(parsedData) {
+  const gArray = parsedData.gArray;
+  const srcArray = parsedData.srcArray;
+  const offsetArray = parsedData.offsetArray;
+  const startArray = parsedData.startArray;
+  const durationArray = parsedData.durationArray;
+  const xArray = parsedData.xArray;
+  const yArray = parsedData.yArray;
+  const zArray = parsedData.zArray;
+  const fakeArray = parsedData.fakeArray;
 
   var geometry = new THREE.BufferGeometry();
 
@@ -31,25 +33,35 @@ function convertParsedDataToObject(jsonData) {
 
   const themeColors = Theme.lines;
 
-  var lastPoint = undefined;
-  for (var i = 0; i < parsedData.linePoints.length; i++) {
-    var point = parsedData.linePoints[i];
-    if (point.fake) continue;
+  var gLast = undefined;
+  var xLast = undefined;
+  var yLast = undefined;
+  var zLast = undefined;
+  for (var i = 0; i < parsedData.pointCount; i++) {
+    if (fakeArray[i]) continue;
 
-    if (point.g == 0 || point.g == 1 || point.g == 2) {
-      var color = themeColors[point.g];
+    const g = gArray[i];
+    const x = xArray[i];
+    const y = yArray[i];
+    const z = zArray[i];
+
+    if (g == 0 || g == 1 || g == 2) {
+      var color = themeColors[g];
     } else {
       var color = themeColors[3];
     }
 
-    if (lastPoint != undefined && lastPoint.g != point.g) {
+    if (gLast != undefined && gLast != g) {
       // if switching colors, repeat the last point with the new color
       colors.push(color.R, color.G, color.B);
-      positions.push(lastPoint.x, lastPoint.y, lastPoint.z);
+      positions.push(xLast, yLast, zLast);
     }
-    positions.push(point.x, point.y, point.z);
+    positions.push(x, y, z);
     colors.push(color.R, color.G, color.B);
-    lastPoint = point;
+    gLast = g;
+    xLast = x;
+    yLast = y;
+    zLast = z;
   }
 
   geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -60,7 +72,16 @@ function convertParsedDataToObject(jsonData) {
   var line = new THREE.Line(geometry, material);
   line.geometry.computeBoundingBox();
   var box = line.geometry.boundingBox.clone();
-  line.userData.linePoints = parsedData.linePoints;
+  line.userData.pointCount = parsedData.pointCount;
+  line.userData.gArray = parsedData.gArray;
+  line.userData.srcArray = parsedData.srcArray;
+  line.userData.offsetArray = parsedData.offsetArray;
+  line.userData.startArray = parsedData.startArray;
+  line.userData.durationArray = parsedData.durationArray;
+  line.userData.xArray = parsedData.xArray;
+  line.userData.yArray = parsedData.yArray;
+  line.userData.zArray = parsedData.zArray;
+  line.userData.fakeArray = parsedData.fakeArray;
   line.userData.bbbox2 = box;
   line.userData.inch = parsedData.inch;
   line.userData.totalTime = parsedData.totalTime;
@@ -68,8 +89,17 @@ function convertParsedDataToObject(jsonData) {
   return line;
 }
 
+function getGcodeLine(pointIndex) {
+	const offset = object.userData.offsetArray[pointIndex];
+	var end = currentGcode.indexOf('\n', offset);
+	if (end > offset && currentGcode[end - 1]) {
+		end--;
+	}
+	return currentGcode.slice(offset, end >= 0 ? end : undefined);
+}
 
 function parseGcodeInWebWorker(gcode) {
+  currentGcode = gcode;
   simstop();
   if (object) {
     disposeGeometryAndRemove(object);
@@ -89,7 +119,7 @@ function parseGcodeInWebWorker(gcode) {
           saveViewSettings();
         }
         //console.log(object)
-        if (object && object.userData.linePoints.length > 1) {
+        if (object && object.userData.pointCount > 1) {
           worker.terminate();
           scene.add(object);
           if (object.userData.inch) {
@@ -127,7 +157,7 @@ function parseGcodeInWebWorker(gcode) {
               //console.log(timeConvert(timeremain));
               // output formattedTime to UI here
               $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-              printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Total lines: <b>" + object.userData.linePoints.length + "</b> / Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
+              printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Total lines: <b>" + object.userData.pointCount + "</b> / Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
             }
           }, 200);
           $('#3dviewicon').removeClass('fa-pulse');
@@ -160,14 +190,14 @@ function simSpeed(speed) {
   if (simTween) {
     simTween.timeScale(timefactor);
   }
-	simUpdateProgress();
+  simUpdateProgress();
 }
 
 function runSimFrom(startindex) {
   $('#gcodeviewertab').click()
   if (startindex > 1) {
-    for (var i = 0; i < object.userData.linePoints.length; i++) {
-      if (object.userData.linePoints[i].src >= startindex-1) {
+    for (var i = 0; i < object.userData.pointCount; i++) {
+      if (object.userData.srcArray[i] >= startindex-1) {
         sim(i, true);
         return;
       }
@@ -177,10 +207,10 @@ function runSimFrom(startindex) {
 }
 
 function resetConePosition() {
-  const idx = Math.max(Math.min(simIdx - 1, object.userData.linePoints.length - 1), 0);
-  var posx = object.userData.linePoints[idx].x;
-  var posy = object.userData.linePoints[idx].y;
-  var posz = object.userData.linePoints[idx].z;
+  const idx = Math.max(Math.min(simIdx - 1, object.userData.pointCount - 1), 0);
+  var posx = object.userData.xArray[idx];
+  var posy = object.userData.yArray[idx];
+  var posz = object.userData.zArray[idx];
 
   if (object.userData.inch) {
     posx *= 25.4;
@@ -194,7 +224,7 @@ function resetConePosition() {
 }
 
 function sim(fromLine, paused) {
-  if (typeof(object) == 'undefined' || object.userData.linePoints.length == 0) {
+  if (typeof(object) == 'undefined' || object.userData.pointCount == 0) {
     var message = `No Gcode in Preview yet: Please load G-code from the Open G-code button first before running simulation`
     Metro.toast.create(message, null, 3000, 'bg-red');
     simstop()
@@ -250,11 +280,10 @@ function runSim() {
   var simTimeInSec = 0;
   var resetCone = false;
 
-  for (;simIdx < object.userData.linePoints.length; simIdx++) {
-    var point = object.userData.linePoints[simIdx];
-    if (!point.fake) {
-      var simTimeMins = point.timeMins;
-      if (point.g == 0 && grblParams.$110 != undefined)
+  for (;simIdx < object.userData.pointCount; simIdx++) {
+    if (object.userData.fakeArray[simIdx] == 0) {
+      var simTimeMins = object.userData.durationArray[simIdx];
+      if (object.userData.gArray[simIdx] == 0 && grblParams.$110 != undefined)
         simTimeMins *= 1000 / parseFloat(grblParams.$110); // adjust rapid speed if it is known
       simTimeInSec += simTimeMins * 60;
       if (simPaused) {
@@ -267,7 +296,7 @@ function runSim() {
     }
   }
 
-  if (simIdx >= object.userData.linePoints.length) {
+  if (simIdx >= object.userData.pointCount) {
     simpause();
     if (simTween)
       simTween.kill();
@@ -288,13 +317,13 @@ function runSim() {
   }
 
   if (simDisplayType == 0) {
-    var srcLine = object.userData.linePoints[simIdx].src;
-    $("#conetext").html(`<span class="tally success drop-shadow">Line ` + (srcLine+1) + ": " + editor.session.getLine(srcLine) + `</span>`);
+    const srcLine = object.userData.srcArray[simIdx];
+    $("#conetext").html(`<span class="tally success drop-shadow">Line ` + (srcLine+1) + ": " + getGcodeLine(simIdx) + `</span>`);
   }
 
-  var posx = object.userData.linePoints[simIdx].x;
-  var posy = object.userData.linePoints[simIdx].y;
-  var posz = object.userData.linePoints[simIdx].z;
+  var posx = object.userData.xArray[simIdx];
+  var posy = object.userData.yArray[simIdx];
+  var posz = object.userData.zArray[simIdx];
   if (object.userData.inch) {
     posx *= 25.4;
     posy *= 25.4;
@@ -339,12 +368,12 @@ function simpause() {
 
 function simStepBack() {
   var newIdx = undefined;
-  var atEnd = simIdx >= object.userData.linePoints.length;
-  var line = atEnd ? object.userData.linePoints.at(-1).src + 1 : object.userData.linePoints[simIdx].src;
-  if (!atEnd && ((simTween && simTween.time() > 0) || (simIdx > 0 && object.userData.linePoints[simIdx-1].src == line))) {
+  var atEnd = simIdx >= object.userData.pointCount;
+  var line = atEnd ? object.userData.srcArray[object.userData.pointCount-1] + 1 : object.userData.srcArray[simIdx];
+  if (!atEnd && ((simTween && simTween.time() > 0) || (simIdx > 0 && object.userData.srcArray[simIdx-1] == line))) {
     // in the middle if a line, go back to the start
-    for (var i = atEnd ? object.userData.linePoints.length - 1 : simIdx; i >= 0; i--) {
-      var li = object.userData.linePoints[i].src;
+    for (var i = atEnd ? object.userData.pointCount - 1 : simIdx; i >= 0; i--) {
+      var li = object.userData.srcArray[i];
       if (li == line)
         newIdx = i;
       else if (li < line)
@@ -353,8 +382,8 @@ function simStepBack() {
   } else {
     // already at the start of a line, find a previous non-fake line
     for (var i = simIdx - 1; i >= 0; i--) {
-      if (!object.userData.linePoints[i].fake) {
-        var li = object.userData.linePoints[i].src;
+      if (object.userData.fakeArray[i] == 0) {
+        var li = object.userData.srcArray[i];
         if (newIdx == undefined) {
           if (li < line) {
             line = li;
@@ -385,20 +414,21 @@ function simSetProgress(progress) {
     var newIdx = undefined;
     var partial = 0;
     if (progress == 100) {
-      newIdx = object.userData.linePoints.length;
+      newIdx = object.userData.pointCount;
     } else {
       var time = object.userData.totalTime * progress / 100;
-      for (var i = 0; i < object.userData.linePoints.length; i++) {
-        var point = object.userData.linePoints[i];
-        if (point.fake) continue;
+      for (var i = 0; i < object.userData.pointCount; i++) {
+        if (object.userData.fakeArray[i]) continue;
         if (time == 0) {
           newIdx = i;
           break;
         }
-        if (time >= point.startTime && time < point.startTime + point.timeMins) {
+        const startTime = object.userData.startArray[i];
+        const timeMins = object.userData.durationArray[i];
+        if (time >= startTime && time < startTime + timeMins) {
           // TODO: possible binary search optimization
           newIdx = i;
-          partial = (time - point.startTime) / point.timeMins;
+          partial = (time - startTime) / timeMins;
           break;
         }
       }
@@ -423,12 +453,12 @@ function simUpdateProgress() {
   if (!suppressProgress) {
     var progress = 0;
     if (object) {
-      if (simIdx >= object.userData.linePoints.length || object.userData.totalTime == 0) {
+      if (simIdx >= object.userData.pointCount || object.userData.totalTime == 0) {
         progress = 100;
       } else {
-        progress = object.userData.linePoints[simIdx].startTime;
+        progress = object.userData.startArray[simIdx];
         if (simTween)
-          progress += object.userData.linePoints[simIdx].timeMins * simTween.progress();
+          progress += object.userData.durationArray[simIdx] * simTween.progress();
         progress *= 100 / object.userData.totalTime;
       }
     }
@@ -452,14 +482,14 @@ function simDragStop() {
 }
 
 function simStepForward() {
-  if (simIdx >= object.userData.linePoints.length)
+  if (simIdx >= object.userData.pointCount)
     return;
 
-  var newIdx = object.userData.linePoints.length;
-  const line = object.userData.linePoints[simIdx].src;
+  var newIdx = object.userData.pointCount;
+  const line = object.userData.srcArray[simIdx];
   // find the next non-fake line
-  for (var i = simIdx + 1; i < object.userData.linePoints.length; i++)
-    if (!object.userData.linePoints[i].fake && object.userData.linePoints[i].src > line) {
+  for (var i = simIdx + 1; i < object.userData.pointCount; i++)
+    if (object.userData.fakeArray[i] == 0 && object.userData.srcArray[i] > line) {
       newIdx = i;
       break;
     }
@@ -474,7 +504,7 @@ function simStepForward() {
 }
 
 function simresume() {
-  if (simIdx < object.userData.linePoints.length) {
+  if (simIdx < object.userData.pointCount) {
     simPaused = false;
     $('#pauseSimBtn').show();
     $('#resumeSimBtn').hide();
@@ -497,7 +527,6 @@ function simstop() {
   $('#simControls').hide();
 
   $('#simspeedval').text(timefactor);
-  editor.gotoLine(0)
   $("#conetext").hide();
   $("#simText").hide();
   if (simDisplayType == 0)
@@ -545,9 +574,9 @@ function simAnimate() {
       $("#conetext").css('left', conepos.x + "px").css('top', conepos.y - 20 + "px");
       $('#gcodesent').html("X:" + posx.toFixed(2) + "&nbsp;&nbsp;&nbsp;Y:" + posy.toFixed(2) + "&nbsp;&nbsp;&nbsp;Z:" + posz.toFixed(2));
     } else {
-      if (simIdx >= 0 && simIdx < object.userData.linePoints.length) {
-        var srcLine = object.userData.linePoints[simIdx].src;
-        var html = "Line " + (srcLine+1) + ": " + editor.session.getLine(srcLine);
+      if (simIdx >= 0 && simIdx < object.userData.pointCount) {
+        var srcLine = object.userData.srcArray[simIdx];
+        var html = "Line " + (srcLine+1) + ": " + getGcodeLine(simIdx);
       } else {
         var html = "&lt;END&gt;";
       }

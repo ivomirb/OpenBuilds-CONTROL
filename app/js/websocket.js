@@ -161,12 +161,20 @@ function initSocket() {
     printLogModern('', "api", "Received new G-code from API", "fg-darkGreen");
     printLogModern('', "api", "API called window into focus", "fg-darkGreen");
 
-    if (data.gcode.length > MAX_GCODE_IN_EDITOR) {
-      gcode = data.gcode
-      editor.session.setValue("G-code " + data.filename + " is too large (" + (data.gcode.length / (1024*1024)).toFixed(1) + " MB) to load into the G-code Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it");
+    currentGcode = data.gcode;
+    if (!editor) {
+      useEditor = false;
+    } else if (data.gcode.length > MAX_GCODE_IN_EDITOR) {
+      EnableViaClass('.editorEnabled', false);
+      editor.session.setValue(
+`The G-code file ` + data.filename + ` is too large (` + (data.gcode.length / (1024*1024)).toFixed(1) + ` MB) to load into the G-code Editor.
+If you need to edit it, please use a standalone text editing application and reload it.
+The editor is currently disabled. You can click the Clear button to clear the current G-code and type a new program here.`);
+      useEditor = false;
     } else {
+      EnableViaClass('.editorEnabled', true);
       editor.session.setValue(data.gcode);
-      gcode = false;
+      useEditor = true;
     }
 
     loadedFileName = data.filename;
@@ -174,12 +182,12 @@ function initSocket() {
     setWindowTitle()
     $('#reloadGcodeBtn').attr('title', "Reload " + loadedFileName);
     $('#reloadGcodeBtn').removeClass('disabled');
-    parseGcodeInWebWorker(data.gcode)
+    parseGcodeInWebWorker(data.gcode);
     $('#controlTab').click()
     if (webgl) {
       $('#gcodeviewertab').click();
     } else {
-      $('#gcodeeditortab').click()
+      $('#gcodeeditortab').click();
     }
     jobNeedsHoming();
   });
@@ -386,7 +394,7 @@ function initSocket() {
 
     if (laststatus) {
       if (typeof object !== 'undefined' && done > 0) {
-        if (object.userData !== 'undefined' && object.userData && object.userData.linePoints.length > 2) {
+        if (object.userData !== 'undefined' && object.userData && object.userData.pointCount > 2) {
           var timeremain = object.userData.totalTime;
           if (!isNaN(timeremain)) {
             if (lastJobStartTime) {
