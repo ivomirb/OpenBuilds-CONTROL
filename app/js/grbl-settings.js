@@ -1,4 +1,7 @@
 var settingsUIConstructed = false;
+var editedGrblParams = {};
+const prioritySettings = ["$22"]; // change homing setting first because it can prevent soft limits from being set (grblHAL)
+
 const backupFileFilters = [
   {name: "TXT files", extensions: ["txt"]},
   {name: "All files", extensions: ["*"]},
@@ -13,6 +16,11 @@ function loadGrblBackupFile() {
   };
 
   invokeOpenDialogReadFile(loadFileParams).then((data) => {
+		editedGrblParams = {};
+		$("#grblSettingsAdvTab").click();
+		$('#settingsModifiedFilter:checkbox').prop('checked', false);
+		toggleModifiedFilter(false);
+
     var data = data.split("\n");
     for (var i = 0; i < data.length; i++) {
       var parts = data[i].split('=');
@@ -28,10 +36,10 @@ function loadGrblBackupFile() {
       }
     }
 
-    checkifchanged();
-    displayDirInvert();
-    displayProbeDirInvert();
-    $("#grblSettingsAdvTab").click();
+		setTimeout( () => {
+		  updateDirSettingChecks();
+			checkifchanged();
+		}, 0);
   });
 }
 
@@ -65,17 +73,46 @@ function populateRestoreMenu() {
   });
 }
 
+function autoBackup(note) {
+  const timestamp = new Date().toISOString(); // Generate current timestamp
+  const currentParams = {
+    machinetype: laststatus.machine.name,
+    note: note,
+    timestamp: timestamp,
+    grblParams: {
+      ...grblParams // Spread Operator copy
+    }
+  }; // Add timestamp to the current parameters
+
+  // Retrieve existing backups from localStorage or initialize an empty array
+  let backups = JSON.parse(localStorage.getItem('grblParamsBackups')) || [];
+
+  // Add the current backup to the beginning of the array
+  backups.unshift(currentParams);
+
+  // Trim backups to keep only the last 20
+  if (backups.length > 20) {
+    backups = backups.slice(0, 20);
+  }
+
+  // Save the updated backups array back to localStorage
+  localStorage.setItem('grblParamsBackups', JSON.stringify(backups));
+
+  // Optionally, add your existing save functionality here
+  console.log('Settings saved and backup created.');
+}
+
 function restoreAutoBackup(index) {
   const backups = JSON.parse(localStorage.getItem('grblParamsBackups')) || [];
   const selectedBackup = backups[index];
 
-  // You can now access selectedBackup.grblParams and apply it as needed
-  console.log('Restoring backup:', selectedBackup);
-  // Call your function to restore the backup here, e.g., update grblParams
-  // Example: grblParams = selectedBackup.grblParams;
-
   // Retrieve grblParams from the backup
   const grblParamsBackup = selectedBackup.grblParams;
+
+	editedGrblParams = {};
+  $("#grblSettingsAdvTab").click();
+	$('#settingsModifiedFilter:checkbox').prop('checked', false);
+  toggleModifiedFilter(false);
 
   // Iterate through the keys in the grblParams object and apply them using jQuery
   for (const key in grblParamsBackup) {
@@ -83,6 +120,7 @@ function restoreAutoBackup(index) {
       const paramValue = grblParamsBackup[key];
       var key2 = key.substr(1);
       const inputElement = $("#val-" + key2 + "-input");
+
       if (grblSettingsTemplate[key2] == undefined || grblSettingsTemplate[key2].type == "text") {
         inputElement.val(paramValue);
       } else {
@@ -102,16 +140,15 @@ function restoreAutoBackup(index) {
     }
   }
 
-  // Call any post-restoration functions you need (e.g., re-enable limits, etc.)
-  checkifchanged();
-  displayDirInvert();
-  displayProbeDirInvert();
-  $("#grblSettingsAdvTab").click();
+		setTimeout( () => {
+		  updateDirSettingChecks();
+			checkifchanged();
+		}, 0);
 }
 
 
 function backupGrblSettings() {
-  autoBackup("Manual Backup")
+  autoBackup("Manual Backup");
   var grblBackup = ""
   for (var key in grblParams) {
     var key2 = key.substr(1);
@@ -145,8 +182,70 @@ function backupGrblSettings() {
   invokeSaveAsDialogNew(blob, saveFileParams);
 }
 
+function grblSaveSettings() {
+  autoBackup("Updated Grbl Settings");
+  var toSaveCommandsFirst = [];
+  var toSaveCommandsSecond = [];
+  var saveProgressBar = $("#grblSaveProgress").data("progress");
+  for (var key in grblParams) {
+    if (grblParams.hasOwnProperty(key)) {
+      var j = key.substring(1)
+      var newVal = $("#val-" + j + "-input").val();
+      // Only send values that changed
+      if (newVal !== undefined) {
+        if (parseFloat(newVal) != parseFloat(grblParams[key]) && newVal != grblParams[key]) {
+
+          if (prioritySettings.contains(key))
+            toSaveCommandsFirst.push(key + '=' + newVal);
+          else
+            toSaveCommandsSecond.push(key + '=' + newVal);
+        }
+      }
+    }
+  }
+
+  var toSaveCommands = [...toSaveCommandsFirst, ...toSaveCommandsSecond];
+
+  if (toSaveCommands.length > 0) {
+    let counter = 0;
+    // Blank the dialog
+    if (saveProgressBar) {
+      saveProgressBar.val(0);
+    }
+    $("#grblNewParam").html("")
+    $("#grblNewParamVal").html("")
+    // Open Dialog savingGrblSettingsProgress
+    Metro.dialog.open('#savingGrblSettingsProgress')
+    const sendInterval = setInterval(function() {
+      var newParam = toSaveCommands[counter].split("=")[0];
+      var newParamKey = newParam.substr(1);
+      if (grblSettingsTemplate[newParamKey] !== undefined) {
+        var newParamName = grblSettingsTemplate[newParamKey].title
+      } else {
+        var newParamName = "unknown"
+      }
+      var newParamVal = toSaveCommands[counter].split("=")[1];
+      $("#grblNewParam").html("<code>" + newParam + " : " + newParamName + "</code>")
+      $("#grblNewParamVal").html("<code>" + newParamVal + "</code>")
+
+      if (saveProgressBar) {
+        saveProgressBar.val(counter / toSaveCommands.length * 100);
+      }
+      //
+      sendGcode(toSaveCommands[counter] + "\n");;
+      counter++;
+      if (counter === toSaveCommands.length) {
+        // Finished running
+        clearInterval(sendInterval);
+        grblParams = {};
+        toSaveCommands = [];
+			  setTimeout(askToResetOnGrblSettingsChange, 1000); // Just to show settings was written
+      }
+    }, 400); // send another command every 400ms
+  }
+
+}
 function grblSettings(data) {
-  // console.log(data)
   var template = ``
   const grblconfig = data.split('\n')
   for (var i = 0; i < grblconfig.length; i++) {
@@ -155,7 +254,7 @@ function grblSettings(data) {
     grblParams[key] = param
   }
 
-  $('#grblSettings').show()
+  $('#grblSettings').show();
 
   if (laststatus.machine.firmware.platform == "grblHAL") {
     $("#grbl-settings-tab-title").html('grblHAL');
@@ -164,29 +263,11 @@ function grblSettings(data) {
   }
 
   if (grblParams['$22'] > 0) {
-    $('#gotozeroZmPosXYwPos').removeClass('disabled')
-    $('#gotozeroMPos').removeClass('disabled')
-    $('#homeBtn').attr('disabled', false)
-    $('#gotoXMinMpos').removeClass('disabled')
-    $('#gotoXMaxMpos').removeClass('disabled')
-    $('#gotoYMinMpos').removeClass('disabled')
-    $('#gotoYMaxMpos').removeClass('disabled')
-    $('#gotoZMinMpos').removeClass('disabled')
-    $('#gotoZMaxMpos').removeClass('disabled')
-    $('#gotoAMinMpos').removeClass('disabled')
-    $('#gotoAMaxMpos').removeClass('disabled')
+    $('#homeBtn').attr('disabled', false);
+    $('#gotozeroZmPosXYwPos, #gotozeroMPos, #gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos').removeClass('disabled');
   } else {
-    $('#gotozeroZmPosXYwPos').addClass('disabled')
-    $('#gotozeroMPos').addClass('disabled')
-    $('#homeBtn').attr('disabled', true)
-    $('#gotoXMinMpos').addClass('disabled')
-    $('#gotoXMaxMpos').addClass('disabled')
-    $('#gotoYMinMpos').addClass('disabled')
-    $('#gotoYMaxMpos').addClass('disabled')
-    $('#gotoZMinMpos').addClass('disabled')
-    $('#gotoZMaxMpos').addClass('disabled')
-    $('#gotoAMinMpos').addClass('disabled')
-    $('#gotoAMaxMpos').addClass('disabled')
+    $('#homeBtn').attr('disabled', true);
+    $('#gotozeroZmPosXYwPos, #gotozeroMPos, #gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos').addClass('disabled');
   }
 
   updateGotoLimits();
@@ -208,13 +289,777 @@ function grblSettings(data) {
     $(".servo-active").hide()
   }
 
-
   updateToolOnSValues();
 
   if (localStorage.getItem('jogOverride')) {
-    jogOverride(localStorage.getItem('jogOverride'))
+    jogOverride(localStorage.getItem('jogOverride'));
   } else {
     jogOverride(100);
+  }
+}
+
+function showBasicSettings() {
+  $("#grbl-settings-basic").show();
+  $("#grbl-settings-advanced").hide();
+}
+
+function showAdvSettings() {
+  $("#grbl-settings-basic").hide();
+  $("#grbl-settings-advanced").show();
+}
+
+function grblPopulate() {
+  if (isJogWidget) return;
+
+  $('#grblconfig').show();
+  $('#grblconfig').empty();
+  var template = `
+  <form id="grblSettingsTable">
+
+  <ul data-role="tabs" data-expand="true" class="mb-2">
+    <li id="grblSettingsBasicTab" onclick="showBasicSettings()"><a href="#"><small><i class="fas fa-fw fa-cog mr-1 fg-darkGreen"></i>Basic Settings</a></small></li>
+    <li id="grblSettingsAdvTab" onclick="showAdvSettings()" class="active"><a href="#"><small><i class="fas fa-fw fa-cogs mr-1 fg-darkRed"></i>Advanced Settings</a></small></li>
+  </ul>
+
+
+  <div id="grbl-settings-basic" style="display: none;">
+      <ul class="step-list mb-3">
+        <li>
+          <h6>Select your Machine<br><small>Tell us what machine you have?</small></h6>
+          <a style="width: 100%;"
+            class="button dropdown-toggle bd-dark dark outline"
+            id="context_toggle2"><img src="img/mch/leadmachine1010.png" /> Select
+            your machine type from the list:</a>
+          <ul class="ribbon-dropdown machine-profile-menu" data-role="dropdown"
+            data-duration="100">
+            <li><a href="#" onclick="selectMachine('custom');"><img
+                  src="img/mch/custom.png" width="16px" /> CUSTOM Machine (Profile
+                sets sane defaults)</a></li>
+            <li>
+              <a href="#" class="dropdown-toggle"><img src="img/mch/acro55.png"
+                  width="16px" /> OpenBuilds ACRO</a>
+              <ul class="ribbon-dropdown" data-role="dropdown">
+                <li onclick="selectMachine('acro55');"><a href="#"><img
+                      src="img/mch/acro55.png" width="16px" /> OpenBuilds ACRO 55</a></li>
+                <li onclick="selectMachine('acro510');"><a href="#"><img
+                      src="img/mch/acro510.png" width="16px" /> OpenBuilds ACRO
+                    510</a></li>
+                <li onclick="selectMachine('acro1010');"><a href="#"><img
+                      src="img/mch/acro1010.png" width="16px" /> OpenBuilds ACRO
+                    1010</a></li>
+                <li onclick="selectMachine('acro1510');"><a href="#"><img
+                      src="img/mch/acro1510.png" width="16px" /> OpenBuilds ACRO
+                    1510</a></li>
+                <li onclick="selectMachine('acro1515');"><a href="#"><img
+                      src="img/mch/acro1515.png" width="16px" /> OpenBuilds ACRO
+                    1515</a></li>
+                <li class="divider"></li>
+                <li onclick="selectMachine('acroa1');"><a href="#"><img
+                      src="img/mch/acroa1.png" width="16px" /> OpenBuilds ACRO A1</a></li>
+              </ul>
+            </li>
+            <li>
+              <a href="#" class="dropdown-toggle"><img src="img/mch/cbeam.png"
+                  width="16px" /> OpenBuilds C-Beam Machine</a>
+              <ul class="ribbon-dropdown" data-role="dropdown">
+                <li onclick="selectMachine('cbeam');"><a href="#"><img
+                      src="img/mch/cbeam.png" width="16px" /> OpenBuilds C-Beam
+                    Machine</a></li>
+                <li onclick="selectMachine('cbeamxl');"><a href="#"><img
+                      src="img/mch/cbeamxl.png" width="16px" /> OpenBuilds C-Beam
+                    XL</a></li>
+              </ul>
+            </li>
+            <li>
+              <a href="#" class="dropdown-toggle"><img
+                  src="img/mch/leadmachine1010.png" width="16px" /> OpenBuilds
+                LEAD Machine</a>
+              <ul class="ribbon-dropdown" data-role="dropdown">
+                <li onclick="selectMachine('leadmachine1010');"><a href="#"><img
+                      src="img/mch/leadmachine1010.png" width="16px" />OpenBuilds
+                    LEAD 1010</a></li>
+                <li onclick="selectMachine('leadmachine1010laser');"><a href="#"><img
+                      src="img/mch/leadmachine1010laser.png" width="16px" />OpenBuilds
+                    LEAD 1010 with Laser Module</a></li>
+                <li onclick="selectMachine('leadmachine1010plasma');"><a href="#"><img
+                      src="img/mch/leadmachine1010plasma.png" width="16px" />OpenBuilds
+                    LEAD 1010 Plasma Add-On</a></li>
+                <li onclick="selectMachine('leadmachine1515');"><a href="#"><img
+                      src="img/mch/leadmachine1515.png" width="16px" />OpenBuilds
+                    LEAD 1515</a></li>
+              </ul>
+            </li>
+            <li><a href="#" onclick="selectMachine('minimill');"><img
+                  src="img/mch/minimill.png" width="16px" /> OpenBuilds MiniMill</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <h6>Add-Ons Installed<br><small>Telling us what kind of attachments the
+              machine has, allows us to pre-configure your Grbl Settings to match</small></h6>
+          <ul class="image-checkbox-ul">
+            <li>
+              <input type="checkbox" name="limits" id="limitsinstalled"
+                value="limits">
+              <label for="limitsinstalled"><img
+                  src="./img/toolhead/xtensionslimit.png" /></label>
+              <div class="image-checkbox-text">Xtension Limit Switches</div>
+            </li>
+            <!-- Radio Group -->
+            <li>
+              <input type="radio" name="toolhead" id="toolhead_router11"
+                value="router11">
+              <label for="toolhead_router11"><img
+                  src="./img/toolhead/router11.png" /></label>
+              <div class="image-checkbox-text">RoutER11 with IoT Relay</div>
+            </li>
+            <li>
+              <input type="radio" name="toolhead" id="toolhead_plasma"
+                value="plasma">
+              <label for="toolhead_plasma"><img
+                  src="./img/toolhead/leadplasma.png" /></label>
+              <div class="image-checkbox-text">LEAD 1010 Plasma Add-On</div>
+            </li>
+            <li>
+              <input type="radio" name="toolhead" id="toolhead_laser"
+                value="laser">
+              <label for="toolhead_laser"><img src="./img/toolhead/laser.png" /></label>
+              <div class="image-checkbox-text">Laser Diode Module</div>
+            </li>
+            <li>
+              <input type="radio" name="toolhead" id="toolhead_scribe"
+                value="scribe">
+              <label for="toolhead_scribe"><img src="./img/toolhead/plotter.png" /></label>
+              <div class="image-checkbox-text">SCRIBE<br>Pen Lifter</div>
+            </li>
+            <li>
+              <input type="radio" name="toolhead" id="toolhead_vfd_spindle"
+                value="vfd_spindle">
+              <label for="toolhead_vfd_spindle"><img src="./img/toolhead/vfd.png" /></label>
+              <div class="image-checkbox-text">Variable Speed Spindle</div>
+            </li>
+            <!-- End Radio Group -->
+          </ul>
+        </li>
+
+        <li>
+          <h6>Finished<br><small>Remember to "Save to Firmware" and Reset when Prompted. <br>If you have any custom requirements,
+              please customise the settings in the Advanced Settings section above</small></h6>
+        </li>
+
+
+      </ul>
+  </div>
+  <div id="grbl-settings-advanced">
+      <div id="grblSettingsTableView">
+        <table id="grblMetroTable" data-role="table"
+          data-table-search-title="Search for Parameters by Name or $-Key"
+          data-search-fields="Key, Parameter"
+          data-on-draw="onTableDraw"
+          data-on-table-create="onTableCreate"
+          data-cell-wrapper="false"
+          class="table compact striped row-hover row-border"
+          data-show-rows-steps="false" data-rows="200"
+          data-show-pagination="false" data-show-table-info="true"
+          data-show-search="true">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Key</th>
+              <th style="text-align: left;">Parameter</th>
+              <th style="width: 250px; min-width: 240px !important;">Value</th>
+              <th style="width: 110px; min-width: 110px !important;">Utility</th>
+            </tr>
+          </thead>
+          <tbody>`
+
+  editedGrblParams = {};
+
+  for (var key in grblParams) {
+    var key2 = key.substr(1);
+    if (grblSettingsTemplate[key2] !== undefined) {
+      template += `<tr>
+              <td>` + grblSettingsTemplate[key2].key + `</td>
+              <td>` + grblSettingsTemplate[key2].title + `</td>
+              <td>` + grblSettingsTemplate[key2].template + `</td>
+              <td>` + grblSettingsTemplate[key2].utils + `</td>
+            </tr>`
+    } else {
+      template += `
+            <tr>
+              <td>` + key + `</td>
+              <td><span class="tally alert">` + key + `</span></td>
+              <td><input data-role="input" data-clear-button="false"
+                  data-append="?" type="text"
+                  value="` + grblParams[key] + `"
+                  id="val-` + key2 + `-input"></td>
+              <td></td>
+            </tr>
+            `
+    }
+  }
+
+  template += `</tbody>
+        </table>
+      </div> <!-- End of grblSettingsTableView -->
+      </div>
+    </div>
+  </nav>
+</form>
+    `
+  $('#grblconfig').append(template);
+  settingsUIConstructed = false;
+
+  $('#grblSettingsTable').on('keyup paste click change', 'input, select', checkifchanged);
+
+  $('#grblSettingsBadge').hide();
+  $('#limitsinstalled:checkbox').prop('checked', grblParams['$21'] == 1 && grblParams['$22'] > 0);
+
+  if (isMatchingConfig(grblParams, grblParams_scribe)) {
+    setSelectedToolhead('scribe')
+  } else if (isMatchingConfig(grblParams, grblParams_plasma)) {
+    setSelectedToolhead('plasma')
+  } else if (isMatchingConfig(grblParams, grblParams_router)) {
+    setSelectedToolhead('router11')
+  } else if (isMatchingConfig(grblParams, grblParams_laser)) {
+    setSelectedToolhead('laser')
+  } else if (isMatchingConfig(grblParams, grblParams_vfd)) {
+    setSelectedToolhead('vfd_spindle')
+  }
+
+  setTimeout(function() {
+    setMachineButton(laststatus.machine.name);
+  }, 500)
+
+  populateRestoreMenu();
+}
+
+function checkifchanged() {
+  if (!settingsUIConstructed) return;
+
+  var hasChanged = false;
+
+  for (var key in grblParams) {
+    if (grblParams.hasOwnProperty(key)) {
+      var j = key.substring(1);
+      var newVal = $("#val-" + j + "-input").val();
+
+      if (newVal !== undefined) {
+        // Determine if the value should be compared as text or number
+        var oldVal = grblParams[key];
+        var compareAsNumber = !isNaN(parseFloat(oldVal)) && !isNaN(parseFloat(newVal));
+
+        // Perform appropriate comparison
+        if ((compareAsNumber && parseFloat(newVal) !== parseFloat(oldVal)) ||
+          (!compareAsNumber && newVal !== oldVal)) {
+          hasChanged = true;
+          editedGrblParams[key] = newVal;
+
+          if (!$("#val-" + j + "-input").parent().is('td')) {
+            $("#val-" + j + "-input").parent().addClass('alert');
+          } else if ($("#val-" + j + "-input").is('select')) {
+            $("#val-" + j + "-input").addClass('alert');
+          } else if (j == 3) { // axes
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#ydirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zdirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#adirinvert').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+              $('#xHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+              $('#yHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+              $('#zHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+              $('#aHomeDir').parent().children('.app-notification').addClass('bd-red');
+            else
+              $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
+          }
+        } else {
+          delete editedGrblParams[key];
+          if (!$("#val-" + j + "-input").parent().is('td')) {
+            $("#val-" + j + "-input").parent().removeClass('alert');
+          } else if ($("#val-" + j + "-input").is('select')) {
+            $("#val-" + j + "-input").removeClass('alert');
+          } else if (j == 3) {
+            $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+            $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+          } else if (j == 23) { // home axes
+            $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+            $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
+          }
+        }
+      } else if (editedGrblParams.hasOwnProperty(key)) {
+        hasChanged = true;
+      }
+    }
+  }
+
+  if (hasChanged) {
+    $('#grblSettingsBadge').fadeIn('slow');
+    $('#saveBtn').attr('disabled', false).removeClass('disabled');
+    $('#saveBtnIcon').removeClass('fg-gray').addClass('fg-grayBlue');
+  } else {
+    $('#grblSettingsBadge').fadeOut('slow');
+    $('#saveBtn').attr('disabled', true).addClass('disabled');
+    $('#saveBtnIcon').removeClass('fg-grayBlue').addClass('fg-gray');
+  }
+}
+
+function askToResetOnGrblSettingsChange() {
+  Metro.dialog.close('#savingGrblSettingsProgress')
+  Metro.dialog.create({
+    title: "Configuration Updated. Reset Grbl?",
+    content: "<div>Some changes in the Grbl Configuration only take effect after a restart/reset of the controller. Would you like to Reset the controller now?</div>",
+    clsDialog: 'dark',
+    actions: [{
+        caption: "Yes",
+        cls: "js-dialog-close success",
+        onclick: function() {
+          setTimeout(function() {
+            socket.emit('resetMachine');
+            setTimeout(function() {
+              sendGcode("$G");
+              refreshGrblSettings();
+            }, 1000); // refresh grbl settings
+          }, 800); // reset
+        }
+      },
+      {
+        caption: "Later",
+        cls: "js-dialog-close",
+        onclick: function() {
+          refreshGrblSettings();
+        }
+      }
+    ]
+  });
+  $('#grblSettingsBadge').hide();
+}
+
+function refreshGrblSettings() {
+  $('#saveBtn').attr('disabled', true).addClass('disabled');
+  $('#saveBtnIcon').removeClass('fg-grayBlue').addClass('fg-gray');
+  grblParams = {};
+  $('#grblconfig').empty();
+  $('#grblconfig').append("<center>Please Wait... </center><br><center>Requesting updated parameters from the controller firmware...</center>");
+  setTimeout(function() {
+    sendGcode('$$');
+    sendGcode('$I');
+    setTimeout(function() {
+      grblPopulate();
+    }, 500);
+  }, 200);
+
+}
+
+// Calc Grbl 1.1 Invert Masks
+// Call: calcDecFromMask(true, false, false)
+// Return: 1
+function calcDecFromMask(x, y, z, a) {
+  return (x?1:0) + (y?2:0) + (z?4:0) + (a?8:0);
+}
+
+// Calc Grbl 1.1 Invert Masks
+// Call: calcMaskFromDec("4")
+// Returns: {x: false, y: false, z: true, a:false}
+function calcMaskFromDec(dec) {
+  var num = parseInt(dec)
+  var invertmask = {
+    x: (num&1) != 0,
+    y: (num&2) != 0,
+    z: (num&4) != 0,
+    a: (num&8) != 0,
+  }
+  return invertmask;
+}
+
+function changeHomeDirInvert() {
+  var xticked = $('#xHomeDir').is(':checked');
+  var yticked = $('#yHomeDir').is(':checked');
+  var zticked = $('#zHomeDir').is(':checked');
+  var aticked = $('#aHomeDir').is(':checked');
+  var value = calcDecFromMask(!xticked, !yticked, !zticked, !aticked);
+  $("#val-23-input").val(value).trigger("change");
+  checkifchanged();
+}
+
+function changeDirInvert() {
+  var xticked = $('#xdirinvert').is(':checked');
+  var yticked = $('#ydirinvert').is(':checked');
+  var zticked = $('#zdirinvert').is(':checked');
+  var aticked = $('#adirinvert').is(':checked');
+  var value = calcDecFromMask(xticked, yticked, zticked, aticked);
+  $("#val-3-input").val(value).trigger("change");
+  checkifchanged();
+}
+
+function updateDirSettingChecks() {
+  const dirMask = calcMaskFromDec($("#val-3-input").val());
+  $('#xdirinvert:checkbox').prop('checked', dirMask.x);
+  $('#ydirinvert:checkbox').prop('checked', dirMask.y);
+  $('#zdirinvert:checkbox').prop('checked', dirMask.z);
+  $('#adirinvert:checkbox').prop('checked', dirMask.a);
+
+  const homeMask = calcMaskFromDec($("#val-23-input").val());
+  $('#xHomeDir:checkbox').prop('checked', !homeMask.x);
+  $('#yHomeDir:checkbox').prop('checked', !homeMask.y);
+  $('#zHomeDir:checkbox').prop('checked', !homeMask.z);
+  $('#aHomeDir:checkbox').prop('checked', !homeMask.a);
+  checkifchanged();
+}
+
+function clearSettings() {
+  Metro.dialog.create({
+    title: "Are you sure?",
+    content: "<div>Resetting the Grbl Settings will restore all the settings to factory defaults, but will keep other EEPROM settings intact. Would you like to continue?</div>",
+    clsDialog: 'dark',
+    actions: [{
+        caption: "Yes",
+        cls: "js-dialog-close success",
+        onclick: function() {
+          sendGcode('$RST=$');
+          refreshGrblSettings()
+        }
+      },
+      {
+        caption: "Cancel",
+        cls: "js-dialog-close",
+        onclick: function() {
+          refreshGrblSettings();
+        }
+      }
+    ]
+  });
+}
+
+function clearWCO() {
+  Metro.dialog.create({
+    title: "Are you sure?",
+    content: "<div>Resetting the Work Coordinate Systems will erase all the coordinate system offsets currently stored in the EEPROM on the controller. Would you like to continue?</div>",
+    clsDialog: 'dark',
+    actions: [{
+        caption: "Yes",
+        cls: "js-dialog-close success",
+        onclick: function() {
+          sendGcode('$RST=#');
+          refreshGrblSettings()
+        }
+      },
+      {
+        caption: "Cancel",
+        cls: "js-dialog-close",
+        onclick: function() {
+          refreshGrblSettings();
+        }
+      }
+    ]
+  });
+}
+
+function clearEEPROM() {
+  Metro.dialog.create({
+    title: "Are you sure?",
+    content: "<div>Resetting the EEPROM will erase all the Grbl Firmware settings from your controller, effectively resetting it back to factory defaults. Would you like to continue?</div>",
+    clsDialog: 'dark',
+    actions: [{
+        caption: "Yes",
+        cls: "js-dialog-close success",
+        onclick: function() {
+          sendGcode('$RST=*');
+          refreshGrblSettings()
+        }
+      },
+      {
+        caption: "Cancel",
+        cls: "js-dialog-close",
+        onclick: function() {
+          refreshGrblSettings();
+        }
+      }
+    ]
+  });
+}
+
+function updateToolOnSValues() {
+  $(".ToolOnS1").html((parseInt(grblParams.$30) * 0.01).toFixed(0))
+  $(".ToolOnS5").html((parseInt(grblParams.$30) * 0.05).toFixed(0))
+  $(".ToolOnS10").html((parseInt(grblParams.$30) * 0.1).toFixed(0))
+  $(".ToolOnS25").html((parseInt(grblParams.$30) * 0.25).toFixed(0))
+  $(".ToolOnS50").html((parseInt(grblParams.$30) * 0.5).toFixed(0))
+  $(".ToolOnS75").html((parseInt(grblParams.$30) * 0.75).toFixed(0))
+  $(".ToolOnS100").html(parseInt(grblParams.$30).toFixed(0))
+}
+
+function getEditorParamValue(key) {
+  return editedGrblParams.hasOwnProperty(key) ? editedGrblParams[key] : grblParams[key];
+}
+
+function setup_settings_table() {
+
+  for (var key in grblParams) {
+    var key2 = key.substr(1);
+    var input = $("#val-" + key2 + "-input");
+    input.val(getEditorParamValue(key));
+    var setting = grblSettingsTemplate[key2];
+    // Metro UI destroys the tooltips for td and tr elements - readding here
+    if (setting !== undefined && setting.description.length > 0)
+      input.closest('td').prev().attr('title', setting.description);
+  }
+  settingsUIConstructed = true;
+
+  $('#limitsinstalled:checkbox').change(enableLimits);
+//  $('#scribeinstalled:checkbox').change(enableScribe);
+
+  // Handle the change event for radio buttons
+  $('input[name="toolhead"]').on('change', function() {
+    console.log(`Selected toolhead: ${$(this).val()}`);
+    var selectedToolhead = $(this).val();
+    if (selectedToolhead == 'router11') {
+      enableRouter();
+    } else if (selectedToolhead == 'scribe') {
+      enableScribe();
+    } else if (selectedToolhead == 'laser') {
+      enableLaser();
+    } else if (selectedToolhead == 'plasma') {
+      enablePlasma();
+    } else if (selectedToolhead == 'vfd_spindle') {
+      enableVFD();
+    }
+  });
+
+  $('#xdirinvert:checkbox').change(changeDirInvert);
+  $('#ydirinvert:checkbox').change(changeDirInvert);
+  $('#zdirinvert:checkbox').change(changeDirInvert);
+  $('#adirinvert:checkbox').change(changeDirInvert);
+
+  $('#xHomeDir:checkbox').change(changeHomeDirInvert);
+  $('#yHomeDir:checkbox').change(changeHomeDirInvert);
+  $('#zHomeDir:checkbox').change(changeHomeDirInvert);
+  $('#aHomeDir:checkbox').change(changeHomeDirInvert);
+
+  // populate Direction Invert Checkboxes
+  updateDirSettingChecks();
+  setTimeout(checkifchanged, 0);
+}
+
+var settingsFilterIndex;
+
+function toggleModifiedFilter(checked) {
+  var table = $('#grblMetroTable').data('table');
+  if (checked) {
+    settingsFilterIndex = table.addFilter((row) => editedGrblParams.hasOwnProperty(row[0]), true);
+  } else if (settingsFilterIndex != undefined) {
+    table.removeFilter(settingsFilterIndex, true);
+		settingsFilterIndex = undefined;
+  }
+}
+
+function onTableDraw() {
+  setup_settings_table();
+}
+
+function onTableCreate() {
+	// add filter checkbox directly before the search bar
+  $('#grblSettingsTableView .table-top').prepend(`
+			<input type="checkbox" data-role="switch" data-caption="Show Modified" id="settingsModifiedFilter"
+			style="padding-right:10px;" onchange="toggleModifiedFilter(this.checked)"/>`);
+  setup_settings_table();
+}
+
+function enableLimits() {
+  var grblParams_lim = {
+    $21: "0", //"Hard limits enable, boolean"
+    $22: "0", //"Homing cycle enable, boolean"
+  }
+  var hasLimits = $('#limitsinstalled').is(':checked');
+  if (hasLimits) {
+    grblParams_lim.$21 = "1"; //"Hard limits enable, boolean"
+    grblParams_lim.$22 = "1"; //"Homing cycle enable, boolean"
+  } else {
+    grblParams_lim.$21 = "0"; //"Hard limits enable, boolean"
+    grblParams_lim.$22 = "0"; //"Homing cycle enable, boolean"
+  }
+  for (var key in grblParams_lim) {
+    if (grblParams_lim.hasOwnProperty(key)) {
+      var j = key.substring(1)
+      var newVal = $("#val-" + j + "-input").val();
+      $("#val-" + j + "-input").val(parseFloat(grblParams_lim[key]))
+    }
+  }
+  checkifchanged();
+}
+
+var grblParams_scribe = {
+  $32: "0", //PWM Freq for RC Servo
+  $33: "50", //PWM Freq for RC Servo
+  $34: "5", //Spindle Off Value for RC Servo
+  $35: "5", //Spinde Min Value for RC Servo
+  $36: "10", //Spindle max Value for RC Servo
+}
+
+function enableScribe() {
+  for (var key in grblParams_scribe) {
+    if (grblParams_scribe.hasOwnProperty(key)) {
+      var j = key.substring(1)
+      var newVal = $("#val-" + j + "-input").val();
+      $("#val-" + j + "-input").val(parseFloat(grblParams_scribe[key]))
+    }
+  }
+  checkifchanged();
+  var elm = document.getElementById("grblSettingsPWM");
+  // elm.scrollIntoView(true);
+}
+
+var grblParams_laser = {
+  $30: "1000", // S Max
+  $32: "1", // Laser Mode On
+  $33: "1000", //PWM Freq
+  $34: "0", //Spindle Off Value
+  $35: "0", //Spinde Min Value
+  $36: "100", //Spindle max Value
+}
+
+function enableLaser() {
+
+  for (var key in grblParams_laser) {
+    if (grblParams_laser.hasOwnProperty(key)) {
+      var j = key.substring(1)
+      var newVal = $("#val-" + j + "-input").val();
+      $("#val-" + j + "-input").val(parseFloat(grblParams_laser[key]))
+    }
+  }
+  checkifchanged();
+  var elm = document.getElementById("grblSettingsPWM");
+  // elm.scrollIntoView(true);
+}
+
+var grblParams_router = {
+  $30: "1000", // S Max
+  $32: "0", // Laser Mode On
+  $33: "5000", //PWM Freq
+  $34: "0", //Spindle Off Value
+  $35: "0", //Spinde Min Value
+  $36: "100", //Spindle max Value
+}
+
+function enableRouter() {
+
+  for (var key in grblParams_router) {
+    if (grblParams_router.hasOwnProperty(key)) {
+      var j = key.substring(1)
+      var newVal = $("#val-" + j + "-input").val();
+      $("#val-" + j + "-input").val(parseFloat(grblParams_router[key]))
+    }
+  }
+  checkifchanged();
+  var elm = document.getElementById("grblSettingsPWM");
+  // elm.scrollIntoView(true);
+}
+
+var grblParams_plasma = {
+  $30: "1000", // S Max
+  $32: "0", // Laser Mode On
+  $33: "1000", //PWM Freq
+  $34: "0", //Spindle Off Value
+  $35: "0", //Spinde Min Value
+  $36: "100", //Spindle max Value
+}
+
+function enablePlasma() {
+
+  for (var key in grblParams_plasma) {
+    if (grblParams_plasma.hasOwnProperty(key)) {
+      var j = key.substring(1)
+      var newVal = $("#val-" + j + "-input").val();
+      $("#val-" + j + "-input").val(parseFloat(grblParams_plasma[key]))
+    }
+  }
+  checkifchanged();
+  var elm = document.getElementById("grblSettingsPWM");
+  // elm.scrollIntoView(true);
+}
+
+var grblParams_vfd = {
+  $30: "24000", // S Max
+  $32: "0", // Laser Mode On
+  $33: "1000", //PWM Freq
+  $34: "0", //Spindle Off Value
+  $35: "0", //Spinde Min Value
+  $36: "100", //Spindle max Value
+}
+
+function enableVFD() {
+
+  for (var key in grblParams_vfd) {
+    if (grblParams_vfd.hasOwnProperty(key)) {
+      var j = key.substring(1)
+      var newVal = $("#val-" + j + "-input").val();
+      $("#val-" + j + "-input").val(parseFloat(grblParams_vfd[key]))
+    }
+  }
+  checkifchanged();
+  var elm = document.getElementById("grblSettingsPWM");
+  // elm.scrollIntoView(true);
+}
+
+function isMatchingConfig(currentParams, predefinedParams) {
+  for (let key in predefinedParams) {
+    // Compare values as numbers to handle type mismatches
+    if (parseFloat(currentParams[key]) !== parseFloat(predefinedParams[key])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+// Function to programmatically set the selected radio
+function setSelectedToolhead(value) {
+  const $radio = $(`input[name="toolhead"][value="${value}"]`);
+  if ($radio.length) {
+    $radio.prop('checked', true).trigger('change'); // Trigger the change event
+  } else {
+    console.error('Toolhead not found:', value);
+  }
+
+  if (value == "scribe") {
+    // Set Default Pen Up/Down values
+    penupval = 250
+    pendownval = 0
+    servo = {
+      up: penupval,
+      down: pendownval
+    }
+    localStorage.setItem("servo-calibration", JSON.stringify(servo));
   }
 }
 
@@ -315,903 +1160,4 @@ function updateGotoLimits() {
     $('#gotozeroMPos > a > .gcode').html(commandXY + ", " + commandZ);
   else
     $('#gotozeroMPos > a > .gcode').html(commandZ + ", " + commandXY);
-}
-
-function showBasicSettings() {
-  $("#grbl-settings-basic").show();
-  $("#grbl-settings-advanced").hide();
-}
-
-function showAdvSettings() {
-  $("#grbl-settings-basic").hide();
-  $("#grbl-settings-advanced").show();
-}
-
-function grblPopulate() {
-  if (!isJogWidget) {
-    $('#grblconfig').show();
-    $('#grblconfig').empty();
-    var template = `
-    <form id="grblSettingsTable">
-
-    <ul data-role="tabs" data-expand="true" class="mb-2">
-      <li id="grblSettingsBasicTab" onclick="showBasicSettings()"><a href="#"><small><i class="fas fa-fw fa-cog mr-1 fg-darkGreen"></i>Basic Settings</a></small></li>
-      <li id="grblSettingsAdvTab" onclick="showAdvSettings()" class="active"><a href="#"><small><i class="fas fa-fw fa-cogs mr-1 fg-darkRed"></i>Advanced Settings</a></small></li>
-    </ul>
-
-
-    <div id="grbl-settings-basic" style="display: none;">
-        <ul class="step-list mb-3">
-          <li>
-            <h6>Select your Machine<br><small>Tell us what machine you have?</small></h6>
-            <a style="width: 100%;"
-              class="button dropdown-toggle bd-dark dark outline"
-              id="context_toggle2"><img src="img/mch/leadmachine1010.png" /> Select
-              your machine type from the list:</a>
-            <ul class="ribbon-dropdown machine-profile-menu" data-role="dropdown"
-              data-duration="100">
-              <li><a href="#" onclick="selectMachine('custom');"><img
-                    src="img/mch/custom.png" width="16px" /> CUSTOM Machine (Profile
-                  sets sane defaults)</a></li>
-              <li>
-                <a href="#" class="dropdown-toggle"><img src="img/mch/acro55.png"
-                    width="16px" /> OpenBuilds ACRO</a>
-                <ul class="ribbon-dropdown" data-role="dropdown">
-                  <li onclick="selectMachine('acro55');"><a href="#"><img
-                        src="img/mch/acro55.png" width="16px" /> OpenBuilds ACRO 55</a></li>
-                  <li onclick="selectMachine('acro510');"><a href="#"><img
-                        src="img/mch/acro510.png" width="16px" /> OpenBuilds ACRO
-                      510</a></li>
-                  <li onclick="selectMachine('acro1010');"><a href="#"><img
-                        src="img/mch/acro1010.png" width="16px" /> OpenBuilds ACRO
-                      1010</a></li>
-                  <li onclick="selectMachine('acro1510');"><a href="#"><img
-                        src="img/mch/acro1510.png" width="16px" /> OpenBuilds ACRO
-                      1510</a></li>
-                  <li onclick="selectMachine('acro1515');"><a href="#"><img
-                        src="img/mch/acro1515.png" width="16px" /> OpenBuilds ACRO
-                      1515</a></li>
-                  <li class="divider"></li>
-                  <li onclick="selectMachine('acroa1');"><a href="#"><img
-                        src="img/mch/acroa1.png" width="16px" /> OpenBuilds ACRO A1</a></li>
-                </ul>
-              </li>
-              <li>
-                <a href="#" class="dropdown-toggle"><img src="img/mch/cbeam.png"
-                    width="16px" /> OpenBuilds C-Beam Machine</a>
-                <ul class="ribbon-dropdown" data-role="dropdown">
-                  <li onclick="selectMachine('cbeam');"><a href="#"><img
-                        src="img/mch/cbeam.png" width="16px" /> OpenBuilds C-Beam
-                      Machine</a></li>
-                  <li onclick="selectMachine('cbeamxl');"><a href="#"><img
-                        src="img/mch/cbeamxl.png" width="16px" /> OpenBuilds C-Beam
-                      XL</a></li>
-                </ul>
-              </li>
-              <li>
-                <a href="#" class="dropdown-toggle"><img
-                    src="img/mch/leadmachine1010.png" width="16px" /> OpenBuilds
-                  LEAD Machine</a>
-                <ul class="ribbon-dropdown" data-role="dropdown">
-                  <li onclick="selectMachine('leadmachine1010');"><a href="#"><img
-                        src="img/mch/leadmachine1010.png" width="16px" />OpenBuilds
-                      LEAD 1010</a></li>
-                  <li onclick="selectMachine('leadmachine1010laser');"><a href="#"><img
-                        src="img/mch/leadmachine1010laser.png" width="16px" />OpenBuilds
-                      LEAD 1010 with Laser Module</a></li>
-                  <li onclick="selectMachine('leadmachine1010plasma');"><a href="#"><img
-                        src="img/mch/leadmachine1010plasma.png" width="16px" />OpenBuilds
-                      LEAD 1010 Plasma Add-On</a></li>
-                  <li onclick="selectMachine('leadmachine1515');"><a href="#"><img
-                        src="img/mch/leadmachine1515.png" width="16px" />OpenBuilds
-                      LEAD 1515</a></li>
-                </ul>
-              </li>
-              <li><a href="#" onclick="selectMachine('minimill');"><img
-                    src="img/mch/minimill.png" width="16px" /> OpenBuilds MiniMill</a>
-              </li>
-            </ul>
-          </li>
-          <li>
-            <h6>Add-Ons Installed<br><small>Telling us what kind of attachments the
-                machine has, allows us to pre-configure your Grbl Settings to match</small></h6>
-            <ul class="image-checkbox-ul">
-              <li>
-                <input type="checkbox" name="limits" id="limitsinstalled"
-                  value="limits">
-                <label for="limitsinstalled"><img
-                    src="./img/toolhead/xtensionslimit.png" /></label>
-                <div class="image-checkbox-text">Xtension Limit Switches</div>
-              </li>
-              <!-- Radio Group -->
-              <li>
-                <input type="radio" name="toolhead" id="toolhead_router11"
-                  value="router11">
-                <label for="toolhead_router11"><img
-                    src="./img/toolhead/router11.png" /></label>
-                <div class="image-checkbox-text">RoutER11 with IoT Relay</div>
-              </li>
-              <li>
-                <input type="radio" name="toolhead" id="toolhead_plasma"
-                  value="plasma">
-                <label for="toolhead_plasma"><img
-                    src="./img/toolhead/leadplasma.png" /></label>
-                <div class="image-checkbox-text">LEAD 1010 Plasma Add-On</div>
-              </li>
-              <li>
-                <input type="radio" name="toolhead" id="toolhead_laser"
-                  value="laser">
-                <label for="toolhead_laser"><img src="./img/toolhead/laser.png" /></label>
-                <div class="image-checkbox-text">Laser Diode Module</div>
-              </li>
-              <li>
-                <input type="radio" name="toolhead" id="toolhead_scribe"
-                  value="scribe">
-                <label for="toolhead_scribe"><img src="./img/toolhead/plotter.png" /></label>
-                <div class="image-checkbox-text">SCRIBE<br>Pen Lifter</div>
-              </li>
-              <li>
-                <input type="radio" name="toolhead" id="toolhead_vfd_spindle"
-                  value="vfd_spindle">
-                <label for="toolhead_vfd_spindle"><img src="./img/toolhead/vfd.png" /></label>
-                <div class="image-checkbox-text">Variable Speed Spindle</div>
-              </li>
-              <!-- End Radio Group -->
-            </ul>
-          </li>
-
-          <li>
-            <h6>Finished<br><small>Remember to "Save to Firmware" and Reset when Prompted. <br>If you have any custom requirements,
-                please customise the settings in the Advanced Settings section above</small></h6>
-          </li>
-
-
-        </ul>
-    </div>
-    <div id="grbl-settings-advanced" style="overflow-y: scroll; max-height: calc(100vh - 300px);">
-        <div id="grblSettingsTableView">
-          <table data-role="table"
-            data-table-search-title="Search for Parameters by Name or $-Key"
-            data-search-fields="Key, Parameter"
-            data-on-draw="setup_settings_table"
-            data-on-table-create="setup_settings_table"
-            data-cell-wrapper="false"
-            class="table compact striped row-hover row-border"
-            data-show-rows-steps="false" data-rows="200"
-            data-show-pagination="false" data-show-table-info="true"
-            data-show-search="true">
-            <thead>
-              <tr>
-                <th style="text-align: left;">Key</th>
-                <th style="text-align: left;">Parameter</th>
-                <th style="width: 250px; min-width: 240px !important;">Value</th>
-                <th style="width: 110px; min-width: 110px !important;">Utility</th>
-              </tr>
-            </thead>
-            <tbody>`
-
-    for (var key in grblParams) {
-      var key2 = key.substr(1);
-      if (grblSettingsTemplate[key2] !== undefined) {
-        template += `<tr>
-                <td>` + grblSettingsTemplate[key2].key + `</td>
-                <td>` + grblSettingsTemplate[key2].title + `</td>
-                <td>` + grblSettingsTemplate[key2].template + `</td>
-                <td>` + grblSettingsTemplate[key2].utils + `</td>
-              </tr>`
-      } else {
-        template += `
-              <tr>
-                <td>` + key + `</td>
-                <td><span class="tally alert">` + key + `</span></td>
-                <td><input data-role="input" data-clear-button="false"
-                    data-append="?" type="text"
-                    value="` + grblParams[key] + `"
-                    id="val-` + key2 + `-input"></td>
-                <td></td>
-              </tr>
-              `
-      }
-    }
-
-    template += `</tbody>
-          </table>
-        </div> <!-- End of grblSettingsTableView -->
-        </div>
-      </div>
-    </nav>
-  </form>
-      `
-    $('#grblconfig').append(template);
-    settingsUIConstructed = false;
-
-    $('#grblSettingsTable').on('keyup paste click change', 'input, select', function() {
-      checkifchanged()
-    });
-
-    // Event Handlers for Switch Checkboxes
-    setTimeout(function() {
-      setup_settings_table();
-    }, 100)
-
-
-
-    $('#grblSettingsBadge').hide();
-    $('#limitsinstalled:checkbox').prop('checked', grblParams['$21'] == 1 && grblParams['$22'] > 0);
-
-    // if (grblParams['$33'] == 50 && grblParams['$34'] == 5 && grblParams['$35'] == 5 && grblParams['$36'] == 10) {
-    //   setSelectedToolhead('scribe')
-    // }
-
-    if (isMatchingConfig(grblParams, grblParams_scribe)) {
-      setSelectedToolhead('scribe')
-    } else if (isMatchingConfig(grblParams, grblParams_plasma)) {
-      setSelectedToolhead('plasma')
-    } else if (isMatchingConfig(grblParams, grblParams_router)) {
-      setSelectedToolhead('router11')
-    } else if (isMatchingConfig(grblParams, grblParams_laser)) {
-      setSelectedToolhead('laser')
-    } else if (isMatchingConfig(grblParams, grblParams_vfd)) {
-      setSelectedToolhead('vfd_spindle')
-    }
-
-    setTimeout(function() {
-      setMachineButton(laststatus.machine.name)
-    }, 500)
-
-    populateRestoreMenu();
-  }
-}
-
-function checkifchanged() {
-  if (!settingsUIConstructed) return;
-
-  var hasChanged = false;
-
-  for (var key in grblParams) {
-    if (grblParams.hasOwnProperty(key)) {
-      var j = key.substring(1);
-      var newVal = $("#val-" + j + "-input").val();
-
-      if (newVal !== undefined) {
-        // Determine if the value should be compared as text or number
-        var oldVal = grblParams[key];
-        var compareAsNumber = !isNaN(parseFloat(oldVal)) && !isNaN(parseFloat(newVal));
-
-        // Perform appropriate comparison
-        if ((compareAsNumber && parseFloat(newVal) !== parseFloat(oldVal)) ||
-          (!compareAsNumber && newVal !== oldVal)) {
-          hasChanged = true;
-
-          // console.log("changed: " + key);
-          // console.log("old: " + oldVal);
-          // console.log("new: " + newVal);
-
-          if (!$("#val-" + j + "-input").parent().is('td')) {
-            $("#val-" + j + "-input").parent().addClass('alert');
-          } else if ($("#val-" + j + "-input").is('select')) {
-            $("#val-" + j + "-input").addClass('alert');
-          } else if (j == 3) { // axes
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
-              $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
-              $('#ydirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
-              $('#zdirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
-              $('#adirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
-          } else if (j == 23) { // home axes
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
-              $('#xHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
-              $('#yHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
-              $('#zHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
-              $('#aHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
-          }
-        } else {
-          if (!$("#val-" + j + "-input").parent().is('td')) {
-            $("#val-" + j + "-input").parent().removeClass('alert');
-          } else if ($("#val-" + j + "-input").is('select')) {
-            $("#val-" + j + "-input").removeClass('alert');
-          } else if (j == 3) {
-            $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
-            $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
-            $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
-            $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
-          } else if (j == 23) { // home axes
-            $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
-            $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
-            $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
-            $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
-          }
-        }
-      }
-    }
-  }
-
-  if (hasChanged) {
-    $('#grblSettingsBadge').fadeIn('slow');
-    $('#saveBtn').attr('disabled', false).removeClass('disabled');
-    $('#saveBtnIcon').removeClass('fg-gray').addClass('fg-grayBlue');
-  } else {
-    $('#grblSettingsBadge').fadeOut('slow');
-    $('#saveBtn').attr('disabled', true).addClass('disabled');
-    $('#saveBtnIcon').removeClass('fg-grayBlue').addClass('fg-gray');
-  }
-}
-
-
-function autoBackup(note) {
-
-  const timestamp = new Date().toISOString(); // Generate current timestamp
-  const currentParams = {
-    machinetype: laststatus.machine.name,
-    note: note,
-    timestamp: timestamp,
-    grblParams: {
-      ...grblParams // Spread Operator copy
-    }
-  }; // Add timestamp to the current parameters
-
-  // Retrieve existing backups from localStorage or initialize an empty array
-  let backups = JSON.parse(localStorage.getItem('grblParamsBackups')) || [];
-
-  // Add the current backup to the beginning of the array
-  backups.unshift(currentParams);
-
-  // Trim backups to keep only the last 20
-  if (backups.length > 20) {
-    backups = backups.slice(0, 20);
-  }
-
-  // Save the updated backups array back to localStorage
-  localStorage.setItem('grblParamsBackups', JSON.stringify(backups));
-
-  // Optionally, add your existing save functionality here
-  console.log('Settings saved and backup created.');
-}
-
-const prioritySettings = ["$22"]; // change homing setting first because it can prevent soft limits from being set (grblHAL)
-
-function grblSaveSettings() {
-  autoBackup("Updated Grbl Settings")
-  var toSaveCommandsFirst = [];
-  var toSaveCommandsSecond = [];
-  var saveProgressBar = $("#grblSaveProgress").data("progress");
-  for (var key in grblParams) {
-    if (grblParams.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // Only send values that changed
-      if (newVal !== undefined) {
-        if (parseFloat(newVal) != parseFloat(grblParams[key]) && newVal != grblParams[key]) {
-          // console.log(key + ' was ' + grblParams[key] + ' but now, its ' + newVal);
-
-          if (prioritySettings.contains(key))
-            toSaveCommandsFirst.push(key + '=' + newVal);
-          else
-            toSaveCommandsSecond.push(key + '=' + newVal);
-        }
-      }
-    }
-  }
-
-  var toSaveCommands = [...toSaveCommandsFirst, ...toSaveCommandsSecond];
-
-  if (toSaveCommands.length > 0) {
-    //console.log("commands", toSaveCommands)
-    let counter = 0;
-    // Blank the dialog
-    if (saveProgressBar) {
-      saveProgressBar.val(0);
-    }
-    $("#grblNewParam").html("")
-    $("#grblNewParamVal").html("")
-    // Open Dialog savingGrblSettingsProgress
-    Metro.dialog.open('#savingGrblSettingsProgress')
-    const i = setInterval(function() {
-      //console.log(counter, toSaveCommands[counter]);
-      var newParam = toSaveCommands[counter].split("=")[0];
-      var newParamKey = newParam.substr(1);
-      if (grblSettingsTemplate[newParamKey] !== undefined) {
-        var newParamName = grblSettingsTemplate[newParamKey].title
-      } else {
-        var newParamName = "unknown"
-      }
-      var newParamVal = toSaveCommands[counter].split("=")[1];
-      $("#grblNewParam").html("<code>" + newParam + " : " + newParamName + "</code>")
-      $("#grblNewParamVal").html("<code>" + newParamVal + "</code>")
-
-      if (saveProgressBar) {
-        saveProgressBar.val(counter / toSaveCommands.length * 100);
-      }
-      //
-      sendGcode(toSaveCommands[counter] + "\n");;
-      counter++;
-      if (counter === toSaveCommands.length) {
-        // Finished running
-        clearInterval(i);
-        grblParams = {};
-        toSaveCommands = [];
-        askToResetOnGrblSettingsChange();
-      }
-    }, 400); // send another command every 400ms
-  }
-
-}
-
-function askToResetOnGrblSettingsChange() {
-  setTimeout(function() {
-    Metro.dialog.close('#savingGrblSettingsProgress')
-    Metro.dialog.create({
-      title: "Configuration Updated. Reset Grbl?",
-      content: "<div>Some changes in the Grbl Configuration only take effect after a restart/reset of the controller. Would you like to Reset the controller now?</div>",
-      clsDialog: 'dark',
-      actions: [{
-          caption: "Yes",
-          cls: "js-dialog-close success",
-          onclick: function() {
-            setTimeout(function() {
-              socket.emit('resetMachine');
-              setTimeout(function() {
-                sendGcode("$G");
-                refreshGrblSettings()
-              }, 1000); // refresh grbl settings
-            }, 800); // reset
-          }
-        },
-        {
-          caption: "Later",
-          cls: "js-dialog-close",
-          onclick: function() {
-            console.log("Do nothing")
-            refreshGrblSettings();
-          }
-        }
-      ]
-    });
-    $('#grblSettingsBadge').hide();
-  }, 1000); // Just to show settings was written
-}
-
-function refreshGrblSettings() {
-  $('#saveBtn').attr('disabled', true).addClass('disabled');
-  $('#saveBtnIcon').removeClass('fg-grayBlue').addClass('fg-gray');
-  grblParams = {};
-  $('#grblconfig').empty();
-  $('#grblconfig').append("<center>Please Wait... </center><br><center>Requesting updated parameters from the controller firmware...</center>");
-  setTimeout(function() {
-    sendGcode('$$');
-    sendGcode('$I');
-    setTimeout(function() {
-      grblPopulate();
-    }, 500);
-  }, 200);
-
-}
-
-// Calc Grbl 1.1 Invert Masks
-// Call: calcDecFromMask(true, false, false)
-// Return: 1
-function calcDecFromMask(x, y, z, a) {
-  return (x?1:0) + (y?2:0) + (z?4:0) + (a?8:0);
-}
-
-// Calc Grbl 1.1 Invert Masks
-// Call: calcMaskFromDec("4")
-// Returns: {x: false, y: false, z: true, a:false}
-function calcMaskFromDec(dec) {
-  var num = parseInt(dec)
-  var invertmask = {
-    x: (num&1) != 0,
-    y: (num&2) != 0,
-    z: (num&4) != 0,
-    a: (num&8) != 0,
-  }
-  return invertmask
-}
-
-
-function changeProbeDirInvert() {
-  var xticked = $('#xHomeDir').is(':checked');
-  var yticked = $('#yHomeDir').is(':checked');
-  var zticked = $('#zHomeDir').is(':checked');
-  var aticked = $('#aHomeDir').is(':checked');
-  var value = calcDecFromMask(!xticked, !yticked, !zticked, !aticked)
-  console.log("Homing Dir $23=" + value)
-  $("#val-23-input").val(value).trigger("change");
-  checkifchanged();
-}
-
-function displayProbeDirInvert() {
-  var dir = calcMaskFromDec($("#val-23-input").val())
-  $('#xHomeDir:checkbox').prop('checked', !dir.x);
-  $('#yHomeDir:checkbox').prop('checked', !dir.y);
-  $('#zHomeDir:checkbox').prop('checked', !dir.z);
-  $('#aHomeDir:checkbox').prop('checked', !dir.a);
-  checkifchanged();
-}
-
-function changeDirInvert() {
-  var xticked = $('#xdirinvert').is(':checked');
-  var yticked = $('#ydirinvert').is(':checked');
-  var zticked = $('#zdirinvert').is(':checked');
-  var aticked = $('#adirinvert').is(':checked');
-  var value = calcDecFromMask(xticked, yticked, zticked, aticked)
-  $("#val-3-input").val(value).trigger("change");
-  checkifchanged();
-}
-
-function displayDirInvert() {
-  var dir = calcMaskFromDec($("#val-3-input").val())
-  $('#xdirinvert:checkbox').prop('checked', dir.x);
-  $('#ydirinvert:checkbox').prop('checked', dir.y);
-  $('#zdirinvert:checkbox').prop('checked', dir.z);
-  $('#adirinvert:checkbox').prop('checked', dir.a);
-  checkifchanged();
-}
-
-function clearSettings() {
-  Metro.dialog.create({
-    title: "Are you sure?",
-    content: "<div>Resetting the Grbl Settings will restore all the settings to factory defaults, but will keep other EEPROM settings intact. Would you like to continue?</div>",
-    clsDialog: 'dark',
-    actions: [{
-        caption: "Yes",
-        cls: "js-dialog-close success",
-        onclick: function() {
-          sendGcode('$RST=$');
-          refreshGrblSettings()
-        }
-      },
-      {
-        caption: "Cancel",
-        cls: "js-dialog-close",
-        onclick: function() {
-          refreshGrblSettings();
-        }
-      }
-    ]
-  });
-}
-
-function clearWCO() {
-  Metro.dialog.create({
-    title: "Are you sure?",
-    content: "<div>Resetting the Work Coordinate Systems will erase all the coordinate system offsets currently stored in the EEPROM on the controller. Would you like to continue?</div>",
-    clsDialog: 'dark',
-    actions: [{
-        caption: "Yes",
-        cls: "js-dialog-close success",
-        onclick: function() {
-          sendGcode('$RST=#');
-          refreshGrblSettings()
-        }
-      },
-      {
-        caption: "Cancel",
-        cls: "js-dialog-close",
-        onclick: function() {
-          refreshGrblSettings();
-        }
-      }
-    ]
-  });
-}
-
-function clearEEPROM() {
-  Metro.dialog.create({
-    title: "Are you sure?",
-    content: "<div>Resetting the EEPROM will erase all the Grbl Firmware settings from your controller, effectively resetting it back to factory defaults. Would you like to continue?</div>",
-    clsDialog: 'dark',
-    actions: [{
-        caption: "Yes",
-        cls: "js-dialog-close success",
-        onclick: function() {
-          sendGcode('$RST=*');
-          refreshGrblSettings()
-        }
-      },
-      {
-        caption: "Cancel",
-        cls: "js-dialog-close",
-        onclick: function() {
-          refreshGrblSettings();
-        }
-      }
-    ]
-  });
-}
-
-function updateToolOnSValues() {
-  $(".ToolOnS1").html((parseInt(grblParams.$30) * 0.01).toFixed(0))
-  $(".ToolOnS5").html((parseInt(grblParams.$30) * 0.05).toFixed(0))
-  $(".ToolOnS10").html((parseInt(grblParams.$30) * 0.1).toFixed(0))
-  $(".ToolOnS25").html((parseInt(grblParams.$30) * 0.25).toFixed(0))
-  $(".ToolOnS50").html((parseInt(grblParams.$30) * 0.5).toFixed(0))
-  $(".ToolOnS75").html((parseInt(grblParams.$30) * 0.75).toFixed(0))
-  $(".ToolOnS100").html(parseInt(grblParams.$30).toFixed(0))
-}
-
-function setup_settings_table() {
-
-  for (var key in grblParams) {
-    var key2 = key.substr(1);
-    var input = $("#val-" + key2 + "-input");
-    input.val(grblParams[key])
-    var setting = grblSettingsTemplate[key2];
-    // Metro UI destroys the tooltips for td and tr elements - readding here
-    if (setting !== undefined && setting.description.length > 0)
-      input.closest('td').prev().attr('title', setting.description);
-  }
-  settingsUIConstructed = true;
-
-  setTimeout(function() {
-    $("#val-32-input").val(parseInt(grblParams['$32'])).trigger("change");
-    $("#val-20-input").val(parseInt(grblParams['$20'])).trigger("change");
-    $("#val-21-input").val(parseInt(grblParams['$21'])).trigger("change");
-    $("#val-22-input").val(parseInt(grblParams['$22'])).trigger("change");
-    $("#val-23-input").val(parseInt(grblParams['$23'])).trigger("change");
-    $("#val-5-input").val(parseInt(grblParams['$5'])).trigger("change");
-    $("#val-6-input").val(parseInt(grblParams['$6'])).trigger("change");
-    $("#val-2-input").val(parseInt(grblParams['$2'])).trigger("change");
-    $("#val-3-input").val(parseInt(grblParams['$3'])).trigger("change");
-    $("#val-4-input").val(parseInt(grblParams['$4'])).trigger("change");
-    $("#val-13-input").val(parseInt(grblParams['$13'])).trigger("change");
-  }, 100);
-
-  $('#limitsinstalled:checkbox').change(function() {
-    enableLimits();
-  });
-
-  // $('#scribeinstalled:checkbox').change(function() {
-  //   enableScribe();
-  // });
-
-  // Handle the change event for radio buttons
-  $('input[name="toolhead"]').on('change', function() {
-    console.log(`Selected toolhead: ${$(this).val()}`);
-    var selectedToolhead = $(this).val();
-    if (selectedToolhead == 'router11') {
-      enableRouter();
-    } else if (selectedToolhead == 'scribe') {
-      enableScribe();
-    } else if (selectedToolhead == 'laser') {
-      enableLaser();
-    } else if (selectedToolhead == 'plasma') {
-      enablePlasma();
-    } else if (selectedToolhead == 'vfd_spindle') {
-      enableVFD();
-    }
-  });
-
-  $('#xdirinvert:checkbox').change(function() {
-    changeDirInvert();
-  });
-  $('#ydirinvert:checkbox').change(function() {
-    changeDirInvert();
-  });
-  $('#zdirinvert:checkbox').change(function() {
-    changeDirInvert();
-  });
-  $('#adirinvert:checkbox').change(function() {
-    changeDirInvert();
-  });
-
-  $('#xHomeDir:checkbox').change(function() {
-    changeProbeDirInvert();
-  });
-  $('#yHomeDir:checkbox').change(function() {
-    changeProbeDirInvert();
-  });
-  $('#zHomeDir:checkbox').change(function() {
-    changeProbeDirInvert();
-  });
-  $('#aHomeDir:checkbox').change(function() {
-    changeProbeDirInvert();
-  });
-
-  // populare Direction Invert Checkboxes
-  displayDirInvert();
-  displayProbeDirInvert();
-
-  console.log("Updated")
-}
-
-function enableLimits() {
-  var grblParams_lim = {
-    $21: "0", //"Hard limits enable, boolean"
-    $22: "0", //"Homing cycle enable, boolean"
-  }
-  var hasLimits = $('#limitsinstalled').is(':checked');
-  if (hasLimits) {
-    grblParams_lim.$21 = "1"; //"Hard limits enable, boolean"
-    grblParams_lim.$22 = "1"; //"Homing cycle enable, boolean"
-  } else {
-    grblParams_lim.$21 = "0"; //"Hard limits enable, boolean"
-    grblParams_lim.$22 = "0"; //"Homing cycle enable, boolean"
-  }
-  for (var key in grblParams_lim) {
-    if (grblParams_lim.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // console.log("$" + j + " = " + newVal)
-      $("#val-" + j + "-input").val(parseFloat(grblParams_lim[key]))
-    }
-  }
-  checkifchanged();
-}
-
-var grblParams_scribe = {
-  $32: "0", //PWM Freq for RC Servo
-  $33: "50", //PWM Freq for RC Servo
-  $34: "5", //Spindle Off Value for RC Servo
-  $35: "5", //Spinde Min Value for RC Servo
-  $36: "10", //Spindle max Value for RC Servo
-}
-
-function enableScribe() {
-  for (var key in grblParams_scribe) {
-    if (grblParams_scribe.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // console.log("$" + j + " = " + newVal)
-      $("#val-" + j + "-input").val(parseFloat(grblParams_scribe[key]))
-    }
-  }
-  checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
-}
-
-var grblParams_laser = {
-  $30: "1000", // S Max
-  $32: "1", // Laser Mode On
-  $33: "1000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enableLaser() {
-
-  for (var key in grblParams_laser) {
-    if (grblParams_laser.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // console.log("$" + j + " = " + newVal)
-      $("#val-" + j + "-input").val(parseFloat(grblParams_laser[key]))
-    }
-  }
-  checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
-}
-
-var grblParams_router = {
-  $30: "1000", // S Max
-  $32: "0", // Laser Mode On
-  $33: "5000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enableRouter() {
-
-  for (var key in grblParams_router) {
-    if (grblParams_router.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // console.log("$" + j + " = " + newVal)
-      $("#val-" + j + "-input").val(parseFloat(grblParams_router[key]))
-    }
-  }
-  checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
-}
-
-var grblParams_plasma = {
-  $30: "1000", // S Max
-  $32: "0", // Laser Mode On
-  $33: "1000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enablePlasma() {
-
-  for (var key in grblParams_plasma) {
-    if (grblParams_plasma.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // console.log("$" + j + " = " + newVal)
-      $("#val-" + j + "-input").val(parseFloat(grblParams_plasma[key]))
-    }
-  }
-  checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
-}
-
-var grblParams_vfd = {
-  $30: "24000", // S Max
-  $32: "0", // Laser Mode On
-  $33: "1000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enableVFD() {
-
-  for (var key in grblParams_vfd) {
-    if (grblParams_vfd.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // console.log("$" + j + " = " + newVal)
-      $("#val-" + j + "-input").val(parseFloat(grblParams_vfd[key]))
-    }
-  }
-  checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
-}
-
-function isMatchingConfig(currentParams, predefinedParams) {
-  for (let key in predefinedParams) {
-    // Compare values as numbers to handle type mismatches
-    if (parseFloat(currentParams[key]) !== parseFloat(predefinedParams[key])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-
-// Function to programmatically set the selected radio
-function setSelectedToolhead(value) {
-  const $radio = $(`input[name="toolhead"][value="${value}"]`);
-  if ($radio.length) {
-    $radio.prop('checked', true).trigger('change'); // Trigger the change event
-  } else {
-    console.error('Toolhead not found:', value);
-  }
-
-  if (value == "scribe") {
-    // Set Default Pen Up/Down values
-    penupval = 250
-    pendownval = 0
-    servo = {
-      up: penupval,
-      down: pendownval
-    }
-    localStorage.setItem("servo-calibration", JSON.stringify(servo));
-  }
 }
