@@ -60,7 +60,7 @@ function startFromHere(lineNumber) {
   var preserveLines = undefined;
 
   var error = undefined;
-  if (gcode)
+  if (!useEditor)
     error = "The G-code is too large to be edited.";
   else if (editor.session.getLength() <= 1)
     error = "No G-code program is currently loaded.";

@@ -647,14 +647,22 @@ app.post('/saveFile', (req, res) => {
   }).single('file');
 
   upload(req, res, function(err) {
-    if (err && req.body.showErrorDlg == "true") {
-      dialog.showMessageBox(jogWindow, {
-        type: 'error',
-        buttons: ['OK'],
-        message: err.toString()
-      });
+    if (err) {
+      if (req.body.showErrorDlg == "true") {
+        dialog.showMessageBox(jogWindow, {
+          type: 'error',
+          buttons: ['OK'],
+          message: err.toString()
+        });
+      }
+      res.send(err.toString());
+    } else {
+      if (req.body.updateLastFilePath == "true") {
+        status.misc.lastFilePath = req.file.originalname;
+        addRecentFile(req.file.originalname);
+      }
+      res.send("");
     }
-    res.send(err ? err.toString() : "");
   });
 });
 

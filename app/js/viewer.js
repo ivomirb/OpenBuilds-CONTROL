@@ -4,6 +4,8 @@ var camera, renderer;
 var gridsystem = new THREE.Group();
 var cone;
 
+var CONE_FACE_COUNT = 8;
+
 var container, stats;
 var controls;
 
@@ -152,7 +154,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   }
 
   if (!disable3Drealtimepos) {
-    var coneGeo = new THREE.CylinderGeometry(0, 5, 40, 15, 1, false)
+    var coneGeo = new THREE.CylinderGeometry(0, 5, 40, CONE_FACE_COUNT, 1, false)
     coneGeo.applyMatrix(new THREE.Matrix4().makeTranslation(0, -20, 0));
 
     cone = new THREE.Mesh(coneGeo, new THREE.MeshLambertMaterial({
@@ -424,11 +426,7 @@ function init3D() {
     console.log('No WebGL Support found on this computer! Disabled 3D Viewer - Sorry!');
     printLog("<span class='fg-darkRed'>[ ERROR ]</span>  <span class='fg-darkRed'>No WebGL Support found on this computer! Disabled 3D Viewer - Sorry!</span>")
     printLog("<span class='fg-darkRed'>[ ERROR ]</span>  <span class='fg-darkRed'>" + getWebGLErrorMessage() + "</span>")
-    $('#gcodeviewertab').hide()
-    $('#consoletab').click()
-    return false;
-  };
-
+  }
 }
 
 function animate() {
@@ -586,7 +584,7 @@ $(window).on('resize', function() {
 });
 
 function resetView(object) {
-  if (object && object.userData.linePoints.length > 1) {
+  if (object && object.userData.pointCount > 1) {
     viewExtents(object);
   } else {
     viewExtents(gridsystem);

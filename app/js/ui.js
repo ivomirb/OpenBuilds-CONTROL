@@ -105,7 +105,7 @@ function setControlBar(val, status) {
     $('#chkSize').show().attr('disabled', val != 2 || isJogWidget || !object);
 
     // Determine the correct state for Run/Play/Pause/Stop
-    const hasJob = (editor && editor.session.getLength() > 1) || gcode;
+    const hasJob = (useEditor && editor && editor.session.getLength() > 1) || (!useEditor && currentGcode != "");
     const activeJob = val == 3 || val == 4;
     const doorOpen = status.machine.inputs.includes('D');
 

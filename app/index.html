@@ -1075,14 +1075,14 @@ Restore previous origins from history.">
 
                     <div class="fixed-bottom m-3 mb-9">
                       <!-- <form class="inline-form"> -->
-                      <button title="Update the 3D View with the edited G-code" class="button success" onclick="parseGcodeInWebWorker(editor.getValue())"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
-                      <button title="Save G-code to file" class="button primary" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
-                      <button title="Find and Replace" class="button dark" onclick="editor.execCommand('replace')"><i class="fas fa-search"></i> Find/Replace</button>&nbsp;
-                      <button title="Select All" class="button dark" onclick="editor.execCommand('selectall')"><i class="far fa-check-square"></i> Select All</button>&nbsp;
-                      <button title="Undo" class="button dark" onclick="editor.execCommand('undo')"><i class="fas fa-undo"></i> Undo</button>&nbsp;
-                      <button title="Redo" class="button dark" onclick="editor.execCommand('redo')"><i class="fas fa-redo"></i> Redo</button>&nbsp;
-                      <button title="Go to End" class="button dark" onclick="editor.execCommand('gotoend')"><i class="fas fa-chevron-down"></i></button>&nbsp;
-                      <button title="Go to Start" class="button dark" onclick="editor.execCommand('gotostart')"><i class="fas fa-chevron-up"></i></button>&nbsp;
+                      <button title="Update the 3D View with the edited G-code" class="button success editorEnabled" onclick="previewGcode()"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
+                      <button title="Save G-code to file" class="button primary editorEnabled" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
+                      <button title="Find and Replace" class="button dark editorEnabled" onclick="editor.execCommand('replace')"><i class="fas fa-search"></i> Find/Replace</button>&nbsp;
+                      <button title="Select All" class="button dark editorEnabled" onclick="editor.execCommand('selectall')"><i class="far fa-check-square"></i> Select All</button>&nbsp;
+                      <button title="Undo" class="button dark editorEnabled" onclick="editor.execCommand('undo')"><i class="fas fa-undo"></i> Undo</button>&nbsp;
+                      <button title="Redo" class="button dark editorEnabled" onclick="editor.execCommand('redo')"><i class="fas fa-redo"></i> Redo</button>&nbsp;
+                      <button title="Go to End" class="button dark editorEnabled" onclick="editor.execCommand('gotoend')"><i class="fas fa-chevron-down"></i></button>&nbsp;
+                      <button title="Go to Start" class="button dark editorEnabled" onclick="editor.execCommand('gotostart')"><i class="fas fa-chevron-up"></i></button>&nbsp;
                       <button title="Clear Editor" class="button dark" onclick="clearGcode()"><i class="fas fa-eraser"></i>
                         Clear</button>&nbsp;
                       <!-- </form> -->
