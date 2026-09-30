@@ -11,91 +11,96 @@ var simTween = false;
 var simDisplayType = 1;
 
 function convertParsedDataToObject(parsedData) {
-  const gArray = parsedData.gArray;
-  const srcArray = parsedData.srcArray;
-  const offsetArray = parsedData.offsetArray;
-  const startArray = parsedData.startArray;
-  const durationArray = parsedData.durationArray;
-  const xArray = parsedData.xArray;
-  const yArray = parsedData.yArray;
-  const zArray = parsedData.zArray;
-  const fakeArray = parsedData.fakeArray;
+  if (!parsedData.error) {
+    try {
+      const gArray = parsedData.gArray;
+      const srcArray = parsedData.srcArray;
+      const offsetArray = parsedData.offsetArray;
+      const startArray = parsedData.startArray;
+      const durationArray = parsedData.durationArray;
+      const xArray = parsedData.xArray;
+      const yArray = parsedData.yArray;
+      const zArray = parsedData.zArray;
 
-  var geometry = new THREE.BufferGeometry();
+      var geometry = new THREE.BufferGeometry();
 
-  var material = new THREE.LineBasicMaterial({
-    vertexColors: THREE.VertexColors,
-    transparent: true,
-    opacity: 0.8,
-  });
-  var positions = [];
-  var colors = [];
+      var material = new THREE.LineBasicMaterial({
+        vertexColors: THREE.VertexColors,
+        transparent: true,
+        opacity: 0.8,
+      });
+      var positions = [];
+      var colors = [];
 
-  const themeColors = Theme.lines;
+      const themeColors = Theme.lines;
 
-  var gLast = undefined;
-  var xLast = undefined;
-  var yLast = undefined;
-  var zLast = undefined;
-  for (var i = 0; i < parsedData.pointCount; i++) {
-    if (fakeArray[i]) continue;
+      var gLast = undefined;
+      var xLast = undefined;
+      var yLast = undefined;
+      var zLast = undefined;
+      for (var i = 0; i < parsedData.pointCount; i++) {
+        const g = gArray[i];
+        const x = xArray[i];
+        const y = yArray[i];
+        const z = zArray[i];
 
-    const g = gArray[i];
-    const x = xArray[i];
-    const y = yArray[i];
-    const z = zArray[i];
+        if (g == 0 || g == 1 || g == 2) {
+          var color = themeColors[g];
+        } else {
+          var color = themeColors[3];
+        }
 
-    if (g == 0 || g == 1 || g == 2) {
-      var color = themeColors[g];
-    } else {
-      var color = themeColors[3];
+        if (gLast != undefined && gLast != g) {
+          // if switching colors, repeat the last point with the new color
+          colors.push(color.R, color.G, color.B);
+          positions.push(xLast, yLast, zLast);
+        }
+        positions.push(x, y, z);
+        colors.push(color.R, color.G, color.B);
+        gLast = g;
+        xLast = x;
+        yLast = y;
+        zLast = z;
+      }
+
+      geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      geometry.computeBoundingSphere();
+
+      var line = new THREE.Line(geometry, material);
+      line.geometry.computeBoundingBox();
+      var box = line.geometry.boundingBox.clone();
+      line.userData.pointCount = parsedData.pointCount;
+      line.userData.gArray = parsedData.gArray;
+      line.userData.srcArray = parsedData.srcArray;
+      line.userData.offsetArray = parsedData.offsetArray;
+      line.userData.startArray = parsedData.startArray;
+      line.userData.durationArray = parsedData.durationArray;
+      line.userData.xArray = parsedData.xArray;
+      line.userData.yArray = parsedData.yArray;
+      line.userData.zArray = parsedData.zArray;
+      line.userData.bbbox2 = box;
+      line.userData.totalTime = parsedData.totalTime;
+      line.userData.toolRanges = parsedData.toolRanges;
+      line.name = 'gcodeobject';
+      return line;
+    } catch (ex) {
+      parsedData.error = ex.toString();
     }
-
-    if (gLast != undefined && gLast != g) {
-      // if switching colors, repeat the last point with the new color
-      colors.push(color.R, color.G, color.B);
-      positions.push(xLast, yLast, zLast);
-    }
-    positions.push(x, y, z);
-    colors.push(color.R, color.G, color.B);
-    gLast = g;
-    xLast = x;
-    yLast = y;
-    zLast = z;
   }
-
-  geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-  geometry.computeBoundingSphere();
-
-  var line = new THREE.Line(geometry, material);
-  line.geometry.computeBoundingBox();
-  var box = line.geometry.boundingBox.clone();
-  line.userData.pointCount = parsedData.pointCount;
-  line.userData.gArray = parsedData.gArray;
-  line.userData.srcArray = parsedData.srcArray;
-  line.userData.offsetArray = parsedData.offsetArray;
-  line.userData.startArray = parsedData.startArray;
-  line.userData.durationArray = parsedData.durationArray;
-  line.userData.xArray = parsedData.xArray;
-  line.userData.yArray = parsedData.yArray;
-  line.userData.zArray = parsedData.zArray;
-  line.userData.fakeArray = parsedData.fakeArray;
-  line.userData.bbbox2 = box;
-  line.userData.inch = parsedData.inch;
-  line.userData.totalTime = parsedData.totalTime;
-  line.name = 'gcodeobject';
-  return line;
+  printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview failed</span>");
+  printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> " + escapeHTML(parsedData.error) + "</span>");
+  return false;
 }
 
 function getGcodeLine(pointIndex) {
-	const offset = object.userData.offsetArray[pointIndex];
-	var end = currentGcode.indexOf('\n', offset);
-	if (end > offset && currentGcode[end - 1]) {
-		end--;
-	}
-	return currentGcode.slice(offset, end >= 0 ? end : undefined);
+  const offset = object.userData.offsetArray[pointIndex];
+  var end = currentGcode.indexOf('\n', offset);
+  if (end > offset && currentGcode[end - 1]) {
+    end--;
+  }
+  return currentGcode.slice(offset, end >= 0 ? end : undefined);
 }
 
 function parseGcodeInWebWorker(gcode) {
@@ -118,31 +123,15 @@ function parseGcodeInWebWorker(gcode) {
           $('#viewToolpathSetting:checkbox').prop('checked', true);
           saveViewSettings();
         }
-        //console.log(object)
-        if (object && object.userData.pointCount > 1) {
+
+        if (object) {
           worker.terminate();
           scene.add(object);
-          if (object.userData.inch) {
-            // console.log(scaling)
-            object.scale.x = 25.4
-            object.scale.y = 25.4
-            object.scale.z = 25.4
-          }
 
-          if (localStorage.getItem('unitsMode')) {
-            if (localStorage.getItem('unitsMode') == "in") {
-              if (object.userData.inch) {
-                redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, true);
-              } else {
-                redrawGrid(object.userData.bbbox2.min.x / 25.4, object.userData.bbbox2.max.x / 25.4, object.userData.bbbox2.min.y / 25.4, object.userData.bbbox2.max.y / 25.4, true);
-              }
-            } else {
-              if (object.userData.inch) {
-                redrawGrid(object.userData.bbbox2.min.x * 25.4, object.userData.bbbox2.max.x * 25.4, object.userData.bbbox2.min.y * 25.4, object.userData.bbbox2.max.y * 25.4, false);
-              } else {
-                redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, false);
-              }
-            }
+          if (localStorage.getItem('unitsMode') == "in") {
+            redrawGrid(object.userData.bbbox2.min.x / 25.4, object.userData.bbbox2.max.x / 25.4, object.userData.bbbox2.min.y / 25.4, object.userData.bbbox2.max.y / 25.4, true);
+          } else {
+            redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, false);
           }
 
           setTimeout(function() {
@@ -157,13 +146,19 @@ function parseGcodeInWebWorker(gcode) {
               //console.log(timeConvert(timeremain));
               // output formattedTime to UI here
               $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-              printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Total lines: <b>" + object.userData.pointCount + "</b> / Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
+              printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
+            } else {
+              $('#timeRemaining').html("");
             }
           }, 200);
           $('#3dviewicon').removeClass('fa-pulse');
           $('#3dviewlabel').html(' 3D View');
         } else {
           // Didn't get an Object
+          if (!disableSerialLog) {
+            $('#consoletab').click();
+          }
+          $('#timeRemaining').html("");
           $('#3dviewicon').removeClass('fa-pulse');
           $('#3dviewlabel').html(' 3D View');
 
@@ -211,12 +206,6 @@ function resetConePosition() {
   var posx = object.userData.xArray[idx];
   var posy = object.userData.yArray[idx];
   var posz = object.userData.zArray[idx];
-
-  if (object.userData.inch) {
-    posx *= 25.4;
-    posy *= 25.4;
-    posz *= 25.4;
-  }
 
   cone.position.x = posx;
   cone.position.y = posy;
@@ -276,24 +265,22 @@ function sim(fromLine, paused) {
 }
 
 function runSim() {
-  // find next non-fake line
+  // find next line
   var simTimeInSec = 0;
   var resetCone = false;
 
   for (;simIdx < object.userData.pointCount; simIdx++) {
-    if (object.userData.fakeArray[simIdx] == 0) {
-      var simTimeMins = object.userData.durationArray[simIdx];
-      if (object.userData.gArray[simIdx] == 0 && grblParams.$110 != undefined)
-        simTimeMins *= 1000 / parseFloat(grblParams.$110); // adjust rapid speed if it is known
-      simTimeInSec += simTimeMins * 60;
-      if (simPaused) {
-        simTimeInSec = Math.max(simTimeInSec, 0.01); // to prevent the paused tween from completing
-        break;
-      } else if (simTimeInSec > 0.03 * timefactor) { // if the sim is not paused, make sure we accumulate enough moves for 30ms
-        break;
-      }
-      resetCone = true;
+    var simTimeMins = object.userData.durationArray[simIdx];
+    if (object.userData.gArray[simIdx] == 0 && grblParams.$110 != undefined)
+      simTimeMins *= 1000 / parseFloat(grblParams.$110); // adjust rapid speed if it is known
+    simTimeInSec += simTimeMins * 60;
+    if (simPaused) {
+      simTimeInSec = Math.max(simTimeInSec, 0.01); // to prevent the paused tween from completing
+      break;
+    } else if (simTimeInSec > 0.03 * timefactor) { // if the sim is not paused, make sure we accumulate enough moves for 30ms
+      break;
     }
+    resetCone = true;
   }
 
   if (simIdx >= object.userData.pointCount) {
@@ -324,11 +311,6 @@ function runSim() {
   var posx = object.userData.xArray[simIdx];
   var posy = object.userData.yArray[simIdx];
   var posz = object.userData.zArray[simIdx];
-  if (object.userData.inch) {
-    posx *= 25.4;
-    posy *= 25.4;
-    posz *= 25.4;
-  }
 
   if (simTween)
     simTween.kill();
@@ -380,21 +362,19 @@ function simStepBack() {
         break;
     }
   } else {
-    // already at the start of a line, find a previous non-fake line
+    // already at the start of a line, find a previous line
     for (var i = simIdx - 1; i >= 0; i--) {
-      if (object.userData.fakeArray[i] == 0) {
-        var li = object.userData.srcArray[i];
-        if (newIdx == undefined) {
-          if (li < line) {
-            line = li;
-            newIdx = i;
-          }
-        }
-        else if (li == line)
+      var li = object.userData.srcArray[i];
+      if (newIdx == undefined) {
+        if (li < line) {
+          line = li;
           newIdx = i;
-        else if (li < line)
-          break;
+        }
       }
+      else if (li == line)
+        newIdx = i;
+      else if (li < line)
+        break;
     }
   }
 
@@ -418,7 +398,6 @@ function simSetProgress(progress) {
     } else {
       var time = object.userData.totalTime * progress / 100;
       for (var i = 0; i < object.userData.pointCount; i++) {
-        if (object.userData.fakeArray[i]) continue;
         if (time == 0) {
           newIdx = i;
           break;
@@ -487,9 +466,9 @@ function simStepForward() {
 
   var newIdx = object.userData.pointCount;
   const line = object.userData.srcArray[simIdx];
-  // find the next non-fake line
+  // find the next line
   for (var i = simIdx + 1; i < object.userData.pointCount; i++)
-    if (object.userData.fakeArray[i] == 0 && object.userData.srcArray[i] > line) {
+    if (object.userData.srcArray[i] > line) {
       newIdx = i;
       break;
     }
