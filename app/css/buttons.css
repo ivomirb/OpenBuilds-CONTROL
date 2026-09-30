@@ -228,3 +228,8 @@ hr {
 {
   color: #999 !important;
 }
+
+/* The default margin of 0.65rem rounds weird and causes misalignment */
+.ribbon-button.dropdown-toggle::before {
+    margin-left: -10px;
+}

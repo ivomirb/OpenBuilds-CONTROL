@@ -27,7 +27,7 @@ function debug_log() {
 debug_log("Starting OpenBuilds CONTROL v" + require('./package').version)
 
 var config = {};
-config.webPorts = [3000, 3020, 3200, 3220]
+config.webPorts = [3000, 3020, 3200, 3220];
 config.webPortIdx = 0;
 config.nextWebPort = function() {
   config.webPort = config.webPorts[config.webPortIdx]
@@ -39,7 +39,6 @@ config.nextWebPort = function() {
 }
 config.webPort = process.env.WEB_PORT || config.nextWebPort();
 config.posDecimals = process.env.DRO_DECIMALS || 3;
-config.grblWaitTime = 0.5;
 config.singleCommandMode = true; // set to false to send as many commands as will fit in the RX buffer
 config.aggressiveHomeReset = true;
 config.maxRecentFiles = 10;
@@ -51,6 +50,8 @@ var persistentConfig = {
   defaultPaths: {},
   recentFiles: [],
   persistDisplayMode: false,
+  grblWaitTime1: 1, // timeout for the first handshake attempt (Cltr+X)
+  grblWaitTime2: 1, // timeout for the second handshake attempt (DTR Enable)
 };
 
 var express = require("express");
@@ -89,6 +90,9 @@ function loadPersistentConfig() {
       }
     }
   } catch (err) {}
+
+  persistentConfig.grblWaitTime1 = Math.max(persistentConfig.grblWaitTime1, 0.1);
+  persistentConfig.grblWaitTime2 = Math.max(persistentConfig.grblWaitTime2, 0.1);
 }
 
 // FluidNC test
@@ -177,6 +181,8 @@ const {
   ReadlineParser
 } = require('@serialport/parser-readline')
 
+var port;
+var connectTimeout;
 
 
 // telnet
@@ -893,70 +899,65 @@ function onParserData(data) {
     io.sockets.emit("status", status);
   }
 
-  // Machine Identification
-  if (data.indexOf("Grbl") === 0 || data.indexOf("[FIRMWARE:grblHAL]") === 0) { // Check if it's Grbl
+  // Reset greeting
+  if (data.startsWith("Grbl") || data.startsWith("[FIRMWARE:grblHAL]")) { // Check if it's Grbl
     debug_log(data)
-    status.comms.blocked = false;
-    if (data.indexOf("GrblHAL") === 0) {
-      status.machine.firmware.type = "grbl";
-      status.machine.firmware.platform = "grblHAL"
-      status.machine.firmware.version = data.substr(8, 4); // get version
-    } else if (data.indexOf("[FIRMWARE:grblHAL]") === 0) {
-      status.machine.firmware.type = "grbl";
-      status.machine.firmware.platform = "grblHAL"
-      // Parse version from seperate [VER:...] line not here for this response
-    } else if (data.indexOf("FluidNC") != -1) { // Grbl 3.6 [FluidNC v3.6.5 (wifi) '$' for help]
-      status.machine.firmware.type = "grbl";
-      status.machine.firmware.platform = "FluidNC"
-      status.machine.firmware.version = data.substr(19, 5); // get version
-    } else {
-      status.machine.firmware.type = "grbl";
-      status.machine.firmware.platform = "gnea"
-      status.machine.firmware.version = data.substr(5, 4); // get version
-    }
-    if (parseFloat(status.machine.firmware.version) < 1.1) { // If version is too old
-      if (status.machine.firmware.version.length < 3) {
-        debug_log('invalid version string, stay connected')
+    // Machine Identification
+    if (status.comms.connectionStatus == 1) {
+      if (data.startsWith("GrblHAL")) {
+        status.machine.firmware.type = "grbl";
+        status.machine.firmware.platform = "grblHAL";
+        status.machine.firmware.version = data.substr(8, 4); // get version
+      } else if (data.startsWith("[FIRMWARE:grblHAL]")) {
+        status.machine.firmware.type = "grbl";
+        status.machine.firmware.platform = "grblHAL";
+        // Parse version from seperate [VER:...] line not here for this response
+      } else if (data.indexOf("FluidNC") != -1) { // Grbl 3.6 [FluidNC v3.6.5 (wifi) '$' for help]
+        status.machine.firmware.type = "grbl";
+        status.machine.firmware.platform = "FluidNC";
+        status.machine.firmware.version = data.substr(19, 5); // get version
       } else {
-        if (status.comms.connectionStatus > 0) {
-          debug_log('WARN: Closing Port ' + port.path + " /  v" + parseFloat(status.machine.firmware.version));
-          // stopPort();
-        } else {
-          debug_log('ERROR: Machine connection not open!');
-        }
-        var output = {
-          'command': command,
-          'response': "Detected an unsupported version: Grbl " + status.machine.firmware.version + ". This is sadly outdated. Please upgrade to Grbl 1.1 or newer to use this software.  Go to http://github.com/gnea/grbl",
-          'type': 'error'
-        }
-        io.sockets.emit('data', output);
+        status.machine.firmware.type = "grbl";
+        status.machine.firmware.platform = "gnea";
+        status.machine.firmware.version = data.substr(5, 4); // get version
       }
-    }
+      if (parseFloat(status.machine.firmware.version) < 1.1) { // If version is too old
+        if (status.machine.firmware.version.length < 3) {
+          debug_log('invalid version string, stay connected')
+        } else {
+          if (status.comms.connectionStatus > 0) {
+            debug_log('WARN: Closing Port ' + port.path + " /  v" + parseFloat(status.machine.firmware.version));
+            // stopPort();
+          } else {
+            debug_log('ERROR: Machine connection not open!');
+          }
+          var output = {
+            'command': command,
+            'response': "Detected an unsupported version: Grbl " + status.machine.firmware.version + ". This is sadly outdated. Please upgrade to Grbl 1.1 or newer to use this software.  Go to http://github.com/gnea/grbl",
+            'type': 'error'
+          }
+          io.sockets.emit('data', output);
+        }
+      }
 
-    if (config.aggressiveHomeReset)
-    {
-      // when aggressiveHomeReset is true (the default) reset the home state on every grbl reset
+      onConnection();
+    }
+    // end of machine identification
+
+    status.comms.blocked = false;
+    if (config.aggressiveHomeReset) {
+      // when aggressiveHomeReset is true (the default), reset the home state on every grbl reset
       status.machine.modals.homedRecently = false;
     }
-  } else if (data.indexOf("LPC176") >= 0) { // LPC1768 or LPC1769 should be Smoothieware
-    status.comms.blocked = false;
-    debug_log("Smoothieware detected");
-    status.machine.firmware.type = "smoothie";
-    status.machine.firmware.version = data.substr(data.search(/version:/i) + 9).split(/,/);
-    status.machine.firmware.date = new Date(data.substr(data.search(/Build date:/i) + 12).split(/,/)).toDateString();
 
-    var output = {
-      'command': "FIRMWARE ERROR",
-      'response': "Detected an unsupported version: Smoothieware " + status.machine.firmware.version + ". This software no longer support Smoothieware. \nLuckilly there is an alternative firmware you can install on your controller to make it work with this software. Check out Grbl-LPC at https://github.com/cprezzi/grbl-LPC - Grbl-LPC is a Grbl port for controllers using the NXP LPC176x chips, for example Smoothieboards",
-      'type': 'error'
-    }
-    io.sockets.emit('data', output);
-    stopPort();
-  } // end of machine identification
+    // after reset, immediately ask for modals
+    gcodeQueue.splice(queuePointer, 0, "$G");
+    send1Q();
+  }
 
   // Machine Feedback: Position
   if (data.indexOf("<") === 0) {
-    // debug_log(' Got statusReport (Grbl & Smoothieware)')
+    // debug_log(' Got statusReport (Grbl)')
     // statusfeedback func
     parseFeedback(data)
     if (command == "?") {
@@ -972,11 +973,8 @@ function onParserData(data) {
     // debug_log(data)
   } else if (data.indexOf("ok") === 0) { // Got an OK so we are clear to send
     io.sockets.emit('ok', command); // added per #325
-    // debug_log("OK FOUND")
-    if (status.machine.firmware.type === "grbl") {
-      // debug_log('got OK from ' + command)
-      sentBuffer.shift();
-    }
+    // debug_log('got OK from ' + command)
+    sentBuffer.shift();
     if (command == "$CD") {
       io.sockets.emit('fluidncConfig', fluidncConfig);
     }
@@ -992,33 +990,29 @@ function onParserData(data) {
     }
   } else if (data.indexOf('ALARM') === 0) {
     debug_log("ALARM:  " + data)
-    switch (status.machine.firmware.type) {
-      case 'grbl':
-        var alarmCode = parseInt(data.split(':')[1]);
 
-        if (!config.aggressiveHomeReset)
-        {
-          // when aggressiveHomeReset is false, certain alarm codes will be safe and will not reset the home state
-          const safeAlarmCodes = [0, 2, 4, 5, 12];
-          if (!safeAlarmCodes.includes(alarmCode))
-          {
-            status.machine.modals.homedRecently = false;
-          }
-        }
+    var alarmCode = parseInt(data.split(':')[1]);
 
-        debug_log('ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode));
-        status.comms.alarm = alarmCode + ' - ' + grblStrings.alarms(alarmCode)
-        if (alarmCode != 5) {
-          io.sockets.emit("toastErrorAlarm", 'ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode) + " [ " + command + " ]")
-        }
-        var output = {
-          'command': '',
-          'response': 'ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode) + " [ " + command + " ]",
-          'type': 'error'
-        }
-        io.sockets.emit('data', output);
-        break;
+    if (!config.aggressiveHomeReset) {
+      // when aggressiveHomeReset is false, certain alarm codes will be safe and will not reset the home state
+      const safeAlarmCodes = [0, 2, 4, 5, 12];
+      if (!safeAlarmCodes.includes(alarmCode)) {
+        status.machine.modals.homedRecently = false;
+      }
     }
+
+    debug_log('ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode));
+    status.comms.alarm = alarmCode + ' - ' + grblStrings.alarms(alarmCode)
+    if (alarmCode != 5) {
+      io.sockets.emit("toastErrorAlarm", 'ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode) + " [ " + command + " ]")
+    }
+    var output = {
+      'command': '',
+      'response': 'ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode) + " [ " + command + " ]",
+      'type': 'error'
+    }
+    io.sockets.emit('data', output);
+
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
   } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1) {
@@ -1031,26 +1025,22 @@ function onParserData(data) {
   } else if (data.indexOf('wait') === 0) { // Got wait from Repetier -> ignore
     // do nothing
   } else if (data.indexOf('error') === 0) { // Error received -> stay blocked stops queue
-    switch (status.machine.firmware.type) {
-      case 'grbl':
-        var errorCode = parseInt(data.split(':')[1]);
+    var errorCode = parseInt(data.split(':')[1]);
 
-        var lastAlarm = "";
-        if (errorCode == 9 && status.comms.connectionStatus == 5 && status.comms.alarm.length > 0) {
-          lastAlarm = "<hr>This error may just be a symptom of an earlier event:<br> ALARM: " + status.comms.alarm
-        }
-        debug_log('error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]");
-        var output = {
-          'command': '',
-          'response': 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm,
-          'type': 'error'
-        }
-        io.sockets.emit('data', output);
-        io.sockets.emit("toastError", 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm)
-        break;
+    var lastAlarm = "";
+    if (errorCode == 9 && status.comms.connectionStatus == 5 && status.comms.alarm.length > 0) {
+      lastAlarm = "<hr>This error may just be a symptom of an earlier event:<br> ALARM: " + status.comms.alarm
     }
+    debug_log('error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]");
+    var output = {
+      'command': '',
+      'response': 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm,
+      'type': 'error'
+    }
+    io.sockets.emit('data', output);
+    io.sockets.emit("toastError", 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm)
+
     debug_log("error;")
-    sentBuffer.shift();
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
   } else if (data === ' ') {
@@ -1061,15 +1051,8 @@ function onParserData(data) {
 
   if (data.indexOf("[MSG:Reset to continue]") === 0) {
     clearGcodeQueue(false);
-    switch (status.machine.firmware.type) {
-      case 'grbl':
-        debug_log("[MSG:Reset to continue] -> Sending Reset")
-        addQRealtime(String.fromCharCode(0x18)); // ctrl-x
-        setTimeout(function() {
-          addQToEndAndKick("$G"); // must fetch the modals after reset
-        }, 100);
-        break;
-    }
+    debug_log("[MSG:Reset to continue] -> Sending Reset")
+    addQRealtime(String.fromCharCode(0x18)); // ctrl-x
   }
 
 
@@ -1103,6 +1086,32 @@ function onParserData(data) {
   }
 }
 
+function onConnection() {
+  clearTimeout(connectTimeout);
+  connectTimeout = undefined;
+  debug_log("GRBL detected");
+  setTimeout(function() {
+    io.sockets.emit('grbl', status.machine.firmware);
+  }, 100)
+  // Start interval for status queries
+  clearInterval(statusLoop);
+  statusLoop = setInterval(function() {
+    if (status.comms.connectionStatus > 0) {
+      addQRealtime("?");
+    }
+  }, 200);
+
+  status.comms.connectionStatus = 2;
+  status.machine.modals.homedRecently = false;
+
+  var output = {
+    'command': 'connect',
+    'response': "Firmware Detected:  " + status.machine.firmware.platform + " version " + status.machine.firmware.version + " dated " + status.machine.firmware.date + " on " + status.comms.interfaces.activePort,
+    'type': 'success'
+  }
+  io.sockets.emit('data', output);
+}
+
 // Initiates handshake with the controller
 function connectController(data) {
   // set status
@@ -1118,107 +1127,41 @@ function connectController(data) {
   console.log(port, friendlyPort(port));
   io.sockets.emit('data', output);
   // do attempt 1
-  addQRealtime("\n"); // this causes smoothie and grblHAL to send the welcome string
+//  addQRealtime("\n"); // this causes grblHAL to send the welcome string (No, it doesn't)
 
   var output = {
     'command': 'connect',
-    'response': "Attempting to detect Controller (1): (Autoreset)",
+    'response': "Attempting to detect Controller (1): (Ctrl+X)",
     'type': 'info'
   }
   io.sockets.emit('data', output);
 
-  var attemptCount = 1;
+  addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+  debug_log("Sent: Ctrl+x");
 
-  // run 4 attempts
-  var attemptInterval = setInterval(function() {
-
-    // check if the controller is ready
-    if (status.machine.firmware.type.length > 0) {
-      if (status.machine.firmware.type === "grbl") {
-        debug_log("GRBL detected");
-        setTimeout(function() {
-          io.sockets.emit('grbl', status.machine.firmware)
-        }, 100)
-        // Start interval for status queries
-        clearInterval(statusLoop);
-        statusLoop = setInterval(function() {
-          if (status.comms.connectionStatus > 0) {
-            addQRealtime("?");
-          }
-        }, 200);
-        status.machine.modals.homedRecently = false;
-      }
-
-      if (data.type == "usb") {
-        var output = {
-          'command': 'connect',
-          'response': "Firmware Detected:  " + status.machine.firmware.platform + " version " + status.machine.firmware.version + " dated " + status.machine.firmware.date + " on " + port.path,
-          'type': 'success'
-        }
-      } else if (data.type == "telnet") {
-        var output = {
-          'command': 'connect',
-          'response': "Firmware Detected:  " + status.machine.firmware.platform + " version " + status.machine.firmware.version + " dated " + status.machine.firmware.date + " on " + data.ip,
-          'type': 'success'
-        }
-      }
-      io.sockets.emit('data', output);
-
-      clearInterval(attemptInterval);
-      return;
+  connectTimeout = setTimeout(function() {
+    debug_log("Didn't detect firmware after Ctrl+X. Lets try toggling DTR");
+    var output = {
+      'command': 'connect',
+      'response': "Attempting to detect Controller (4): (DTR Enable)",
+      'type': 'info'
     }
+    io.sockets.emit('data', output);
 
-    if (attemptCount == 1) { // first attempt failed
-      debug_log("Didnt detect firmware after AutoReset. Lets see if we have Grbl instance with a board that doesnt have AutoReset");
-      var output = {
-        'command': 'connect',
-        'response': "Attempting to detect Controller (2): (Ctrl+X)",
-        'type': 'info'
-      }
-      io.sockets.emit('data', output);
+    // toggle DTR on
+    port.set({
+      "dtr": true
+    }, console.log("Set DTR"));
+
+    // then try Ctrl+X again (but why twice 100ms apart? not sure - it was in the original code)
+    addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+    debug_log("Sent: Ctrl+x after DTR toggle");
+
+    setTimeout(function() {
       addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-      debug_log("Sent: Ctrl+x");
-    }
+    }, 100);
 
-    if (attemptCount == 2) { // second attempt failed
-      debug_log("No firmware yet, probably not Grbl then. lets see if we have Smoothie?");
-      var output = {
-        'command': 'connect',
-        'response': "Attempting to detect Controller (3): (others)",
-        'type': 'info'
-      }
-      io.sockets.emit('data', output);
-      addQRealtime("version\n"); // Check if it's Smoothieware?
-      debug_log("Sent: version");
-    }
-
-    if (attemptCount == 3) { // third attempt failed
-      debug_log("Didnt detect firmware after AutoReset, Ctrl+X or Smoothie check. Lets try toggling DTR");
-      var output = {
-        'command': 'connect',
-        'response': "Attempting to detect Controller (4): (DTR Enable)",
-        'type': 'info'
-      }
-      io.sockets.emit('data', output);
-
-      // toggle DTR on
-      port.set({
-        "dtr": true
-      }, console.log("Set DTR"));
-
-      // then try Ctrl+X again (but why twice? not sure - it was in the original code)
-      setTimeout(function() {
-
-        setTimeout(function() {
-          addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-        }, 100);
-
-        addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-        debug_log("Sent: Ctrl+x after DTR toggle");
-      }, 100);
-    }
-
-    if (attemptCount == 4) { // fourth attempt failed, out of ideas
+    connectTimeout = setTimeout(function() {
       debug_log("No supported firmware detected. Closing port " + port.path);
       if (status.interface.connected) {
         var output = {
@@ -1235,13 +1178,10 @@ function connectController(data) {
       }
       io.sockets.emit('data', output);
       stopPort();
-      clearInterval(attemptInterval);
-      return;
-    }
-    attemptCount++;
-  }, config.grblWaitTime * 2000);
+      connectTimeout = undefined;
+    }, persistentConfig.grblWaitTime2 * 1000);
+  }, persistentConfig.grblWaitTime1 * 1000);
 
-  status.comms.connectionStatus = 2;
   if (data.type == "usb") {
     status.comms.interfaces.activePort = port.path;
     status.comms.interfaces.type = data.type
@@ -1261,11 +1201,7 @@ io.on("connection", function(socket) {
 
   iosocket = socket;
 
-  if (status.machine.firmware.type == 'grbl') {
-    debug_log("Is Grbl");
-    debug_log("Emit Grbl: 1");
-    io.sockets.emit('grbl', status.machine.firmware)
-  }
+  io.sockets.emit('grbl', status.machine.firmware);
 
   // Global Update loop
   clearInterval(frontEndUpdateLoop);
@@ -1712,7 +1648,6 @@ io.on("connection", function(socket) {
       if (data.type == "usb") {
         console.log("connect", "Connecting to " + data.port + " via " + data.type);
 
-
         var allowRtsCts = false
         var allowHupcl = false
         if (process.platform == 'darwin') {
@@ -1757,7 +1692,6 @@ io.on("connection", function(socket) {
         }
 
       });
-
 
       port.on("ready", function(e) {
         portOpened(port, data)
@@ -1842,14 +1776,7 @@ io.on("connection", function(socket) {
       }
       if (dir && dist && feed) {
         debug_log('Adding jog commands to queue. Firmw=' + status.machine.firmware.type + ', blocked=' + status.comms.blocked + ', paused=' + status.comms.paused + ', Q=' + gcodeQueue.length);
-        switch (status.machine.firmware.type) {
-          case 'grbl':
-            addQToEndAndKick('$J=G91G21' + dir + dist + feed);
-            break;
-          default:
-            debug_log('ERROR: Unknown firmware!');
-            break;
-        }
+        addQToEndAndKick('$J=G91G21' + dir + dist + feed);
       } else {
         debug_log('ERROR: Invalid params!');
       }
@@ -1871,14 +1798,7 @@ io.on("connection", function(socket) {
 
       if (xincrement && yincrement && feed) {
         debug_log('Adding jog commands to queue. blocked=' + status.comms.blocked + ', paused=' + status.comms.paused + ', Q=' + gcodeQueue.length);
-        switch (status.machine.firmware.type) {
-          case 'grbl':
-            addQToEndAndKick('$J=G91G21X' + xincrement + " Y" + yincrement + " " + feed);
-            break;
-          default:
-            debug_log('ERROR: Unknown firmware!');
-            break;
-        }
+        addQToEndAndKick('$J=G91G21X' + xincrement + " Y" + yincrement + " " + feed);
       } else {
         debug_log('ERROR: Invalid params!');
       }
@@ -1898,14 +1818,7 @@ io.on("connection", function(socket) {
         var mode = ((data.mode == 0) ? 0 : 1);
         var feed = (data.feed !== undefined ? 'F' + parseInt(data.feed) : '');
         debug_log('Adding jog commands to queue. blocked=' + status.comms.blocked + ', paused=' + status.comms.paused + ', Q=' + gcodeQueue.length);
-        switch (status.machine.firmware.type) {
-          case 'grbl':
-            addQToEndAndKick('$J=G91G21' + mode + xVal + yVal + zVal + feed);
-            break;
-          default:
-            debug_log('ERROR: Unknown firmware!');
-            break;
-        }
+        addQToEndAndKick('$J=G91G21' + mode + xVal + yVal + zVal + feed);
       } else {
         debug_log('error Invalid params!');
       }
@@ -1992,16 +1905,8 @@ io.on("connection", function(socket) {
   socket.on('probe', function(data) {
     debug_log('probe(' + JSON.stringify(data) + ')');
     if (status.comms.connectionStatus > 0) {
-      switch (status.machine.firmware.type) {
-        case 'grbl':
-          addQToEndAndKick('G38.2 ' + data.direction + '-5 F1');
-          addQToEndAndKick('G92 ' + data.direction + ' ' + data.probeOffset);
-          break;
-        default:
-          //not supported
-          debug_log('Command not supported by firmware!');
-          break;
-      }
+      addQToEndAndKick('G38.2 ' + data.direction + '-5 F1');
+      addQToEndAndKick('G92 ' + data.direction + ' ' + data.probeOffset);
     } else {
       debug_log('ERROR: Machine connection not open!');
     }
@@ -2010,65 +1915,61 @@ io.on("connection", function(socket) {
   socket.on('feedOverride', function(data) {
     debug_log(data)
     if (status.comms.connectionStatus > 0) {
-      switch (status.machine.firmware.type) {
-        case 'grbl':
-          debug_log("current FRO = " + status.machine.overrides.feedOverride)
-          debug_log("requested FRO = " + data)
-          var curfro = parseInt(status.machine.overrides.feedOverride)
-          var reqfro = parseInt(data)
-          var delta;
+      debug_log("current FRO = " + status.machine.overrides.feedOverride)
+      debug_log("requested FRO = " + data)
+      var curfro = parseInt(status.machine.overrides.feedOverride)
+      var reqfro = parseInt(data)
+      var delta;
 
-          if (reqfro == 100) {
-            addQRealtime(String.fromCharCode(0x90));
-          } else if (curfro < reqfro) {
-            // FRO Increase
-            delta = reqfro - curfro
-            debug_log("delta = " + delta)
-            var tens = Math.floor(delta / 10)
+      if (reqfro == 100) {
+        addQRealtime(String.fromCharCode(0x90));
+      } else if (curfro < reqfro) {
+        // FRO Increase
+        delta = reqfro - curfro
+        debug_log("delta = " + delta)
+        var tens = Math.floor(delta / 10)
 
-            debug_log("need to send " + tens + " x10s increase")
-            for (let i = 1; i < tens + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(0x91));
-                addQRealtime("?");
-              }, i * 50);
-            }
+        debug_log("need to send " + tens + " x10s increase")
+        for (let i = 1; i < tens + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(0x91));
+            addQRealtime("?");
+          }, i * 50);
+        }
 
-            var ones = delta - (10 * tens);
-            debug_log("need to send " + ones + " x1s increase")
-            for (let i = 1; i < ones + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(0x93));
-                addQRealtime("?");
-              }, i * 50);
-            }
-          } else if (curfro > reqfro) {
-            // FRO Decrease
-            delta = curfro - reqfro
-            debug_log("delta = " + delta)
+        var ones = delta - (10 * tens);
+        debug_log("need to send " + ones + " x1s increase")
+        for (let i = 1; i < ones + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(0x93));
+            addQRealtime("?");
+          }, i * 50);
+        }
+      } else if (curfro > reqfro) {
+        // FRO Decrease
+        delta = curfro - reqfro
+        debug_log("delta = " + delta)
 
-            var tens = Math.floor(delta / 10)
-            debug_log("need to send " + tens + " x10s decrease")
-            for (let i = 1; i < tens + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(0x92));
-                addQRealtime("?");
-              }, i * 50);
-            }
+        var tens = Math.floor(delta / 10)
+        debug_log("need to send " + tens + " x10s decrease")
+        for (let i = 1; i < tens + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(0x92));
+            addQRealtime("?");
+          }, i * 50);
+        }
 
-            var ones = delta - (10 * tens);
-            debug_log("need to send " + ones + " x1s decrease")
-            for (let i = 1; i < ones + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(0x94));
-                addQRealtime("?");
-              }, i * 50);
-            }
-          }
-          addQRealtime("?");
-          status.machine.overrides.feedOverride = parseInt(reqfro); // Set now, but will be overriden from feedback from Grbl itself in next queryloop
-          break;
+        var ones = delta - (10 * tens);
+        debug_log("need to send " + ones + " x1s decrease")
+        for (let i = 1; i < ones + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(0x94));
+            addQRealtime("?");
+          }, i * 50);
+        }
       }
+      addQRealtime("?");
+      status.machine.overrides.feedOverride = parseInt(reqfro); // Set now, but will be overriden from feedback from Grbl itself in next queryloop
     } else {
       debug_log('ERROR: Machine connection not open!');
     }
@@ -2076,65 +1977,61 @@ io.on("connection", function(socket) {
 
   socket.on('spindleOverride', function(data) {
     if (status.comms.connectionStatus > 0) {
-      switch (status.machine.firmware.type) {
-        case 'grbl':
-          debug_log("current SRO = " + status.machine.overrides.spindleOverride)
-          debug_log("requested SRO = " + data)
-          var cursro = parseInt(status.machine.overrides.spindleOverride)
-          var reqsro = parseInt(data)
-          var delta;
+      debug_log("current SRO = " + status.machine.overrides.spindleOverride)
+      debug_log("requested SRO = " + data)
+      var cursro = parseInt(status.machine.overrides.spindleOverride)
+      var reqsro = parseInt(data)
+      var delta;
 
-          if (reqsro == 100) {
-            addQRealtime(String.fromCharCode(153));
-          } else if (cursro < reqsro) {
-            // FRO Increase
-            delta = reqsro - cursro
-            debug_log("delta = " + delta)
-            var tens = Math.floor(delta / 10)
+      if (reqsro == 100) {
+        addQRealtime(String.fromCharCode(153));
+      } else if (cursro < reqsro) {
+        // FRO Increase
+        delta = reqsro - cursro
+        debug_log("delta = " + delta)
+        var tens = Math.floor(delta / 10)
 
-            debug_log("need to send " + tens + " x10s increase")
-            for (let i = 1; i < tens + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(154));
-                addQRealtime("?");
-              }, i * 50);
-            }
+        debug_log("need to send " + tens + " x10s increase")
+        for (let i = 1; i < tens + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(154));
+            addQRealtime("?");
+          }, i * 50);
+        }
 
-            var ones = delta - (10 * tens);
-            debug_log("need to send " + ones + " x1s increase")
-            for (let i = 1; i < ones + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(156));
-                addQRealtime("?");
-              }, i * 50);
-            }
-          } else if (cursro > reqsro) {
-            // FRO Decrease
-            delta = cursro - reqsro
-            debug_log("delta = " + delta)
+        var ones = delta - (10 * tens);
+        debug_log("need to send " + ones + " x1s increase")
+        for (let i = 1; i < ones + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(156));
+            addQRealtime("?");
+          }, i * 50);
+        }
+      } else if (cursro > reqsro) {
+        // FRO Decrease
+        delta = cursro - reqsro
+        debug_log("delta = " + delta)
 
-            var tens = Math.floor(delta / 10)
-            debug_log("need to send " + tens + " x10s decrease")
-            for (let i = 1; i < tens + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(155));
-                addQRealtime("?");
-              }, i * 50);
-            }
+        var tens = Math.floor(delta / 10)
+        debug_log("need to send " + tens + " x10s decrease")
+        for (let i = 1; i < tens + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(155));
+            addQRealtime("?");
+          }, i * 50);
+        }
 
-            var ones = delta - (10 * tens);
-            debug_log("need to send " + ones + " x1s decrease")
-            for (let i = 1; i < ones + 1; i++) {
-              setTimeout(function timer() {
-                addQRealtime(String.fromCharCode(157));
-                addQRealtime("?");
-              }, i * 50);
-            }
-          }
-          addQRealtime("?");
-          status.machine.overrides.spindleOverride = parseInt(reqsro); // Set now, but will be overriden from feedback from Grbl itself in next queryloop
-          break;
+        var ones = delta - (10 * tens);
+        debug_log("need to send " + ones + " x1s decrease")
+        for (let i = 1; i < ones + 1; i++) {
+          setTimeout(function timer() {
+            addQRealtime(String.fromCharCode(157));
+            addQRealtime("?");
+          }, i * 50);
+        }
       }
+      addQRealtime("?");
+      status.machine.overrides.spindleOverride = parseInt(reqsro); // Set now, but will be overriden from feedback from Grbl itself in next queryloop
     } else {
       debug_log('ERROR: Machine connection not open!');
     }
@@ -2163,12 +2060,7 @@ io.on("connection", function(socket) {
       switch (data) {
         case 1:
           debug_log('Clearing Lockout');
-          switch (status.machine.firmware.type) {
-            case 'grbl':
-              addQRealtime('$X\n');
-              debug_log('Sent: $X');
-              break;
-          }
+          addQRealtime('$X\n');
           debug_log('Resuming Queue Lockout');
           var output = {
             'command': '[clear alarm]',
@@ -2184,22 +2076,19 @@ io.on("connection", function(socket) {
           gcodeQueue.length = 0; // Dump the queue
           sentBuffer.length = 0; // Dump bufferSizes
           debug_log('Clearing Lockout');
-          switch (status.machine.firmware.type) {
-            case 'grbl':
-              clearInterval(queueCounter);
-              if (jogWindow) {
-                jogWindow.setProgressBar(0);
-              }
-              addQRealtime(String.fromCharCode(0x18)); // ctrl-x
-              setTimeout(function() {
-                debug_log('Sent: $X+$G');
-                addQToEndAndKick("$X");
-                addQToEndAndKick("$G"); // must fetch the modals after reset
-              }, 500);
-              status.comms.blocked = false;
-              status.comms.paused = false;
-              break;
+
+          clearInterval(queueCounter);
+          if (jogWindow) {
+            jogWindow.setProgressBar(0);
           }
+          addQRealtime(String.fromCharCode(0x18)); // ctrl-x
+          setTimeout(function() {
+            debug_log('Sent: $X');
+            addQToEndAndKick("$X");
+          }, 500);
+          status.comms.blocked = false;
+          status.comms.paused = false;
+
           var output = {
             'command': '[clear alarm]',
             'response': "Operator clicked Clear Alarm: Cleared Lockout and Emptied Queue",
@@ -2220,15 +2109,8 @@ io.on("connection", function(socket) {
   socket.on('resetMachine', function() {
     if (status.comms.connectionStatus > 0) {
       debug_log('Reset Machine');
-      switch (status.machine.firmware.type) {
-        case 'grbl':
-          addQRealtime(String.fromCharCode(0x18)); // ctrl-x
-          setTimeout(function() {
-            addQToEndAndKick("$G"); // must fetch the modals after reset
-          }, 100);
-          debug_log('Sent: Code(0x18)');
-          break;
-      }
+      addQRealtime(String.fromCharCode(0x18)); // ctrl-x
+      debug_log('Sent: Code(0x18)');
     } else {
       debug_log('ERROR: Machine connection not open!');
     }
@@ -2427,9 +2309,11 @@ function stopPort() {
   if (jogWindow) {
     jogWindow.setProgressBar(0);
   }
+
   status.comms.interfaces.activePort = false;
   status.comms.interfaces.activeBaud = false;
   status.comms.connectionStatus = 0;
+  status.comms.queue = 0;
   status.machine.firmware.type = "";
   status.machine.firmware.version = ""; // get version
   status.machine.firmware.date = "";
@@ -2437,6 +2321,7 @@ function stopPort() {
   status.machine.modals.homedRecently = false;
   gcodeQueue.length = 0;
   sentBuffer.length = 0; // dump bufferSizes
+  queuePointer = 0;
   // port.drain(port.close());
 
   if (status.comms.interfaces.type == "usb") {
@@ -2465,54 +2350,53 @@ function parseFeedback(data) {
   } else if (state == "Hold:0") {
     pause();
   }
-  if (status.machine.firmware.type == "grbl") {
-    // Extract work offset (for Grbl > 1.1 only!)
-    const startWCO = data.search(/wco:/i) + 4;
-    if (startWCO > 4) {
-      const wcoLen = data.substr(startWCO).search(/>|\|/);
-      const wcoArray = data.substr(startWCO, wcoLen).split(',', 4).map(parseFloat);
 
-      const xOffset = wcoArray[0];
-      const yOffset = wcoArray[1];
-      const zOffset = wcoArray[2];
-      const aOffset = wcoArray.length > 3 ? wcoArray[3] : 0;
+  // Extract work offset (for Grbl > 1.1 only!)
+  const startWCO = data.search(/wco:/i) + 4;
+  if (startWCO > 4) {
+    const wcoLen = data.substr(startWCO).search(/>|\|/);
+    const wcoArray = data.substr(startWCO, wcoLen).split(',', 4).map(parseFloat);
 
-      status.machine.position.offset.x = parseFloat(xOffset.toFixed(config.posDecimals));
-      status.machine.position.offset.y = parseFloat(yOffset.toFixed(config.posDecimals));
-      status.machine.position.offset.z = parseFloat(zOffset.toFixed(config.posDecimals));
-      status.machine.position.offset.a = parseFloat(aOffset.toFixed(config.posDecimals));
+    const xOffset = wcoArray[0];
+    const yOffset = wcoArray[1];
+    const zOffset = wcoArray[2];
+    const aOffset = wcoArray.length > 3 ? wcoArray[3] : 0;
+
+    status.machine.position.offset.x = parseFloat(xOffset.toFixed(config.posDecimals));
+    status.machine.position.offset.y = parseFloat(yOffset.toFixed(config.posDecimals));
+    status.machine.position.offset.z = parseFloat(zOffset.toFixed(config.posDecimals));
+    status.machine.position.offset.a = parseFloat(aOffset.toFixed(config.posDecimals));
+  }
+
+  // Extract wPos/mPos (for Grbl > 1.1 only!)
+  const startWPos = data.search(/wpos:/i) + 5;
+  const startMPos = data.search(/mpos:/i) + 5;
+  const isMPos = startMPos > 5;
+  const startPos = isMPos ? startMPos : startWPos;
+
+  if (startPos > 5) {
+    const posLen = data.substr(startPos).search(/>|\|/);
+    const posArray = data.substr(startPos, posLen).split(',', 4).map(parseFloat);
+
+    status.machine.has4thAxis = posArray.length > 3;
+
+    var xPos = posArray[0];
+    var yPos = posArray[1];
+    var zPos = posArray[2];
+    var aPos = status.machine.has4thAxis ? posArray[3] : 0;
+
+    if (isMPos) {
+      //If the status includes machine coordinates, subtract the offset to convert to work space
+      xPos -= status.machine.position.offset.x;
+      yPos -= status.machine.position.offset.y;
+      zPos -= status.machine.position.offset.z;
+      aPos -= status.machine.position.offset.a;
     }
 
-    // Extract wPos/mPos (for Grbl > 1.1 only!)
-    const startWPos = data.search(/wpos:/i) + 5;
-    const startMPos = data.search(/mpos:/i) + 5;
-    const isMPos = startMPos > 5;
-    const startPos = isMPos ? startMPos : startWPos;
-
-    if (startPos > 5) {
-      const posLen = data.substr(startPos).search(/>|\|/);
-      const posArray = data.substr(startPos, posLen).split(',', 4).map(parseFloat);
-
-      status.machine.has4thAxis = posArray.length > 3;
-
-      var xPos = posArray[0];
-      var yPos = posArray[1];
-      var zPos = posArray[2];
-      var aPos = status.machine.has4thAxis ? posArray[3] : 0;
-
-      if (isMPos) {
-        //If the status includes machine coordinates, subtract the offset to convert to work space
-        xPos -= status.machine.position.offset.x;
-        yPos -= status.machine.position.offset.y;
-        zPos -= status.machine.position.offset.z;
-        aPos -= status.machine.position.offset.a;
-      }
-
-      status.machine.position.work.x = parseFloat(xPos.toFixed(config.posDecimals));
-      status.machine.position.work.y = parseFloat(yPos.toFixed(config.posDecimals));
-      status.machine.position.work.z = parseFloat(zPos.toFixed(config.posDecimals));
-      status.machine.position.work.a = parseFloat(aPos.toFixed(config.posDecimals));
-    }
+    status.machine.position.work.x = parseFloat(xPos.toFixed(config.posDecimals));
+    status.machine.position.work.y = parseFloat(yPos.toFixed(config.posDecimals));
+    status.machine.position.work.z = parseFloat(zPos.toFixed(config.posDecimals));
+    status.machine.position.work.a = parseFloat(aPos.toFixed(config.posDecimals));
   }
 
   // Extract override values (for Grbl > v1.1 only!)
@@ -2709,27 +2593,19 @@ function laserTest(data) {
         // laserTest is off
         // debug_log('laserTest: ' + 'Power ' + power + ', Duration ' + duration + ', maxS ' + maxS);
         if (duration >= 0) {
-          switch (status.machine.firmware.type) {
-            case 'grbl':
-              addQToEndAndKick('G1F1');
-              addQToEndAndKick('M3S' + parseInt(power * maxS / 100));
-              laserTestOn = true;
-              io.sockets.emit('laserTest', power);
-              if (duration > 0) {
-                addQToEndAndKick('G4 P' + duration / 1000);
-                addQToEndAndKick('M5S0');
-                laserTestOn = false;
-              }
-              break;
+          addQToEndAndKick('G1F1');
+          addQToEndAndKick('M3S' + parseInt(power * maxS / 100));
+          laserTestOn = true;
+          io.sockets.emit('laserTest', power);
+          if (duration > 0) {
+            addQToEndAndKick('G4 P' + duration / 1000);
+            addQToEndAndKick('M5S0');
+            laserTestOn = false;
           }
         }
       } else {
         // debug_log('laserTest: ' + 'Power off');
-        switch (status.machine.firmware.type) {
-          case 'grbl':
-            addQToEndAndKick('M5S0');
-            break;
-        }
+        addQToEndAndKick('M5S0');
         laserTestOn = false;
         io.sockets.emit('laserTest', 0);
       }
@@ -2740,23 +2616,20 @@ function laserTest(data) {
 }
 
 // queue
-function BufferSpace(firmware) {
+function BufferSpace() {
   const len = sentBuffer.length;
   var total = len; // account for the \n at the end
   for (var i = 0; i < len; i++) {
     total += sentBuffer[i].length;
   }
-  if (firmware == "grbl") {
-    if (status.machine.firmware.rxBufferSize > 0) {
-      return (status.machine.firmware.rxBufferSize - 1) - total;
+  if (status.machine.firmware.rxBufferSize > 0) {
+    return (status.machine.firmware.rxBufferSize - 1) - total;
+  } else {
+    if (status.machine.firmware.platform == "grblHAL") {
+      return GRBLHAL_RX_BUFFER_SIZE - total;
     } else {
-      if (status.machine.firmware.platform == "grblHAL") {
-        return GRBLHAL_RX_BUFFER_SIZE - total;
-      } else {
-        return GRBL_RX_BUFFER_SIZE - total;
-      }
+      return GRBL_RX_BUFFER_SIZE - total;
     }
-
   }
 }
 
@@ -2766,29 +2639,25 @@ function send1Q() {
     if (queuePointer == 0) {
       io.sockets.emit("queueCount", [gcodeQueue.length, gcodeQueue.length]);
     }
-    switch (status.machine.firmware.type) {
-      case 'grbl':
-        while ((gcodeQueue.length - queuePointer) > 0 && !status.comms.blocked && !status.comms.paused) {
-          const spaceLeft = BufferSpace('grbl');
+    while ((gcodeQueue.length - queuePointer) > 0 && !status.comms.blocked && !status.comms.paused) {
+      const spaceLeft = BufferSpace();
 
-          // Do we have enough space in the buffer?
-          if (gcodeQueue[queuePointer].length < spaceLeft) {
-            const gcode = gcodeQueue[queuePointer];
-            if (jobStatusInternal == 1 && gcode.startsWith("$J")) {
-              jobStatusInternal = 2;
-              status.misc.jobStatus = 2;
-            }
-            queuePointer++;
-            sentBuffer.push(gcode);
-            machineSend(gcode + '\n');
-            // debug_log('Sent: ' + gcode + ' Q: ' + (gcodeQueue.length - queuePointer) + ' Bspace: ' + (spaceLeft - gcode.length - 1));
-          } else {
-            status.comms.blocked = true;
-          }
-
-          if (config.singleCommandMode) break;
+      // Do we have enough space in the buffer?
+      if (gcodeQueue[queuePointer].length < spaceLeft) {
+        const gcode = gcodeQueue[queuePointer];
+        if (jobStatusInternal == 1 && gcode.startsWith("$J")) {
+          jobStatusInternal = 2;
+          status.misc.jobStatus = 2;
         }
-        break;
+        queuePointer++;
+        sentBuffer.push(gcode);
+        machineSend(gcode + '\n');
+        // debug_log('Sent: ' + gcode + ' Q: ' + (gcodeQueue.length - queuePointer) + ' Bspace: ' + (spaceLeft - gcode.length - 1));
+      } else {
+        status.comms.blocked = true;
+      }
+
+      if (config.singleCommandMode) break;
     }
   } else {
     debug_log('Not Connected')
@@ -2881,37 +2750,31 @@ function stop(data) {
   if (status.comms.connectionStatus > 0) {
     status.comms.paused = true;
     debug_log('STOP');
-    switch (status.machine.firmware.type) {
-      case 'grbl':
 
-        if (data.jog) {
-          addQRealtime(String.fromCharCode(0x85)); // canceljog
-          debug_log('Sent: 0x85 Jog Cancel');
-          debug_log(queuePointer, gcodeQueue)
-        }
-
-        if (!data.abort && !data.jog) { // pause motion first.
-          addQRealtime('!'); // hold
-          debug_log('Sent: !');
-        }
-
-        if (status.machine.firmware.version === '1.1d') {
-          addQRealtime(String.fromCharCode(0x9E)); // Stop Spindle/Laser
-          debug_log('Sent: Code(0x9E)');
-        }
-
-        debug_log('Cleaning Queue');
-        if (!data.jog) {
-          setTimeout(function() {
-            addQRealtime(String.fromCharCode(0x18)); // ctrl-x
-            debug_log('Sent: Code(0x18)');
-            setTimeout(function() {
-              addQToEndAndKick("$G"); // must fetch the modals after reset
-            }, 100);
-          }, 200);
-        }
-        break;
+    if (data.jog) {
+      addQRealtime(String.fromCharCode(0x85)); // canceljog
+      debug_log('Sent: 0x85 Jog Cancel');
+      debug_log(queuePointer, gcodeQueue)
     }
+
+    if (!data.abort && !data.jog) { // pause motion first.
+      addQRealtime('!'); // hold
+      debug_log('Sent: !');
+    }
+
+    if (status.machine.firmware.version === '1.1d') {
+      addQRealtime(String.fromCharCode(0x9E)); // Stop Spindle/Laser
+      debug_log('Sent: Code(0x9E)');
+    }
+
+    debug_log('Cleaning Queue');
+    if (!data.jog) {
+      setTimeout(function() {
+        addQRealtime(String.fromCharCode(0x18)); // ctrl-x
+        debug_log('Sent: Code(0x18)');
+      }, 200);
+    }
+
     laserTestOn = false;
     status.comms.runStatus = 'Stopped';
     status.comms.alarm = "";
@@ -2928,15 +2791,11 @@ function pause() {
   if (status.comms.connectionStatus == 3) {
     status.comms.paused = true;
     debug_log('PAUSE');
-    switch (status.machine.firmware.type) {
-      case 'grbl':
-        addQRealtime('!'); // Send hold command
-        debug_log('Sent: !');
-        if (status.machine.firmware.version === '1.1d') {
-          addQRealtime(String.fromCharCode(0x9E)); // Stop Spindle/Laser
-          debug_log('Sent: Code(0x9E)');
-        }
-        break;
+    addQRealtime('!'); // Send hold command
+    debug_log('Sent: !');
+    if (status.machine.firmware.version === '1.1d') {
+      addQRealtime(String.fromCharCode(0x9E)); // Stop Spindle/Laser
+      debug_log('Sent: Code(0x9E)');
     }
     status.comms.runStatus = 'Paused';
     status.comms.connectionStatus = 4;
@@ -2948,12 +2807,8 @@ function pause() {
 function unpause() {
   if (status.comms.connectionStatus > 0) {
     debug_log('UNPAUSE');
-    switch (status.machine.firmware.type) {
-      case 'grbl':
-        addQRealtime('~'); // Send resume command
-        debug_log('Sent: ~');
-        break;
-    }
+    addQRealtime('~'); // Send resume command
+    debug_log('Sent: ~');
     status.comms.paused = false;
     status.comms.blocked = false;
     setTimeout(function() {
@@ -3654,11 +3509,6 @@ function friendlyPort(port) {
     img = 'serial.png'
     note = 'Motherboard Serial Port';
   } else if (port.productId && port.vendorId) {
-    if (port.productId == '6015' && port.vendorId == '1D50') {
-      // found Smoothieboard
-      img = 'smoothieboard.png';
-      note = 'Smoothieware USB Port (Not Supported)';
-    }
     if (port.productId == '6001' && port.vendorId == '0403') {
       // found FTDI FT232
       img = 'usb.png';

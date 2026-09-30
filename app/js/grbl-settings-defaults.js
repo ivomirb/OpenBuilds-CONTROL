@@ -822,9 +822,7 @@ function selectMachine(type) {
     }
   }
 
-  checkifchanged();
-  displayDirInvert();
-  displayProbeDirInvert();
+  updateDirSettingChecks();
   setMachineButton(type);
 
   if (lastSelectedMachine != type) {
@@ -843,7 +841,7 @@ function selectMachine(type) {
 
   lastSelectedMachine = type;
   sendGcode('$I=' + lastSelectedMachine)
-  checkifchanged()
+  checkifchanged();
 };
 
 function setMachineButton(type) {
