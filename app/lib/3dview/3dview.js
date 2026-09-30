@@ -5,10 +5,14 @@ var simIdx, timefactor = 1,
 var loader = new THREE.ObjectLoader();
 
 var simTween = false;
+var frameTime = undefined;
+var lastToolRange = undefined;
 
-// if simDisplayType is 0, the current line moves with the cone and the XYZ values are at the bottom
-// if simDisplayType is 1, the current line and the XYZ values are at the top left corner
-var simDisplayType = 1;
+// if SIM_DISPLAY_TYPE is 0, the current line moves with the cone and the XYZ values are at the bottom
+// if SIM_DISPLAY_TYPE is 1, the current line and the XYZ values are at the top left corner
+var SIM_DISPLAY_TYPE = 1;
+
+var TOOL_SPIN_RATE = 2; // 2 radians per second
 
 function convertParsedDataToObject(parsedData) {
   if (!parsedData.error) {
@@ -127,6 +131,7 @@ function parseGcodeInWebWorker(gcode) {
         if (object) {
           worker.terminate();
           scene.add(object);
+          lastToolRange = undefined;
 
           if (localStorage.getItem('unitsMode') == "in") {
             redrawGrid(object.userData.bbbox2.min.x / 25.4, object.userData.bbbox2.max.x / 25.4, object.userData.bbbox2.min.y / 25.4, object.userData.bbbox2.max.y / 25.4, true);
@@ -219,7 +224,7 @@ function sim(fromLine, paused) {
     simstop()
   } else {
     simIdx = fromLine;
-    if (simDisplayType == 1) {
+    if (SIM_DISPLAY_TYPE == 1) {
       $("#simText").show();
       $("#simText > span").html("");
     } else {
@@ -297,13 +302,13 @@ function runSim() {
     });
     simTween.pause();
     simUpdateProgress();
-    if (simDisplayType == 0) {
+    if (SIM_DISPLAY_TYPE == 0) {
       $("#conetext").html(`<span class="tally success drop-shadow">&lt;END&gt;</span>`);
     }
     return;
   }
 
-  if (simDisplayType == 0) {
+  if (SIM_DISPLAY_TYPE == 0) {
     const srcLine = object.userData.srcArray[simIdx];
     $("#conetext").html(`<span class="tally success drop-shadow">Line ` + (srcLine+1) + ": " + getGcodeLine(simIdx) + `</span>`);
   }
@@ -508,7 +513,7 @@ function simstop() {
   $('#simspeedval').text(timefactor);
   $("#conetext").hide();
   $("#simText").hide();
-  if (simDisplayType == 0)
+  if (SIM_DISPLAY_TYPE == 0)
     $('#gcodesent').html("&nbsp;");
   clearSceneFlag = true;
   if (cone) {
@@ -520,6 +525,9 @@ function simstop() {
 }
 
 function simAnimate() {
+  const time = new Date().getTime();
+  const dt = Math.min(frameTime ? time - frameTime : 0, 0.1);
+  frameTime = time;
   if (simRunning && cone && cone.position) {
     var posx = cone.position.x;
     var posy = cone.position.y;
@@ -530,7 +538,28 @@ function simAnimate() {
       posz /= 25.4;
     }
 
-    if (simDisplayType == 0) {
+    var spin = 0;
+    if (lastToolRange && simIdx >= lastToolRange.startPoint && simIdx < lastToolRange.endPoint) {
+      spin = lastToolRange.direction;
+    } else {
+      for (var i = 0; i < object.userData.toolRanges.length; i++) {
+        const range = object.userData.toolRanges[i];
+        if (simIdx >= range.startPoint && simIdx < range.endPoint) {
+          lastToolRange = range;
+          spin = range.direction;
+          break;
+        }
+      }
+    }
+
+    cone.rotation.y += TOOL_SPIN_RATE * spin * dt;
+    if (spin > 0 && cone.rotation.y > 2*Math.PI) {
+      cone.rotation.y -= 2*Math.PI;
+    } else if (spin < 0 && cone.rotation.y < 0) {
+      cone.rotation.y += 2*Math.PI;
+    }
+
+    if (SIM_DISPLAY_TYPE == 0) {
       var conepos = toScreenPosition(cone, camera)
       var offset = $("#renderArea").offset()
       var farside = $("#renderArea").offset().left + $("#renderArea").outerWidth()

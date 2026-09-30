@@ -107,7 +107,7 @@ $(document).ready(function() {
   if (!isJogWidget) {
     init3D();
 
-/*    if (typeof ace !== 'undefined') {
+    if (typeof ace !== 'undefined') {
       editor = ace.edit("editor");
       editor.$blockScrolling = Infinity;
       editor.session.setMode("ace/mode/cncpro");
@@ -134,7 +134,7 @@ $(document).ready(function() {
         e.preventDefault();
         $('.linenumber').html((editor.getSelectionRange().start.row + 1));
       }, false);
-    } else*/ {
+    } else {
     $('#gcodeeditortab').hide();
     }
 

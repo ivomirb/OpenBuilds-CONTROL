@@ -51,6 +51,8 @@ self.onmessage = function(e) {
       zArray: zArray,
     };
 
+console.log(result.toolRanges);
+
     self.postMessage(result, [
       gArray.buffer,
       srcArray.buffer,
@@ -62,7 +64,7 @@ self.onmessage = function(e) {
       zArray.buffer]);
   } catch (ex) {
     self.postMessage({error: ex.toString()});
-		throw ex;
+    throw ex;
   }
 }
 
@@ -78,38 +80,38 @@ const TIME_FUDGE_FACTOR = 1.32;
 const gcodeHandlers = {
   // G0: rapid move
   G0: function(parser, args) {
-		args.g = 0;
-		parser.handleLineCommand(args);
-		return true;
-	},
+    args.g = 0;
+    parser.handleLineCommand(args);
+    return true;
+  },
 
   // G1: feed move
   G1: function(parser, args) {
-		args.g = 1;
-		parser.handleLineCommand(args);
-		return true;
-	},
+    args.g = 1;
+    parser.handleLineCommand(args);
+    return true;
+  },
 
   // G2: CW arc
   G2: function(parser, args) {
-		args.g = 2;
-		parser.handleArcCommand(args);
-		return true;
-	},
+    args.g = 2;
+    parser.handleArcCommand(args);
+    return true;
+  },
 
   // G3: CCW arc
   G3: function(parser, args) {
-		args.g = 3;
-		parser.handleArcCommand(args);
-		return true;
-	},
+    args.g = 3;
+    parser.handleArcCommand(args);
+    return true;
+  },
 
   // G73: drill cycle
   G73: function(parser, args) {
-		args.g = 1; // treat as G1
-		parser.handleLineCommand(args);
-		return true;
-	},
+    args.g = 1; // treat as G1
+    parser.handleLineCommand(args);
+    return true;
+  },
 
   // G92: set temporary offset
   G92: function(parser, args) {
@@ -127,19 +129,19 @@ const gcodeHandlers = {
 
   // M3: spindle forward
   M3: function(parser) {
-    parser.addToolRange(parser.tool);
+    parser.addToolRange(parser.tool, 1);
     return false;
   },
 
   // M4: spindle reverse
   M4: function(parser) {
-    parser.addToolRange(-parser.tool);
+    parser.addToolRange(parser.tool, -1);
     return false;
   },
 
   // M5: spindle off
   M5: function(parser) {
-    parser.addToolRange(0);
+    parser.addToolRange(-1);
     return false;
   },
 
@@ -487,17 +489,18 @@ addLineSegment(args, p1, p2) {
   this.totalTime += duration;
 }
 
-addToolRange(tool) {
+addToolRange(tool, direction) {
   if (this.currentToolRange) {
-    if (this.currentToolRange.tool == tool) return; // no change
+    if (this.currentToolRange.tool == tool && this.currentToolRange.direction == direction) return; // no change
     this.currentToolRange.endLine = this.src;
     this.currentToolRange.endPoint = this.linePoints.length;
     this.toolRanges.push(this.currentToolRange);
     this.currentToolRange = null;
   }
-  if (tool != 0) {
+  if (tool != -1) {
     this.currentToolRange = {
       tool: tool,
+      direction: direction,
       startLine: this.src,
       startPoint: this.linePoints.length};
   }
@@ -611,19 +614,19 @@ parseLine(text, src, offset) {
     }
   });
 
-	var command;
-	if (args.g != undefined) {
-		command = "G" + args.g;
-	} else if (args.m != undefined) {
-		command = "M" + args.m;
-	} else {
-		command = this.lastMove;
-	}
+  var command;
+  if (args.g != undefined) {
+    command = "G" + args.g;
+  } else if (args.m != undefined) {
+    command = "M" + args.m;
+  } else {
+    command = this.lastMove;
+  }
 
-	var handler = this.handlers[command];
+  var handler = this.handlers[command];
   if (handler && handler(this, args)) {
-		// if the handler returns true, then this is a move command that can be used as a default for future moves
-		this.lastMove = command;
+    // if the handler returns true, then this is a move command that can be used as a default for future moves
+    this.lastMove = command;
   }
 }
 
@@ -655,7 +658,7 @@ parseGcode(gcode) {
     src++;
     offset = end.index + end[0].length;
   }
-  this.addToolRange(0);
+  this.addToolRange(-1);
 
   // replace XY=NaN with the first known coordinates
   // replace Z=NaN with the highest Z in the object

@@ -4,6 +4,8 @@ var camera, renderer;
 var gridsystem = new THREE.Group();
 var cone;
 
+var CONE_FACE_COUNT = 8;
+
 var container, stats;
 var controls;
 
@@ -152,7 +154,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   }
 
   if (!disable3Drealtimepos) {
-    var coneGeo = new THREE.CylinderGeometry(0, 5, 40, 15, 1, false)
+    var coneGeo = new THREE.CylinderGeometry(0, 5, 40, CONE_FACE_COUNT, 1, false)
     coneGeo.applyMatrix(new THREE.Matrix4().makeTranslation(0, -20, 0));
 
     cone = new THREE.Mesh(coneGeo, new THREE.MeshLambertMaterial({
