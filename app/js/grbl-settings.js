@@ -650,7 +650,6 @@ function askToResetOnGrblSettingsChange() {
           setTimeout(function() {
             socket.emit('resetMachine');
             setTimeout(function() {
-              sendGcode("$G");
               refreshGrblSettings();
             }, 1000); // refresh grbl settings
           }, 800); // reset

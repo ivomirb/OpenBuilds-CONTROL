@@ -29,41 +29,6 @@ $(document).ready(function() {
   socket.emit('refreshGui');
 });
 
-function showGrbl(bool, firmware) {
-  //console.log(firmware)
-  if (bool) {
-    if (firmware.platform == "grblHAL" || firmware.platform == "gnea") { // Doesn't use $$ settings, uses config.yaml
-      setTimeout(function() {
-        sendGcode('$$')
-      }, 500);
-    } else if (firmware.platform == "FluidNC") {
-      // Show FluidNC specific tabs and buttons
-      setTimeout(function() {
-        sendGcode('$CD')
-      }, 500);
-    }
-
-    setTimeout(function() {
-      sendGcode('$I')
-    }, 700);
-
-    setTimeout(function() {
-      sendGcode('$G')
-    }, 900);
-
-    $("#grblButtons").show()
-    $("#firmwarename").html(firmware.platform)
-
-  } else { // Hide
-    $("#grblButtons").hide()
-    $("#firmwarename").html('')
-  }
-  if (localStorage.getItem('jogOverride')) {
-    jogOverride(localStorage.getItem('jogOverride'))
-  }
-
-}
-
 function printLogModern(icon, source, string, printLogCls) {
   if (!disableSerialLog) {
     if (document.getElementById("console") !== null) {
@@ -274,7 +239,7 @@ function initSocket() {
 
       if (data.response.match(/\$(\d+)(=)/)) {
         if (typeof grblSettings !== 'undefined') {
-          grblSettings(data.response)
+          grblSettings(data.response);
         }
       }
 
@@ -288,9 +253,25 @@ function initSocket() {
 
   });
 
-  socket.on("grbl", function(data) {
-    console.log(data)
-    showGrbl(true, data)
+  socket.on("grbl", function(firmware) {
+    if (firmware.type != "grbl") return;
+    grblParams = {};
+    if (firmware.platform == "grblHAL" || firmware.platform == "gnea") { // Doesn't use $$ settings, uses config.yaml
+      setTimeout(function() {
+        sendGcode('$$\n$I');
+      }, 500);
+    } else if (firmware.platform == "FluidNC") {
+      // Show FluidNC specific tabs and buttons
+      setTimeout(function() {
+        sendGcode('$CD\n$I');
+      }, 500);
+    }
+
+    $("#grblButtons").show();
+    $("#firmwarename").html(firmware.platform);
+    if (localStorage.getItem('jogOverride')) {
+      jogOverride(localStorage.getItem('jogOverride'));
+    }
   });
 
   socket.on("queueComplete", function(data) {
@@ -792,7 +773,11 @@ function initSocket() {
       bellstate = false
     }
     if (status.comms.connectionStatus == 0) {
-      showGrbl(false, false)
+      $("#grblButtons").hide();
+      $("#firmwarename").html('');
+      if (localStorage.getItem('jogOverride')) {
+        jogOverride(localStorage.getItem('jogOverride'));
+      }
     }
 
     if (laststatus == undefined || status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
