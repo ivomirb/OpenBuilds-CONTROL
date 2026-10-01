@@ -51,8 +51,6 @@ self.onmessage = function(e) {
       zArray: zArray,
     };
 
-console.log(result.toolRanges);
-
     self.postMessage(result, [
       gArray.buffer,
       srcArray.buffer,
@@ -632,7 +630,7 @@ parseLine(text, src, offset) {
 
 parseGcode(gcode) {
   var offset = 0;
-  var regex = /\r{0,1}\n/g;
+  var regex = /\r?\n/g;
   var progress = 0;
   var src = 0;
   while (true) {

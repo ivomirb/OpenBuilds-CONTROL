@@ -200,25 +200,27 @@ console.log(error);
   var resumeFileTemplate = `
     <form>
       <div>
-        The Recovery strategy will modify the currently loaded G-code accordingly:
+        The Recovery strategy will modify the currently loaded G-code like this:
         <hr>
           <ul>
-            <li>Keep the first <span class="tally dark" id="preserveLines"></span> lines of the file as header. It assumes that the header</li>
+            <li>Keep the first <span class="tally dark" id="preserveLines"></span> lines of the file as header. It assumes that the header will:</li>
             <ul>
-              <li>Establishes the units mm or inch for the entire program</li>
-              <li>Raises Z to a safe height</li>
-              <li>Turns on the spindle</li>
+              <li>Establish the units mm or inch for the entire program</li>
+              <li>Raise Z to a safe height</li>
+              <li>Turn on the spindle</li>
             </ul>
             <li>Move to entry position with G-code: <span class="tally dark" id="resumeXYA"></span></li>
             <li>Plunge to cutting height with G-code: <span class="tally dark" id="resumeZ"></span></li>
-            <li>Restore the parser context with: <span class="tally dark" id="context"></span></li>
+            <li>Restore the modal state with: <span class="tally dark" id="context"></span></li>
             <li>Run G-code starting at line <span class="tally dark" id="resumeLastLine"></span> and continue with the job</li>
           </ul>
         Review the recovery strategy and click 'Proceed' to update the loaded gcode to reflect the changes, and update the 3D view.
       </div>
     </form>
     <div class="remark warning">
-      NOTE: Use this tool at your own risk. Recovering G-code is a risky operation. You are also responsible for ensuring that work origin is correctly set</span>.  Use at your own risk.
+      NOTE: Use this tool at your own risk. Recovering G-code is a risky operation.
+      You are also responsible for ensuring that work origin is correctly set. Use at your own risk.<br>
+      TIP: The simulation feature can help preview the new toolpath as a sanity check.
     </div>
     `
 

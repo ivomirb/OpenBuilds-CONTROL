@@ -111,6 +111,13 @@ $(document).ready(function() {
       editor = ace.edit("editor");
       editor.$blockScrolling = Infinity;
       editor.session.setMode("ace/mode/cncpro");
+      if (typeof process !== "undefined") {
+        if (process.platform == 'win32') {
+          editor.session.setNewLineMode("windows");
+        } else {
+          editor.session.setNewLineMode("unix");
+        }
+      }
       editor.setTheme('ace/theme/sqlserver')
       editor.setAutoScrollEditorIntoView(true);
       editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
@@ -204,20 +211,22 @@ $(document).ready(function() {
 });
 
 function runJobFile() {
+  const gcode = useEditor ? editor.getValue() : currentGcode;
+  if (!jobNeedsHoming(gcode)) {
+    runJobFileInternal(gcode);
+  }
+}
+
+function runJobFileInternal(gcode) {
   var formData = new FormData();
-  var blob = new Blob([useEditor ? editor.getValue() : currentGcode], {
+  var blob = new Blob([gcode], {
     type: 'text/plain'
   });
 
   var fileOfBlob = new File([blob], 'upload.gcode');
   formData.append("file", fileOfBlob);
   var xhr = new XMLHttpRequest();
-  xhr.onload = function() {
-    if (xhr.status == 200) {
-      console.log(xhr.response)
-    }
-  };
-  // Add any event handlers here...
+
   captureWcsHistory("", "", true);
   xhr.open('POST', '/runjob', true);
   xhr.send(formData);
@@ -230,25 +239,55 @@ function runJobFile() {
   lastJobStartTime = new Date().getTime();
 }
 
-function jobNeedsHoming() {
-  if (editor.getValue().lastIndexOf("G53") != -1 || editor.getValue().lastIndexOf("g53") != -1) {
-    if (laststatus !== undefined) {
-      if (laststatus.machine.modals.homedRecently == false) {
-        var dialog = Metro.dialog.create({
-          clsDialog: 'dark',
-          title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates:",
-          content: "<i class='fas fa-exclamation-triangle fg-darkRed'></i> Tip: The G-code file you loaded contains G53 commands. Please make sure to HOME the machine to establish the Machine Coordinate (G53) System properly to prevent crashes.",
-          actions: [{
-            caption: "Close",
-            cls: "js-dialog-close",
-            onclick: function() {
-              //
-            }
-          }]
-        });
-      }
-    }
+function jobNeedsHoming(gcode) {
+  if (laststatus && laststatus.machine.modals.homedRecently) {
+    return false;
   }
+
+  if (localStorage.getItem('disableJobNeedsHoming') == "true") {
+    return false;
+  }
+
+  var command;
+  if (gcode.indexOf("G28") >= 0 || editor.getValue().indexOf("g28") >= 0) {
+    command = "G28";
+  } else if (gcode.indexOf("G30") >= 0 || editor.getValue().indexOf("g30") >= 0) {
+    command = "G30";
+  } else if (gcode.indexOf("G53") >= 0 || editor.getValue().indexOf("g53") >= 0) {
+    command = "G53";
+  } else {
+    return false;
+  }
+
+  var dialog = Metro.dialog.create({
+    clsDialog: 'dark',
+    title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates",
+    content: `<i class='fas fa-exclamation-triangle fg-darkRed'></i> Alert: The job you are about to run contains a ` + command + ` command, which uses machine coordinates and requires homing.<br><br>` +
+`The homing state of the machine cannot be determined at the moment.<br>` +
+`Please make sure to home the machine to establish the Machine Coordinate (G53) System and prevent crashes.<br><br>` +
+`<input id="DisableJobHomeCheck" type="checkbox" data-role="checkbox" data-style="2" data-caption="Don't show this again"/>`,
+    actions: [{
+      caption: "Run Job Anyway",
+      cls: "js-dialog-close warning",
+      onclick: function() {
+        if ($('#DisableJobHomeCheck').prop('checked')) {
+          localStorage.setItem('disableJobNeedsHoming', "true");
+        }
+        runJobFileInternal(gcode);
+      }
+    },
+    {
+      caption: "Abort",
+      cls: "js-dialog-close",
+      onclick: function() {
+        if ($('#DisableJobHomeCheck').prop('checked')) {
+          localStorage.setItem('disableJobNeedsHoming', "true");
+        }
+      }
+    }]
+  });
+
+  return true;
 }
 
 function loadJobFile() {

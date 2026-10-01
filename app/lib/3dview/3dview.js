@@ -75,6 +75,9 @@ function convertParsedDataToObject(parsedData) {
       var line = new THREE.Line(geometry, material);
       line.geometry.computeBoundingBox();
       var box = line.geometry.boundingBox.clone();
+      if (box.isEmpty()) {
+        box.expandByPoint({x:0, y:0, z:0});
+      }
       line.userData.pointCount = parsedData.pointCount;
       line.userData.gArray = parsedData.gArray;
       line.userData.srcArray = parsedData.srcArray;

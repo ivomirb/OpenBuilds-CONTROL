@@ -11,7 +11,9 @@ var openDialogs = [];
 
 const MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
 
-var path = require("path");
+if (typeof require == "function") {
+  var path = require("path");
+}
 
 $(document).ready(function() {
   initSocket();
@@ -154,7 +156,6 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     } else {
       $('#gcodeeditortab').click();
     }
-    jobNeedsHoming();
   });
 
   socket.on('integrationpopup', function(data) {
@@ -523,38 +524,33 @@ The editor is currently disabled. You can click the Clear button to clear the cu
   });
 
   socket.on('sysinfo', function(sysinfo) {
-    console.log(sysinfo)
-    lastsysinfo = sysinfo;
+    if (sysinfo) {
+      lastsysinfo = sysinfo;
 
-    var mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model
-    $("#mobospecs").html(mobo)
+      var mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model;
+      $("#mobospecs").html(mobo);
 
+      var cpu = sysinfo.hardware.cpu[0].model;
+      $("#cpuspecs").html(cpu);
 
-    var cpu = sysinfo.hardware.cpu[0].model
-    $("#cpuspecs").html(cpu)
+      var gpu = sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)";
+      $("#gpuspecs").html(gpu);
 
-    var gpu = sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)"
-    $("#gpuspecs").html(gpu)
+      var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
+      $("#memoryspecs").html(memory);
 
-    var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
-    $("#memoryspecs").html(memory)
+      var operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
+      $("#osspecs").html(operatingsys);
 
-    var operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
-    $("#osspecs").html(operatingsys)
-
-
-
-    var ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
-    $("#ipspecs").html(ipaddresses)
-
-
-
+      var ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
+      $("#ipspecs").html(ipaddresses);
+    }
   });
 
   socket.on('status', function(status) {
 
     if (nostatusyet && !isJogWidget) {
-      setWindowTitle(status)
+      setWindowTitle(status);
       if (status.driver.operatingsystem == "rpi") {
         $('#windowtitlebar').hide();
       }

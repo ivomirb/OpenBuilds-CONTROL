@@ -50,8 +50,8 @@ var persistentConfig = {
   defaultPaths: {},
   recentFiles: [],
   persistDisplayMode: false,
-  grblWaitTime1: 1, // timeout for the first handshake attempt (Cltr+X)
-  grblWaitTime2: 1, // timeout for the second handshake attempt (DTR Enable)
+  grblWaitTime1: 3, // timeout for the first handshake attempt (Cltr+X)
+  grblWaitTime2: 3, // timeout for the second handshake attempt (DTR Enable)
 };
 
 var express = require("express");
@@ -125,7 +125,6 @@ app.post('/uploadCustomFirmware', (req, res) => {
   upload(req, res, function(err) {
     // req.file contains information of uploaded file
     // req.body contains information of text fields, if there were any
-
     if (err instanceof multer.MulterError) {
       return res.send(err);
     } else if (err) {
@@ -696,7 +695,7 @@ app.post('/upload', function(req, res) {
   form.on('file', function(name, file) {
     debug_log('Uploaded ' + file.filepath);
     showJogWindow()
-    readFile(file.filepath, true)
+    readFile(file.filepath, true);
   });
 
   form.on('aborted', function() {
@@ -1143,7 +1142,7 @@ function connectController(data) {
     debug_log("Didn't detect firmware after Ctrl+X. Lets try toggling DTR");
     var output = {
       'command': 'connect',
-      'response': "Attempting to detect Controller (4): (DTR Enable)",
+      'response': "Attempting to detect Controller (2): (DTR Enable)",
       'type': 'info'
     }
     io.sockets.emit('data', output);
@@ -1235,8 +1234,8 @@ io.on("connection", function(socket) {
         persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePath);
         persistentConfig.defaultPaths["last"] = path.dirname(result.filePath);
         savePersistentConfig();
+        callback(result.filePath);
       }
-      callback(result.filePath);
     }).catch(err => {
       console.log(err)
     })
@@ -2897,8 +2896,9 @@ loadPersistentConfig();
       }
       if (process.platform == 'win32') {
         status.driver.operatingsystem = 'windows';
-        if (process.argv.length >= 2) {
-          var openFilePath = process.argv[1];
+        const pathIndex = electronApp.isPackaged ? 1 : 2;
+        if (process.argv.length > pathIndex) {
+          var openFilePath = process.argv[pathIndex];
           if (openFilePath !== "") {
            debug_log("path" + openFilePath);
             readFile(openFilePath, false);
@@ -2911,8 +2911,8 @@ loadPersistentConfig();
         BrowserWindow.clearPersistedState('main-window');
       if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !persistentConfig.autoStart)) {
         showJogWindow();
-      if (process.argv.indexOf("-debug") > 0)
-        jogWindow.webContents.openDevTools();
+        if (process.argv.indexOf("-debug") > 0)
+          jogWindow.webContents.openDevTools();
       }
 
     }

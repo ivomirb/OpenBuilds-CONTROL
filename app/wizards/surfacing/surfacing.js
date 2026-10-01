@@ -228,7 +228,7 @@ function createSurfaceGcode() {
   localStorage.setItem("lastSurfacingTool", JSON.stringify(data));
 
   var startpoint, endpoint, primaryAxis, secondaryAxis;
-	var offsetRadius = data.extendRadius == "enabled" ? 0 : data.surfaceDiameter / 2;
+  var offsetRadius = data.extendRadius == "enabled" ? 0 : data.surfaceDiameter / 2;
   if (data.surfaceDirection === "X") {
     primaryAxis = "X";
     secondaryAxis = "Y";

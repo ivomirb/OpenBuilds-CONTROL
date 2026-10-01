@@ -579,7 +579,6 @@ function fixRenderSize() {
 }
 
 $(window).on('resize', function() {
-  console.log("Window Resize")
   fixRenderSize();
 });
 
