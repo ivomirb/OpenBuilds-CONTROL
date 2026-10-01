@@ -50,8 +50,8 @@ var persistentConfig = {
   defaultPaths: {},
   recentFiles: [],
   persistDisplayMode: false,
-  grblWaitTime1: 3, // timeout for the first handshake attempt (Cltr+X)
-  grblWaitTime2: 3, // timeout for the second handshake attempt (DTR Enable)
+  grblWaitTime1: 2, // timeout for the first handshake attempt (Cltr+X)
+  grblWaitTime2: 2, // timeout for the second handshake attempt (DTR Enable)
 };
 
 var express = require("express");

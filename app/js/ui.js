@@ -196,7 +196,6 @@ function captureWcsHistoryInternal(position, wcs, name, tooltip, isRunJob) {
     history.splice(index, 1);
   }
 
-  name = name.replace("Modified by", "Before");
   var newItem = {
     x: position.x,
     y: position.y,

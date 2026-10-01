@@ -356,7 +356,7 @@ function bindKeys() {
     if (keyboardShortcuts.setzeroxyz.length) {
       $(document).bind('keydown', keyboardShortcuts.setzeroxyz, function(e) {
         e.preventDefault();
-        captureWcsHistory('Modified by <b>Set Zero XYZ</b>');
+        captureWcsHistory('Before <b>Set Zero XYZ</b>');
         sendGcode('G10 P0 L20 X0 Y0 Z0');
       });
     }

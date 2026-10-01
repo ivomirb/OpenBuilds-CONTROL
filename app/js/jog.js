@@ -243,7 +243,7 @@ function onDroKeydown(axis, e) {
     var value = parseFloat(input.val());
     if (!showMCS && e.shiftKey) {
       // Modify the origin (always in mm for better precision)
-      captureWcsHistory('Modified by <b>' + Axis + ' input</b>');
+      captureWcsHistory('Before <b>' + Axis + ' input</b>');
       if (axis != 'a' && unit == "in") {
         value *= 25.4;
       }
