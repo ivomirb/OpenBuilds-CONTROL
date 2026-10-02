@@ -644,7 +644,7 @@ const contextMenusHtml = `
 		<li class="divider"></li>
 		<li onclick="ExportAll()"><a href="#"><i class="fas fa-save icon"></i> Export All Macros</a></li>
 		<li class="btn-file" title="" id="macroImportAllOld"><a href="#"><input class="btn-file" id="macroImportAllFile" type="file" accept=".json" /><i class="fas fa-upload icon"></i> Import All Macros</a></li>
-		<li  id="macroImportAllNew" onclick=""><a href="#"><i class="fas fa-upload icon"></i> Import All Macros</a></li>
+		<li  id="macroImportAllNew" onclick="ImportAllNew()"><a href="#"><i class="fas fa-upload icon"></i> Import All Macros</a></li>
 	</ul>
 </div>
 <div id="macroTabContextToggle">
@@ -677,7 +677,7 @@ if (typeof invokeOpenDialog == 'function')
 	else
 	{
 		$('#macroImportAllNew').remove();
-		$('#macroImportAllFile').on('change', ImportAll);
+		$('#macroImportAllFile').on('change', ImportAllOld);
 	}
 
 	// add items to button context menu
