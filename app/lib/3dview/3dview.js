@@ -531,6 +531,7 @@ function simAnimate() {
   const time = new Date().getTime();
   const dt = Math.min(frameTime ? time - frameTime : 0, 0.1);
   frameTime = time;
+  var spin = 0;
   if (simRunning && cone && cone.position) {
     var posx = cone.position.x;
     var posy = cone.position.y;
@@ -539,27 +540,6 @@ function simAnimate() {
       posx /= 25.4;
       posy /= 25.4;
       posz /= 25.4;
-    }
-
-    var spin = 0;
-    if (lastToolRange && simIdx >= lastToolRange.startPoint && simIdx < lastToolRange.endPoint) {
-      spin = lastToolRange.direction;
-    } else {
-      for (var i = 0; i < object.userData.toolRanges.length; i++) {
-        const range = object.userData.toolRanges[i];
-        if (simIdx >= range.startPoint && simIdx < range.endPoint) {
-          lastToolRange = range;
-          spin = range.direction;
-          break;
-        }
-      }
-    }
-
-    cone.rotation.y += TOOL_SPIN_RATE * spin * dt;
-    if (spin > 0 && cone.rotation.y > 2*Math.PI) {
-      cone.rotation.y -= 2*Math.PI;
-    } else if (spin < 0 && cone.rotation.y < 0) {
-      cone.rotation.y += 2*Math.PI;
     }
 
     if (SIM_DISPLAY_TYPE == 0) {
@@ -595,6 +575,35 @@ function simAnimate() {
     }
     if (!simPaused)
       simUpdateProgress();
+
+    if (lastToolRange && simIdx >= lastToolRange.startPoint && simIdx < lastToolRange.endPoint) {
+      spin = lastToolRange.direction;
+    } else {
+      for (var i = 0; i < object.userData.toolRanges.length; i++) {
+        const range = object.userData.toolRanges[i];
+        if (simIdx >= range.startPoint && simIdx < range.endPoint) {
+          lastToolRange = range;
+          spin = range.direction;
+          break;
+        }
+      }
+    }
+
+  } else if (!simRunning && cone && laststatus && laststatus.machine.overrides.realSpindle != 0) {
+    if (laststatus.machine.modals.spindlestate == "M3") {
+      spin = 1;
+    } else if (laststatus.machine.modals.spindlestate == "M4") {
+      spin = -1;
+    }
+  }
+
+  if (spin != 0) {
+    cone.rotation.y += TOOL_SPIN_RATE * spin * dt;
+    if (spin > 0 && cone.rotation.y > 2*Math.PI) {
+      cone.rotation.y -= 2*Math.PI;
+    } else if (spin < 0 && cone.rotation.y < 0) {
+      cone.rotation.y += 2*Math.PI;
+    }
   }
 }
 

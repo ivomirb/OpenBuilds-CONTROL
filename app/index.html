@@ -382,7 +382,16 @@
                     <li class="divider fg-gray"></li>
                     <li id="menuMisting" style="display: none;" onclick="sendGcode('M7')"><a class="grblmode" href="#">Misting On (M7)</a></li>
                     <li onclick="sendGcode('M8')"><a class="grblmode" href="#">Coolant On (M8)</a></li>
-
+                    <li>
+                      <a href="#" class="dropdown-toggle" title="Insert a pause after the spindle starts (for grblHAL use setting $394 instead).
+Not available in Laser mode.">Spindle Delay</a>
+                      <ul class="ribbon-dropdown" data-role="dropdown">
+                        <li id="spinDelay0" onclick="spindleDelay(0)"><a href="#">No Delay</a></li>
+                        <li id="spinDelay3" onclick="spindleDelay(3)"><a href="#">Delay 3 sec (G4 P3)</a></li>
+                        <li id="spinDelay5" onclick="spindleDelay(5)"><a href="#">Delay 5 sec (G4 P5)</a></li>
+                        <li id="spinDelay8" onclick="spindleDelay(8)"><a href="#">Delay 8 sec (G4 P8)</a></li>
+                      </ul>
+                    </li>
                   </ul>
                 </div>
 
@@ -403,6 +412,20 @@
                     <li onclick="sendGcode('M9')"><a class="grblmode" href="#">Coolant Off (M9)</a></li>
 
                   </ul>
+                </div>
+
+                <div>
+                  <button id="toolBtn3" class="ribbon-button" onclick="pauseSpindle()" title="Stops the spindle while the job is paused.
+The spindle will automatically start when the job is resumed.">
+                    <span class="icon">
+                      <span class="fa-layers fa-fw">
+                        <i class="fas fa-bookmark" data-fa-transform="rotate-180"></i>
+                        <i class="fas fa-screwdriver" data-fa-transform="rotate-135 down-3"></i>
+                        <i class="fas fa-times fg-red" data-fa-transform="down-3"></i>
+                      </span>
+                    </span>
+                    <span class="caption">Tool<br>Off</span>
+                  </button>
                 </div>
 
                 <button id="grblProbeMenu" class="ribbon-button" onclick="openProbeDialog();" disabled>
@@ -1797,6 +1820,8 @@ Restore previous origins from history.">
   <script type="text/javascript" src="lib/jquery/jquery-input-history.min.js"></script>
 
   <!-- Theme  -->
+  <script type="text/javascript" src="js/ui.js"></script>
+
   <script type="text/javascript" src="js/theme.js"></script>
 
   <script type="text/javascript" src="js/diagnostics.js"></script>
@@ -1833,7 +1858,6 @@ Restore previous origins from history.">
 
   <script type="text/javascript" src="js/main.js"></script>
   <script type="text/javascript" src="js/updates.js"></script>
-  <script type="text/javascript" src="js/ui.js"></script>
 
   <script type="text/javascript" src="js/grbl-settings-defaults.js"></script>
   <script type="text/javascript" src="js/grbl-settings-templates.js"></script>

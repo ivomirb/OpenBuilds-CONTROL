@@ -103,14 +103,9 @@ function inMode() {
 
 function toggleWCS() {
   showMCS = !showMCS;
-  if (showMCS) {
-    $('#mcsBtn, .dro').addClass('droMCS');
-    $('#Xwork, #Ywork, #Zwork, #Awork').html("MCS");
-  } else {
-    $('#mcsBtn, .dro').removeClass('droMCS');
-    $('#Xwork, #Ywork, #Zwork, #Awork').html("WORK");
-  }
   $('#mcsBtn').html(showMCS ? "MCS" : "WCS");
+  $('#Xwork, #Ywork, #Zwork, #Awork').html(showMCS ? "MCS" : "WORK");
+  AddRemoveClass('#mcsBtn, .dro', 'droMCS', showMCS);
   EnableViaClass($(".setzero"), !showMCS);
 
   if (!disableDROupdates && laststatus) {

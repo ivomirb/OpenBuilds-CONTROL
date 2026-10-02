@@ -18,115 +18,47 @@ function saveDiagnostics() {
   localStorage.setItem('disableDROupdates', disableDROupdates);
 
   localStorage.setItem('disableAggressiveHomeReset', disableAggressiveHomeReset);
-  if (disableAggressiveHomeReset)
-    $('#disableAggressiveHomeResetTick').addClass("checked");
-  else
-    $('#disableAggressiveHomeResetTick').removeClass("checked");
+  AddRemoveClass('#disableAggressiveHomeResetTick', "checked", disableAggressiveHomeReset);
 
   localStorage.setItem('disable4thAxis', disable4thAxis);
-  if (disable4thAxis)
-    $('#disable4thAxisTick').addClass("checked");
-  else
-    $('#disable4thAxisTick').removeClass("checked");
+  AddRemoveClass('#disable4thAxisTick', "checked", disable4thAxis);
 }
 
 function initDiagnostics() {
-  if (localStorage.getItem('disable3Dviewer')) {
-    if (JSON.parse(localStorage.getItem('disable3Dviewer')) == true) {
-      disable3Dviewer = true;
-      $('#disable3DviewerTick').addClass("checked");
-      $("#disable3DcontrolsTick").addClass("disabled");
-      $("#disable3DskyboxTick").addClass("disabled");
-      $("#disable3DrealtimeposTick").addClass("disabled");
-      $("#disable3DgcodepreviewTick").addClass("disabled");
-    }
-  } else {
-    disable3Dviewer = false;
-  }
+  disable3Dviewer = localStorage.getItem('disable3Dviewer') && (JSON.parse(localStorage.getItem('disable3Dviewer')) == true);
+  AddRemoveClass('#disable3DviewerTick', "checked", disable3Dviewer);
+  EnableViaClass("#disable3DcontrolsTick, #disable3DskyboxTick, #disable3DrealtimeposTick, #disable3DgcodepreviewTick", !disable3Dviewer);
 
-  if (localStorage.getItem('disable3Dcontrols')) {
-    if (JSON.parse(localStorage.getItem('disable3Dcontrols')) == true) {
-      disable3Dcontrols = true;
-      $('#disable3DcontrolsTick').addClass("checked");
-    }
-  } else {
-    disable3Dcontrols = false;
-  }
+  disable3Dcontrols = localStorage.getItem('disable3Dcontrols') && (JSON.parse(localStorage.getItem('disable3Dcontrols')) == true);
+  AddRemoveClass('#disable3DcontrolsTick', "checked", disable3Dcontrols);
 
-  if (localStorage.getItem('disable3Dskybox')) {
-    if (JSON.parse(localStorage.getItem('disable3Dskybox')) == true) {
-      disable3Dskybox = true;
-      $('#disable3DskyboxTick').addClass("checked");
-    }
-  } else {
-    disable3Dskybox = false;
-  }
+  disable3Dskybox = localStorage.getItem('disable3Dskybox') && (JSON.parse(localStorage.getItem('disable3Dskybox')) == true);
+  AddRemoveClass('#disable3DskyboxTick', "checked", disable3Dskybox);
 
-  if (localStorage.getItem('disable3Drealtimepos')) {
-    if (JSON.parse(localStorage.getItem('disable3Drealtimepos')) == true) {
-      disable3Drealtimepos = true;
-      $('#disable3DrealtimeposTick').addClass("checked");
-    }
-  } else {
-    disable3Drealtimepos = false;
-  }
+  disable3Drealtimepos = localStorage.getItem('disable3Drealtimepos') && (JSON.parse(localStorage.getItem('disable3Drealtimepos')) == true);
+  AddRemoveClass('#disable3DrealtimeposTick', "checked", disable3Drealtimepos);
 
-  if (localStorage.getItem('disable3Dgcodepreview')) {
-    if (JSON.parse(localStorage.getItem('disable3Dgcodepreview')) == true) {
-      disable3Dgcodepreview = true;
-      $('#disable3DgcodepreviewTick').addClass("checked");
-    }
-  } else {
-    disable3Dgcodepreview = false;
-  }
+  disable3Dgcodepreview = localStorage.getItem('disable3Dgcodepreview') && (JSON.parse(localStorage.getItem('disable3Dgcodepreview')) == true);
+  AddRemoveClass('#disable3DgcodepreviewTick', "checked", disable3Dgcodepreview);
 
-  if (localStorage.getItem('disableSerialLog')) {
-    if (JSON.parse(localStorage.getItem('disableSerialLog')) == true) {
-      disableSerialLog = true;
-      $('#disableSerialLogTick').addClass("checked");
-    }
-  } else {
-    disableSerialLog = false;
-  }
+  disableSerialLog = localStorage.getItem('disableSerialLog') && (JSON.parse(localStorage.getItem('disableSerialLog')) == true);
+  AddRemoveClass('#disableSerialLogTick', "checked", disableSerialLog);
 
-  if (localStorage.getItem('disableDROupdates')) {
-    if (JSON.parse(localStorage.getItem('disableDROupdates')) == true) {
-      disableDROupdates = true;
-      $('#disableDROupdatesTick').addClass("checked");
-    }
-  } else {
-    disableDROupdates = false;
-  }
+  disableDROupdates = localStorage.getItem('disableDROupdates') && (JSON.parse(localStorage.getItem('disableDROupdates')) == true);
+  AddRemoveClass('#disableDROupdatesTick', "checked", disableDROupdates);
 
-
-
-  if (localStorage.getItem('disableAggressiveHomeReset')) {
-    if (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true) {
-      disableAggressiveHomeReset = true;
-      $('#disableAggressiveHomeResetTick').addClass("checked");
-    }
-  } else {
-    disableAggressiveHomeReset = false;
-  }
+  disableAggressiveHomeReset = localStorage.getItem('disableAggressiveHomeReset') && (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true);
+  AddRemoveClass('#disableAggressiveHomeResetTick', "checked", disableAggressiveHomeReset);
 
   $('#disableAutoStartTick').toggle(typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux'));
   if (typeof process !== "undefined" && process.platform == 'linux') {
     $('#disableAutoStartLabel').html("Disable Tray Icon"); // no autostart on linux
   }
 
-  if (localStorage.getItem('disable4thAxis')) {
-    if (JSON.parse(localStorage.getItem('disable4thAxis')) == true) {
-      disable4thAxis = true;
-      $('#disable4thAxisTick').addClass("checked");
-    }
-  } else {
-    disable4thAxis = false;
-  }
+  disable4thAxis = localStorage.getItem('disable4thAxis') && (JSON.parse(localStorage.getItem('disable4thAxis')) == true);
+  AddRemoveClass('#disable4thAxisTick', "checked", disable4thAxis);
 
-  if (disable3Drealtimepos || disable3Dgcodepreview)
-    $('#runSimBtn').parent().hide();
-  else
-    $('#runSimBtn').parent().show();
+  $('#runSimBtn').parent().toggle(!disable3Drealtimepos && !disable3Dgcodepreview);
 };
 
 function toggleAutoStart() {

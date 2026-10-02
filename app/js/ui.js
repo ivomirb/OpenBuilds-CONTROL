@@ -13,15 +13,19 @@ var wcsHistory = {
 var wcsHistoryEmpty = true;
 var lastWcsCapture = {};
 
-function EnableViaClass(button, enabled) {
-  if (typeof button == "string") {
-    button = $(button);
+function AddRemoveClass(element, className, add) {
+  if (typeof element == "string") {
+    element = $(element);
   }
-  if (enabled) {
-    $(button).removeClass('disabled');
+  if (add) {
+    element.addClass(className);
   } else {
-    $(button).addClass('disabled');
+    element.removeClass(className);
   }
+}
+
+function EnableViaClass(button, enabled) {
+  AddRemoveClass(button, "disabled", !enabled);
 }
 
 // Toolbar with USB port/connect/disconnect
@@ -98,16 +102,20 @@ function setControlBar(val, status) {
 
     $('#grblProbeMenu').show().attr('disabled', val != 2);
 
-    // The tool button's can't be disabled because the graphics look weird. Disable the menus instead
-    EnableViaClass($('#toolBtn').show().next(), val == 2);
-    EnableViaClass($('#toolBtn2').show().next(), val == 2);
-
-    $('#chkSize').show().attr('disabled', val != 2 || isJogWidget || !object);
-
     // Determine the correct state for Run/Play/Pause/Stop
     const hasJob = (useEditor && editor && editor.session.getLength() > 1) || (!useEditor && currentGcode != "");
     const activeJob = val == 3 || val == 4;
     const doorOpen = status.machine.inputs.includes('D');
+
+    $('#toolBtn').show().attr('disabled', activeJob);
+    AddRemoveClass('#spinDelay0', "checked", status.misc.spindleDelay == 0 || status.misc.laserMode);
+    AddRemoveClass('#spinDelay3', "checked", status.misc.spindleDelay == 3 && !status.misc.laserMode);
+    AddRemoveClass('#spinDelay5', "checked", status.misc.spindleDelay == 5 && !status.misc.laserMode);
+    AddRemoveClass('#spinDelay8', "checked", status.misc.spindleDelay == 8 && !status.misc.laserMode);
+    EnableViaClass('#spinDelay0, #spinDelay3, #spinDelay5, #spinDelay8', !status.misc.laserMode);
+
+    $('#toolBtn2').toggle(!activeJob);
+    $('#toolBtn3').toggle(activeJob).attr('disabled', val != 4 || status.machine.overrides.realSpindle == 0);
 
     // Hide the Run button if running or paused. Enable if the door is closed and there is a job to run
     $('#runBtn').toggle(val != 3 && val != 4).attr('disabled', doorOpen || !hasJob);
@@ -120,6 +128,8 @@ function setControlBar(val, status) {
 
     // Enable the Stop button if running or paused
     $('#stopBtn').show().attr('disabled', !activeJob);
+
+    $('#chkSize').show().attr('disabled', val != 2 || isJogWidget || !object);
 
     // Disable the Home button during a job or if the homing feature is disabled
     $('#homeBtn').show().attr('disabled', activeJob || grblParams['$22'] == 0);

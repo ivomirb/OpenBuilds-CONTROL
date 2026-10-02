@@ -263,22 +263,19 @@ function grblSettings(data) {
     $("#grbl-settings-tab-title").html('Grbl');
   }
 
-  if (grblParams['$22'] > 0) {
-    $('#homeBtn').attr('disabled', false);
-    $('#gotozeroZmPosXYwPos, #gotozeroMPos, #gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos').removeClass('disabled');
-  } else {
-    $('#homeBtn').attr('disabled', true);
-    $('#gotozeroZmPosXYwPos, #gotozeroMPos, #gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos').addClass('disabled');
-  }
+  var homingEnabled = grblParams['$22'] > 0;
+  $('#homeBtn').attr('disabled', !homingEnabled);
+  AddRemoveClass('#gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos', 'disabled', !homingEnabled);
+  AddRemoveClass('#gotozeroZmPosXYwPos, #gotozeroMPos', 'disabled', !homingEnabled);
 
   updateGotoLimits();
   if (!isJogWidget && webgl)
     updateMachineCoordinates();
 
   if (grblParams['$32'] == 1) {
-    $('#enLaser').removeClass('alert').addClass('success').html('ON')
+    $('#enLaser').removeClass('alert').addClass('success').html('ON');
   } else {
-    $('#enLaser').removeClass('success').addClass('alert').html('OFF')
+    $('#enLaser').removeClass('success').addClass('alert').html('OFF');
   }
 
   // grblHAL - enable Servo Buttons if Spindle PWM == 50hz

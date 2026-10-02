@@ -9,7 +9,7 @@ var bellstate = false;
 var waitingForStatus = false;
 var openDialogs = [];
 
-const MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
+var MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
 
 if (typeof require == "function") {
   var path = require("path");
@@ -605,18 +605,18 @@ The editor is currently disabled. You can click the Clear button to clear the cu
       var doorType = status.comms.runStatus.split(":")[1]
       var doorMsg = "";
       if (doorType == 0) {
-        doorMsg += "Closed: Ready to Resume"
+        doorMsg += "Door Closed: Ready to Resume"
       }
       if (doorType == 1) {
-        doorMsg += "Open: Paused"
+        doorMsg += "Door Open: Paused"
       }
       if (doorType == 2) {
-        doorMsg += "De-energising"
+        doorMsg += "Door Open: Tool Stopping"
       }
-      if (doorType == 3) {
-        doorMsg += "Re-energising"
+      if (doorType == 3 || doorType == 4) {
+        doorMsg += "Door Closed: Tool Starting Up"
       }
-      $('#runStatus').html("Door: " + doorMsg);
+      $('#runStatus').html(doorMsg);
     } else {
       $('#runStatus').html("Controller: " + status.comms.runStatus);
     }
@@ -817,11 +817,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     if ((!laststatus || laststatus.misc.autoStart != status.misc.autoStart) &&
         !isJogWidget && typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux')) {
       $('#mainCloseBtn').attr( "title", status.misc.autoStart ? "Close to Tray" : "Close");
-      if (status.misc.autoStart) {
-        $('#disableAutoStartTick').removeClass("checked");
-      } else {
-        $('#disableAutoStartTick').addClass("checked");
-      }
+      AddRemoveClass('#disableAutoStartTick', "checked", !status.misc.autoStart);
     }
 
     laststatus = status;
@@ -1129,6 +1125,36 @@ function spindleOverride(step) {
   if (socket) {
     socket.emit('spindleOverride', step);
     $('#tro').data('slider').buff(((step - 10) * 100) / (200 - 10))
+  }
+}
+
+function spindleDelay(sec) {
+  if (socket) {
+    socket.emit('spindleDelay', sec);
+  }
+}
+
+function pauseSpindle() {
+  if (socket) {
+    socket.emit('serialInject', String.fromCharCode(0x84));
+
+    if (localStorage.getItem('disablePauseSpindleDlg') != "true") {
+      var dialog = Metro.dialog.create({
+        clsDialog: 'dark',
+        title: "<i class='fas fa-exclamation-triangle'></i> Spindle Paused",
+        content: `The spindle will automatically turn back on when the job is resumed.<br>The movement will continue a few seconds later.<br><br>` +
+    `<input id="DisablePauseSpindleDlg" type="checkbox" data-role="checkbox" data-style="2" data-caption="Don't show this again"/>`,
+        actions: [{
+          caption: "OK",
+          cls: "js-dialog-close",
+          onclick: function() {
+            if ($('#DisablePauseSpindleDlg').prop('checked')) {
+              localStorage.setItem('disablePauseSpindleDlg', "true");
+            }
+          }
+        }]
+      });
+    }
   }
 }
 

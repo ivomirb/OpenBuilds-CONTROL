@@ -52,6 +52,7 @@ var persistentConfig = {
   persistDisplayMode: false,
   grblWaitTime1: 2, // timeout for the first handshake attempt (Cltr+X)
   grblWaitTime2: 2, // timeout for the second handshake attempt (DTR Enable)
+  spindleDelay: 0,
 };
 
 var express = require("express");
@@ -93,6 +94,11 @@ function loadPersistentConfig() {
 
   persistentConfig.grblWaitTime1 = Math.max(persistentConfig.grblWaitTime1, 0.1);
   persistentConfig.grblWaitTime2 = Math.max(persistentConfig.grblWaitTime2, 0.1);
+
+  if (persistentConfig.spindleDelay != 3 && persistentConfig.spindleDelay != 5 && persistentConfig.spindleDelay != 8) {
+    persistentConfig.spindleDelay = 0;
+  }
+  status.misc.spindleDelay = persistentConfig.spindleDelay;
 }
 
 // FluidNC test
@@ -526,6 +532,8 @@ var status = {
     jobStatus: 0, // 0 - no job, 1 - running, 2 - jog job running (can't be paused)
     autoStart: true,
     lastFilePath: "",
+    spindleDelay: 0,
+    laserMode: false,
   },
 };
 
@@ -862,7 +870,7 @@ function onParserData(data) {
   };
 
   if (data.indexOf("[GC:") === 0) {
-    gotModals(data)
+    gotModals(data);
   }
 
   if (data.indexOf("[INTF:") === 0) {
@@ -1039,6 +1047,8 @@ function onParserData(data) {
     debug_log("error;")
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
+  } else if (data.startsWith("$32=")) {
+    status.misc.laserMode = parseInt(data.substr(4)) == 1;
   } else if (data === ' ') {
     // nothing
   } else {
@@ -1447,6 +1457,14 @@ io.on("connection", function(socket) {
 
   socket.on("autoStart", setAutoStart);
 
+  socket.on("spindleDelay", function(data) {
+    status.misc.spindleDelay = data;
+    if (persistentConfig.spindleDelay != data) {
+      persistentConfig.spindleDelay = data;
+      savePersistentConfig();
+    }
+  });
+
   socket.on("flashGrbl", function(data) {
 
     var port = data.port;
@@ -1738,7 +1756,7 @@ io.on("connection", function(socket) {
     debug_log('Run Command (' + data.replace('\n', '|') + ')');
     if (status.comms.connectionStatus > 0) {
       if (data) {
-        addLinesToQueue(data);
+        addLinesToQueue(data, false);
         status.comms.runStatus = 'Running'
         // debug_log('sending ' + JSON.stringify(gcodeQueue))
         send1Q();
@@ -2224,8 +2242,8 @@ function machineSend(gcode) {
 
 // Splits the data into lines and adds them to the queue
 // Removes comments
-function addLinesToQueue(data) {
-  var lineCount = 0;
+function addLinesToQueue(data, isJob) {
+  var empty = true;
   data = data.split('\n');
   for (var i = 0; i < data.length; i++) {
 
@@ -2245,12 +2263,16 @@ function addLinesToQueue(data) {
 
     var tosend = line.trim();
     if (tosend.length > 0) {
-      addQToEnd(tosend);
-      lineCount++;
+      if (addQToEnd(tosend) && isJob && status.misc.spindleDelay > 0 && !status.misc.laserMode) {
+        if (tosend.indexOf("M3") >= 0 || tosend.indexOf("M4") >= 0 || tosend.indexOf("M03") >= 0 || tosend.indexOf("M04") >= 0) {
+          addQToEnd("G4 P" + parseInt(status.misc.spindleDelay) + ".");
+        }
+      }
+      empty = false;
     }
   }
 
-  return lineCount > 0;
+  return !empty;
 }
 
 function runJob(object) {
@@ -2276,7 +2298,7 @@ function runJob(object) {
     debug_log('ERROR: Another job still in progress.');
     return;
   }
-  if (data && addLinesToQueue(data)) {
+  if (data && addLinesToQueue(data, true)) {
     // Start interval for qCount messages to socket clients
     queueCounter = setInterval(function() {
       status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
@@ -2552,21 +2574,6 @@ function gotModals(data) {
     if (coolantStateCommands.includes(data[i])) {
       status.machine.modals.coolantstate = data[i]; // handle M7, M8, M9
     }
-
-    // //   status.machine.modals.tool = "0",
-    // if (data[i].indexOf("T") === 0) {
-    //   status.machine.modals.tool = parseFloat(data[i].substr(1))
-    // }
-    //
-    // //   status.machine.modals.spindle = "0"
-    // if (data[i].indexOf("S") === 0) {
-    //   status.machine.modals.spindle = parseFloat(data[i].substr(1))
-    // }
-    //
-    // //   status.machine.modals.feedrate = "0"
-    // if (data[i].indexOf("F") === 0) {
-    //   status.machine.modals.feedrate = parseFloat(data[i].substr(1))
-    // }
   }
 } // end gotModals
 
@@ -2699,9 +2706,10 @@ function finalizeJob(success) {
   }
 }
 
-var modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M4', 'M5', 'M7', 'M8', 'M9']
+var modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M03', 'M4', 'M04', 'M5', 'M7', 'M8', 'M9']
 var modalCommandsRegExp = new RegExp(modalCommands.join("|"));
 
+// Returns true if a modal command was found
 function addQToEnd(gcode) {
   // debug_log('added ' + gcode)
   gcodeQueue.push(gcode);
@@ -2715,10 +2723,12 @@ function addQToEnd(gcode) {
   }
   if (!gcode.startsWith("$J=") && modalCommandsRegExp.test(testGcode)) {
     gcodeQueue.push("$G");
-  }
-  if (gcode.match(/T([\d.]+)/i)) {
+    return true;
+  } else if (gcode.match(/T([\d.]+)/i)) {
     gcodeQueue.push("$G");
+    return true;
   }
+  return false;
 }
 
 // Adds a line to the queue and kicks the sender if currently idle
