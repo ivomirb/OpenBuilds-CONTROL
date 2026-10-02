@@ -387,6 +387,7 @@ window.SetMacroTabsVisibility = function(vis)
 		CreateTabContents($('#macroHorizontalTabs'), activeIdx);
 		$('#macroVerticalTabs').parent().hide();
 		$('#macroHorizontalTabs').parent().show();
+		$('#macros').css('height', 'calc(100vh - 537px)');
 	}
 	else if (vis == 2)
 	{
@@ -397,6 +398,7 @@ window.SetMacroTabsVisibility = function(vis)
 		CreateTabContents($('#macroVerticalTabs'), activeIdx);
 		$('#macroHorizontalTabs').parent().hide();
 		$('#macroVerticalTabs').parent().show();
+		$('#macros').css('height', 'calc(100vh - 495px)');
 	}
 	else
 	{
@@ -406,6 +408,7 @@ window.SetMacroTabsVisibility = function(vis)
 		$('#macroHideGroups > a > .icon').show();
 		$('#macroHorizontalTabs').parent().hide();
 		$('#macroVerticalTabs').parent().hide();
+		$('#macros').css('height', 'calc(100vh - 495px)');
 	}
 
 	RefreshButtonVisibility();
