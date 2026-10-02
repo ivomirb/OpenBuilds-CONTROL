@@ -17,11 +17,11 @@ This is a fork by Ivo Beltchev with multiple improvements.
 
 ### User Interface
 
-* **Windows only:** A new setting to disable the autostart and the tray icon, making it behave like a regular Windows app
+* A new setting to disable the autostart and the tray icon, making it behave like a regular desktop app
 * Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
 * The dialogs for opening and saving files have independent default directories for G-code, macros and grbl settings
 * The position of the main window is preserved between runs
-* Fix for dragging sliders with the mouse (bug in the external Metro UI library)
+* Fix for dragging sliders with the mouse
 * Improved readability for Light and Dark themes
 
 ### 3D View
@@ -37,7 +37,7 @@ This is a fork by Ivo Beltchev with multiple improvements.
 ### Grbl Settings Editor
 
 * The "Advanced" tab is selected by default because it is more useful for non-OpenBuilds customers
-* Added a new option to view only the modified settings
+* Added a new option to view only the modified settings, and buttons to revert each change
 * Fixed a bug where using the search filter loses all unsaved changes
 * Fixed the broken tooltips for the setting descriptions
 * Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
