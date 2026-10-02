@@ -377,10 +377,12 @@ function setAutoStart(enabled) {
     persistentConfig.autoStart = enabled;
     status.misc.autoStart = enabled;
     savePersistentConfig();
-    electronApp.setLoginItemSettings({
-      openAtLogin: enabled,
-      args: []
-    })
+    if (process.platform == 'win32') {
+      electronApp.setLoginItemSettings({
+        openAtLogin: enabled,
+        args: []
+      });
+    }
     if (enabled) {
       if (!appIcon) {
         createTrayIcon();
@@ -388,6 +390,7 @@ function setAutoStart(enabled) {
     }
     else {
       if (appIcon) {
+        appIcon.setContextMenu(null);
         appIcon.destroy();
         appIcon = null;
       }
@@ -2887,7 +2890,7 @@ loadPersistentConfig();
 
     function createApp() {
       status.misc.autoStart = persistentConfig.autoStart;
-      if (process.platform != 'win32' || persistentConfig.autoStart)
+      if (persistentConfig.autoStart || (process.platform != 'win32' && process.platform != 'linux'))
         createTrayIcon();
       if (process.platform == 'darwin') {
         debug_log("Creating MacOS Menu");
@@ -3018,6 +3021,7 @@ loadPersistentConfig();
                 message: 'Auto Start and the tray icon have been disabled.\n\nThey can be restored from the Application Settings menu in the Troubleshooting tab.'
               });
               if (appIcon) {
+                appIcon.setContextMenu(null);
                 appIcon.destroy();
               }
               appIcon = null;

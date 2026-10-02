@@ -815,7 +815,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
 
     if ((!laststatus || laststatus.misc.autoStart != status.misc.autoStart) &&
-        !isJogWidget && typeof process !== "undefined" && process.platform == 'win32') {
+        !isJogWidget && typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux')) {
       $('#mainCloseBtn').attr( "title", status.misc.autoStart ? "Close to Tray" : "Close");
       if (status.misc.autoStart) {
         $('#disableAutoStartTick').removeClass("checked");
