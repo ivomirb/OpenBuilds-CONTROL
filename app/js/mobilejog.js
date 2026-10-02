@@ -16,7 +16,7 @@ $(document).ready(function() {
           }
         },
         {
-          caption: "Cancel",
+          caption: "No",
           cls: "js-dialog-close",
           onclick: function() {
             //
@@ -26,6 +26,7 @@ $(document).ready(function() {
     });
   }
 
+  $('#jro').data('slider').val(100);
 });
 
 var elem = document.documentElement;

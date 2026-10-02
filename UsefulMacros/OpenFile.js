@@ -1,10 +1,6 @@
 // Removes the dropdown menu from the Open G-Code button and adds a button for reloading the last file
-// Also hides the splashscreen and the "new" badge from the ribbon
 // Based on Thayne Co work here: https://thayneco.com/single-click-to-open-a-file-browser-in-openbuilds-control/
 // Requires the "reopen last file" functionality from this fork: https://github.com/ivomirb/OpenBuilds-CONTROL 
-
-$('#splash').hide();
-$('#btnTheme > span.h6.badge.bg-green.fg-white').hide();
 
 var openFileButtons = `
 <button id="file" class="ribbon-button" onclick="socket.emit('openFile')">

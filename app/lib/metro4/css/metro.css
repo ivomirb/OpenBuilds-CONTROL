@@ -23658,7 +23658,9 @@ textarea {
           box-shadow: none;
   float: none;
 }
-.v-menu .menu-title {
+.v-menu .menu-title,
+.d-menu .menu-title,
+.ribbon-dropdown .menu-title {
   background-color: #f6f7f8;
   font-size: 12px;
   line-height: 22px;
@@ -23669,14 +23671,20 @@ textarea {
   font-weight: bold;
   pointer-events: none;
 }
-.v-menu .menu-title:first-child {
+.v-menu .menu-title:first-child,
+.d-menu .menu-title:first-child,
+.ribbon-dropdown .menu-title:first-child {
   margin: 0;
   border-top-width: 0;
 }
-.v-menu .menu-title:first-child:hover {
+.v-menu .menu-title:first-child:hover,
+.d-menu .menu-title:first-child:hover,
+.ribbon-dropdown .menu-title:first-child:hover {
   border-top-width: 0;
 }
-.v-menu .menu-title:hover {
+.v-menu .menu-title:hover,
+.d-menu .menu-title:hover,
+.ribbon-dropdown .menu-title:hover {
   background-color: #f6f7f8;
   cursor: default;
   border: 0;

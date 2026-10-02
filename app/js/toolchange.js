@@ -1,4 +1,3 @@
-var sectionNum = 0;
 var toolchanges = [];
 
 // Skeleton script to replace the Visualiser cone with an STL of an endmill
@@ -57,7 +56,7 @@ function populateToolChanges(gcode) {
       dropdownTemplate += `<li onclick="runGcodeSection(` + 0 + `,` + toolchanges[0].lineNum + `)"><a href="#" onclick=""><i class="fas fa-play"></i> Run Header (lines 1-` + toolchanges[0].lineNum + `)</a></li>`
 
     }
-    for (i = 0; i < toolchanges.length; i++) {
+    for (var i = 0; i < toolchanges.length; i++) {
       var endline = false;
       if (toolchanges[i + 1]) {
         endline = toolchanges[i + 1].lineNum
@@ -106,7 +105,7 @@ function runGcodeAllTools() {
   }
 
   // Toolchanges
-  for (i = 0; i < toolchanges.length; i++) {
+  for (var i = 0; i < toolchanges.length; i++) {
     var startLine = toolchanges[i].lineNum + 1
     if (toolchanges[i + 1]) {
       var endLine = toolchanges[i + 1].lineNum

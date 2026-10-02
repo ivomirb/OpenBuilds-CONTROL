@@ -1,6 +1,7 @@
-var gcode;
-var loadedFileName = "";
+var currentGcode = ""; // this should always match what is in the 3d view, but the editor contents may be different
+var loadedFileName = ""; // name for the contents of the editor, usually the last loaded file
 var editor;
+var useEditor = false; // if false, currentGcode is used instead of the contents of the editor
 var isJogWidget = false;
 var lastJobStartTime = false;
 
@@ -14,22 +15,22 @@ function setWindowTitle(status) {
   var string = ""
 
   if (status) {
-    string += " v" + status.driver.version
+    string += " v" + status.driver.version;
   } else if (laststatus) {
-    string += " v" + laststatus.driver.version
+    string += " v" + laststatus.driver.version;
   }
 
 
   if (loadedFileName.length > 0) {
-    string += " / " + loadedFileName
+    string += " / " + loadedFileName;
   }
 
   if (!nostatusyet && laststatus.comms.interfaces.activePort) {
-    string += " / connected to " + laststatus.comms.interfaces.activePort
+    string += " / connected to " + laststatus.comms.interfaces.activePort;
   }
 
   $('#windowtitle').html(string)
-  document.title = "OpenBuilds CONTROL" + string
+  document.title = "OpenBuilds CONTROL" + string;
 
 }
 
@@ -40,7 +41,7 @@ function getReleaseStats() {
     console.log(data)
     var assets = data.assets;
     var downloadCount = 0
-    for (i = 0; i < assets.length; i++) {
+    for (var i = 0; i < assets.length; i++) {
       if (assets[i].name.indexOf("exe") != -1) {
         downloadCount = downloadCount + assets[i].download_count;
       }
@@ -105,90 +106,67 @@ $(document).ready(function() {
 
   if (!isJogWidget) {
     init3D();
-  }
 
-  // File Open Button compatible with Node 19+ dialogs
-
-  if (navigator.userAgent.indexOf('Electron') >= 0) {
-    console.log("Native Dialog Button Enabled")
-    $("#openGcodeBtn").hide()
-    $("#openGcodeBtnElectron19").show()
-  } else {
-    console.log("Native Dialog Button Disabled")
-    $("#openGcodeBtn").show()
-    $("#openGcodeBtnElectron19").hide()
-  }
-
-
-
-  if (typeof ace !== 'undefined') {
-    editor = ace.edit("editor");
-    editor.$blockScrolling = Infinity;
-    editor.session.setMode("ace/mode/cncpro");
-    editor.setTheme('ace/theme/sqlserver')
-    // editor.setOption('printMarginColumn', 0)
-    editor.setAutoScrollEditorIntoView(true);
-    editor.session.setValue('; No GCODE yet - please Load a GCODE file from the Open GCODE button'); // from samplefile.js
-    editor.setShowPrintMargin(false);
-    editor.getSession().on('change', function() {
-      // parseGcodeInWebWorker(editor.getValue())
-    });
-
-  }
-
-
-  function setposition(e) {
-    var bodyOffsets = document.body.getBoundingClientRect();
-    tempX = e.pageX //- bodyOffsets.left;
-    tempY = e.pageY;
-    // console.log(tempX);
-    var offset = $("#editorContextMenu").offset();
-    $("#editorContextMenu").css({
-      display: 'block',
-      left: e.pageX,
-      top: e.pageY
-    });
-  }
-
-  if (editor) {
-    editor.container.addEventListener("contextmenu", function(e) {
-      setposition(e);
-      e.preventDefault();
-      $('.linenumber').html((editor.getSelectionRange().start.row + 1));
-      // alert('success! - rightclicked line ' + (editor.getSelectionRange().start.row + 1));
-    }, false);
-  }
-
-
-  var fileOpen = document.getElementById('file');
-  if (fileOpen) {
-    fileOpen.addEventListener('change', readFile, false);
-  }
-
-
-  $.get("/gcode").done(function(data) {
-    // console.log(data.length)
-    if (data.length > 2) {
-      if (data.length > 10000000) {
-        gcode = this.result
-        editor.session.setValue("GCODE is too large (" + (data.length / 1024).toFixed(0) + "kB) to load into the GCODE Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it ");
-      } else {
-        editor.session.setValue(data);
-        gcode = false;
+    if (typeof ace !== 'undefined') {
+      editor = ace.edit("editor");
+      editor.$blockScrolling = Infinity;
+      editor.session.setMode("ace/mode/cncpro");
+      if (typeof process !== "undefined") {
+        if (process.platform == 'win32') {
+          editor.session.setNewLineMode("windows");
+        } else {
+          editor.session.setNewLineMode("unix");
+        }
       }
-      parseGcodeInWebWorker(data)
-      $('#controlTab').click()
-      if (!webgl) {
-        $('#gcodeviewertab').click();
-      } else {
-        $('#gcodeeditortab').click()
-      }
-      jobNeedsHoming();
+      editor.setTheme('ace/theme/sqlserver')
+      editor.setAutoScrollEditorIntoView(true);
+      editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
+      editor.setShowPrintMargin(false);
+      $('#editor').addClass("editorEnabled");
+
+      // The editor doesn't update when its text changes, unless it is visible.
+      // The observer forces an update when the editor becomes visible.
+      const observer = new IntersectionObserver(
+        () => { editor.resize(); },
+        {root: document.documentElement});
+      observer.observe(document.getElementById("editor"));
+
+      editor.container.addEventListener("contextmenu", function(e) {
+
+        $("#editorContextMenu").css({
+          left: e.pageX,
+          top: e.pageY
+        }).data('dropdown').close(true);
+        $("#editorContextToggle").click();
+
+        $('.linenumber').html((editor.getSelectionRange().start.row + 1));
+      }, false);
+    } else {
+    $('#gcodeeditortab').hide();
     }
 
-  });
+    if (!webgl) {
+      $('#gcodeviewertab').hide();
+    }
 
-  getChangelog()
+    if (disableSerialLog) {
+      $('#consoletab').hide();
+    }
+
+    // determine the preferred starting tab
+    if (!webgl) {
+      if (!disableSerialLog) {
+        $('#consoletab').click();
+      } else if (editor) {
+        $('#gcodeeditortab').click();
+      }
+      else {
+        $('#macrostab').click();
+      }
+    }
+  }
+
+  getChangelog();
 
   setInterval(function() {
     setWindowTitle();
@@ -224,7 +202,7 @@ $(document).ready(function() {
       console.log('%c  isJob: false,', 'font-weight: regular; font-size: 12px;color: black; ');
       console.log('%c  completedMsg: "message displayed upon completion ",', 'font-weight: regular; font-size: 12px;color: black; ');
       console.log('%c});', 'font-weight: regular; font-size: 12px;color: black; ');
-      console.log('%c; Send the GCODE string to the controller, ideal for single commands', 'font-weight: bold; font-size: 12px;color: black; ');
+      console.log('%c; Send the G-code string to the controller, ideal for single commands', 'font-weight: bold; font-size: 12px;color: black; ');
       console.log('%csendGcode("gcode-string")', 'font-weight: regular; font-size: 12px;color: black; ');
     }
   });
@@ -233,121 +211,91 @@ $(document).ready(function() {
 });
 
 function runJobFile() {
-  if (gcode) {
-    var formData = new FormData();
-    var blob = new Blob([gcode], {
-      type: 'text/plain'
-    });
+  const gcode = useEditor ? editor.getValue() : currentGcode;
+  if (!jobNeedsHoming(gcode)) {
+    runJobFileInternal(gcode);
+  }
+}
 
-    var fileOfBlob = new File([blob], 'upload.gcode');
-    formData.append("file", fileOfBlob);
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function() {
-      if (xhr.status == 200) {
-        console.log(xhr.response)
-      }
-    };
-    // Add any event handlers here...
-    xhr.open('POST', '/runjob', true);
-    xhr.send(formData);
-    printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File (from memory) sent to backend </span>`);
+function runJobFileInternal(gcode) {
+  var formData = new FormData();
+  var blob = new Blob([gcode], {
+    type: 'text/plain'
+  });
 
+  var fileOfBlob = new File([blob], 'upload.gcode');
+  formData.append("file", fileOfBlob);
+  var xhr = new XMLHttpRequest();
+
+  captureWcsHistory("", "", true);
+  xhr.open('POST', '/runjob', true);
+  xhr.send(formData);
+  if (useEditor) {
+    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from gcode editor) sent to backend </span>`);
   } else {
-    // v1.0.329 Removed as a test for random issue with Websocket Disconnects on some files, using http post for both
-    // socket.emit('runJob', {
-    //   data: editor.getValue(),
-    //   isJob: true,
-    //   fileName: loadedFileName
-    // });
-    var formData = new FormData();
-    var blob = new Blob([editor.getValue()], {
-      type: 'text/plain'
-    });
-
-    var fileOfBlob = new File([blob], 'upload.gcode');
-    formData.append("file", fileOfBlob);
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function() {
-      if (xhr.status == 200) {
-        console.log(xhr.response)
-      }
-    };
-    // Add any event handlers here...
-    xhr.open('POST', '/runjob', true);
-    xhr.send(formData);
-    printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File (from gcode editor) sent to backend </span>`);
-
+    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
   }
 
-  lastJobStartTime = new Date().getTime()
-
+  lastJobStartTime = new Date().getTime();
 }
 
-function readFile(evt) {
-  console.group("New FileOpen Event:");
-  console.log(evt);
-  console.groupEnd();
-  // Close the menu
-  $("#drop1").dropdown("toggle");
-
-  // Files
-  var files = evt.target.files || evt.dataTransfer.files;
-
-  for (var i = 0; i < files.length; i++) {
-    loadFile(files[i]);
+function jobNeedsHoming(gcode) {
+  if (laststatus && laststatus.machine.modals.homedRecently) {
+    return false;
   }
-  document.getElementById('file').value = '';
+
+  if (localStorage.getItem('disableJobNeedsHoming') == "true") {
+    return false;
+  }
+
+  var command;
+  if (gcode.indexOf("G28") >= 0 || editor.getValue().indexOf("g28") >= 0) {
+    command = "G28";
+  } else if (gcode.indexOf("G30") >= 0 || editor.getValue().indexOf("g30") >= 0) {
+    command = "G30";
+  } else if (gcode.indexOf("G53") >= 0 || editor.getValue().indexOf("g53") >= 0) {
+    command = "G53";
+  } else {
+    return false;
+  }
+
+  var dialog = Metro.dialog.create({
+    clsDialog: 'dark',
+    title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates",
+    content: `<i class='fas fa-exclamation-triangle fg-darkRed'></i> Alert: The job you are about to run contains a ` + command + ` command, which uses machine coordinates and requires homing.<br><br>` +
+`The homing state of the machine cannot be determined at the moment.<br>` +
+`Please make sure to home the machine to establish the Machine Coordinate (G53) System and prevent crashes.<br><br>` +
+`<input id="DisableJobHomeCheck" type="checkbox" data-role="checkbox" data-style="2" data-caption="Don't show this again"/>`,
+    actions: [{
+      caption: "Run Job Anyway",
+      cls: "js-dialog-close warning",
+      onclick: function() {
+        if ($('#DisableJobHomeCheck').prop('checked')) {
+          localStorage.setItem('disableJobNeedsHoming', "true");
+        }
+        runJobFileInternal(gcode);
+      }
+    },
+    {
+      caption: "Abort",
+      cls: "js-dialog-close",
+      onclick: function() {
+        if ($('#DisableJobHomeCheck').prop('checked')) {
+          localStorage.setItem('disableJobNeedsHoming', "true");
+        }
+      }
+    }]
+  });
+
+  return true;
 }
 
-// load file
-function loadFile(f) {
-  // Filereader
-  if (f) {
-    var r = new FileReader();
-    // if (f.name.match(/.gcode$/i)) {
-    r.readAsText(f);
-    r.onload = function(event) {
-      if (this.result.length > (20 * 1024 * 1024)) {
-        gcode = this.result
-        editor.session.setValue("File " + f.name + " is too large (" + (this.result.length / 1024).toFixed(0) + "kB) to load into the GCODE Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it ");
-      } else {
-        editor.session.setValue(this.result);
-        gcode = false;
-      }
-      loadedFileName = f.name;
-      setWindowTitle()
-      if (webgl) {
-        printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File Loaded, please wait while we render a preview... </span>`);
-      } else {
-        printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File Loaded </span>`);
-      }
-      parseGcodeInWebWorker(this.result)
-      jobNeedsHoming();
-    };
-    // }
-  }
+function loadJobFile() {
+  socket.emit('openFile');
 }
 
-function jobNeedsHoming() {
-
-  if (editor.getValue().lastIndexOf("G53") != -1 || editor.getValue().lastIndexOf("g53") != -1) {
-    if (laststatus !== undefined) {
-      if (laststatus.machine.modals.homedRecently == false) {
-        var dialog = Metro.dialog.create({
-          clsDialog: 'dark',
-          title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates:",
-          content: "<i class='fas fa-exclamation-triangle fg-darkRed'></i> Tip: The GCODE file you loaded contains G53 commands. Please make sure to HOME the machine to establish the Machine Coordinate (G53) System properly to prevent crashes.",
-          actions: [{
-            caption: "Close",
-            cls: "js-dialog-close",
-            onclick: function() {
-              //
-            }
-          }]
-        });
-      }
-    }
-  }
+function reloadJobFile(filePath) {
+  socket.emit('reopenFile', filePath);
 }
 
 function versionCompare(v1, v2, options) {
@@ -492,13 +440,112 @@ var webgl = (function() {
 
 })();
 
-function saveGcode() {
-  var blob = new Blob([editor.getValue()], {
-    type: "plain/text"
-  });
-  invokeSaveAsDialog(blob, 'edited-gcode.gcode');
+function previewGcode() {
+  parseGcodeInWebWorker(editor.getValue());
 }
 
+function saveGcode() {
+  var saveFileParams = {
+    id: "gcode",
+    title: "Save G-code",
+    filters: [
+      {name: "G-code files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
+      {name: "All files", extensions: ["*"]},
+    ],
+    fileName: loadedFileName,
+    updateLastFilePath: true,
+  };
+
+  socket.emit('saveFileDialog', saveFileParams, (filePath) => {
+  var blob = new Blob([editor.getValue()], {
+      type: 'text/plain'
+    });
+    saveBlobToDisk(blob, filePath, saveFileParams).then((err) => {
+      if (!err) {
+        loadedFileName = path.basename(filePath);
+      }
+    });
+  });
+}
+
+function clearGcode() {
+  editor.execCommand('selectall');
+  editor.execCommand('del');
+  parseGcodeInWebWorker("");
+  loadedFileName = '';
+  useEditor = true;
+  EnableViaClass('.editorEnabled', true);
+  setWindowTitle();
+}
+
+function saveBlobToDisk(blob, filePath, params) {
+  var formData = new FormData();
+  var fileOfBlob = new File([blob], filePath);
+  formData.append("file", fileOfBlob);
+  formData.append("showErrorDlg", params.showErrorDlg ? "true" : "false");
+  formData.append("updateLastFilePath", params.updateLastFilePath ? "true" : "false");
+  var xhr = new XMLHttpRequest();
+  var promise = new Promise((resolve) => {
+    xhr.onload = function() {
+      resolve(xhr.response);
+    };
+  });
+  xhr.open('POST', '/saveFile', true);
+  xhr.send(formData);
+
+  return promise;
+}
+
+// params could be a suggested file name
+// or params could be an object with optional fields
+//   * id - dialog id, used to persist the default folder
+//   * title - the dialog title
+//   * filters - FileFilter[]
+//   * fileName - a suggested file name
+function invokeSaveAsDialogNew(blob, params) {
+  if (!params) {
+    params = {};
+  } else if (typeof params == "string") {
+    params = {
+      fileName: params,
+    };
+  }
+
+  socket.emit('saveFileDialog', params, (filePath) => {
+    saveBlobToDisk(blob, filePath, params);
+  });
+}
+
+// params is an object with the following fields (all optional)
+//   * id - dialog id, used to persist the default folder
+//   * title - the dialog title
+//   * filters - FileFilter[]
+//   * fileName - a suggested file name
+function invokeOpenDialog(params) {
+  return new Promise((resolve) => {
+    socket.emit('openFileDialog', params, (filePath) => {
+      resolve(filePath);
+    });
+  });
+}
+
+function invokeOpenDialogReadFile(params) {
+  return new Promise((resolve) => {
+    socket.emit('openFileDialog', params, (filePath) => {
+      if (params.showErrorDlg) {
+        socket.emit('readTextFile', filePath, params, (data) => {
+          resolve(data);
+        });
+      } else {
+        socket.emit('readTextFile', filePath, params, (err, data) => {
+          resolve({err, data});
+        });
+      }
+    });
+  });
+}
+
+// This is unused, but preserved in case an old macro needs it
 function invokeSaveAsDialog(file, fileName) {
   if (!file) {
     throw 'Blob object is required.';

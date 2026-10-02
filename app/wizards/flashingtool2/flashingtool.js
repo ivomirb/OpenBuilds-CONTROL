@@ -2,18 +2,7 @@ var selectedControllerType = 'blackboxx32'
 
 function flashToolBoard(device) {
   selectedControllerType = device
-  if (device == "blackbox4x") {
-    $("#grblAxesCount").data("select").val("3axes-grbl")
-    $("#flash-tool-grbl-row").show();
-    $("#flash-tool-grblhal-row").hide();
-    $("#flash-tool-erase-row").hide();
-    $("#flash-tool-interface-fw-row").hide();
-    $("#flash-tool-custom-row").hide();
-    $("#flash-tool-backup-row").show();
-    $("#flash-tool-blox-bootloader-row").hide();
-    $("#flash-tool-blox-row").hide();
-    $("#customFirmwareSet").html("Please select the Grbl Firmware hex file you want to flash");
-  } else if (device == "blackboxx32") {
+  if (device == "blackboxx32") {
     $("#grblHalAxesCount").data("select").val("3axes-grblhal")
     $("#flash-tool-grbl-row").hide();
     $("#flash-tool-grblhal-row").show();
@@ -34,15 +23,6 @@ function flashToolBoard(device) {
     $("#flash-tool-blox-bootloader-row").hide();
     $("#flash-tool-blox-row").hide();
     $("#customFirmwareSet").html("Please select the Interface Firmware binary file you want to flash");
-  } else if (device == "bloxv1") {
-    $("#flash-tool-grbl-row").hide();
-    $("#flash-tool-grblhal-row").hide();
-    $("#flash-tool-erase-row").show();
-    $("#flash-tool-interface-fw-row").hide();
-    $("#flash-tool-backup-row").show();
-    $("#flash-tool-blox-bootloader-row").show();
-    $("#flash-tool-blox-row").show();
-    $("#customFirmwareSet").html("Please select the BLOX Firmware binary file you want to flash");
   }
 
 }
@@ -54,9 +34,7 @@ function openFlashingTool() {
   var template = `
     <ul data-role="tabs" data-expand="true">
       <li><a href="#" onclick="flashToolBoard('blackboxx32');"><img src="/wizards/flashingtool2/img/bbx32-icon.png" height="32"> <b>BlackBox X32</b></a></li>
-      <!-- li><a href="#" onclick="flashToolBoard('blackbox4x');"><img src="/wizards/flashingtool2/img/bb4x-icon.png" height="32"> <b>BlackBox 4X</b></a></li -->
       <li><a href="#" onclick="flashToolBoard('interfacev1');"><img src="/wizards/flashingtool2/img/interfacev1-icon.png" height="32"> <b>Interface</b></a></li>
-      <!-- li><a href="#" onclick="flashToolBoard('bloxv1');"><img src="/wizards/flashingtool2/img/blox-icon.png" height="32"> <b>BLOX</b></a></li-->
     </ul>`
 
   template += `
@@ -248,53 +226,7 @@ function readEspFirmwareFile() {
 
 function flashFirmwarefromWizard() {
   autoBackup("Updated Firmware: " + selectedControllerType);
-  if (selectedControllerType == "blackbox4x") {
-
-    if ($("#grblAxesCount").val() == "3axes-grbl") {
-      var filename = "grbl-3axes-nodoor.hex";
-    } else if ($("#grblAxesCount").val() == "2axes-grbl") {
-      var filename = "grbl-2axes-nodoor.hex";
-    } else if ($("#grblAxesCount").val() == "servo-grbl") {
-      var filename = "grbl-servo-nodoor.hex";
-    }
-
-    var data = {
-      port: $("#portUSB2").val(),
-      file: filename,
-      customImg: false
-    }
-
-    if ($("#grblAxesCount").val() == "custom") {
-      // Custom Firmware
-      if ($("#firmwareBin").val().length > 0) {
-        var form = document.getElementById('customFirmwareForm');
-        var formData = new FormData(form);
-        var xhr = new XMLHttpRequest();
-        xhr.onload = function() {
-          if (xhr.status == 200) {
-            console.log(xhr.response);
-            $("#customFirmwareSet").html(xhr.response);
-            data.customImg = true;
-            data.file = xhr.response;
-            console.log(data);
-            socket.emit('flashGrbl', data);
-          }
-        };
-        // Add any event handlers here...
-        xhr.open('POST', '/uploadCustomFirmware', true);
-        xhr.send(formData);
-      } else {
-        $('#controlTab').click();
-        $('#consoletab').click();
-        printLog("<span class='fg-red'>[ Firmware Upgrade ] </span><span class='fg-red'><i class='fas fa-times fa-fw fg-red fa-fw'></i>You selected the option to use a custom firmware file, but failed to select a file to use for the operation. Please try again</span>")
-      }
-    } else {
-      //  Precompiled Firmwares
-      socket.emit('flashGrbl', data)
-
-    }
-
-  } else if (selectedControllerType == "blackboxx32") {
+  if (selectedControllerType == "blackboxx32") {
 
     if ($("#grblHalAxesCount").val() == "3axes-grblhal") {
       var filename = "grblhal-grbl3axis.bin";
@@ -375,57 +307,8 @@ function flashFirmwarefromWizard() {
 
     } else {
       // latest included firmware
-      socket.emit('flashInterface', data)
+      socket.emit('flashInterface', data);
     }
-
-
-  } else if (selectedControllerType == "bloxv1") {
-    var data = {
-      port: $("#portUSB2").val(),
-      customImg: false
-    }
-
-    if ($("#flashErase").val() == "flasherase") {
-      data.erase = true;
-    }
-
-    if ($("#bloxFirmwareType").val() == "blox-grblhal-corexy") {
-      data.file = "blox-grblhal-corexy.bin"
-    }
-
-    if ($("#bloxFirmwareType").val() == "blox-grblhal-cartesian") {
-      data.file = "blox-grblhal-cartesian.bin"
-    }
-
-    if ($("#bloxFirmwareType").val() == "custom") {
-      // custom image
-      if ($("#firmwareBin").val().length > 0) {
-        var form = document.getElementById('customFirmwareForm');
-        var formData = new FormData(form);
-        var xhr = new XMLHttpRequest();
-        xhr.onload = function() {
-          if (xhr.status == 200) {
-            console.log(xhr.response)
-            $("#customFirmwareSet").html(xhr.response);
-            data.file = xhr.response;
-            data.customImg = true;
-            socket.emit('flashBLOX', data);
-          }
-        };
-        // Add any event handlers here...
-        xhr.open('POST', '/uploadCustomFirmware', true);
-        xhr.send(formData);
-      } else {
-        $('#controlTab').click();
-        $('#consoletab').click();
-        printLog("<span class='fg-red'>[ Firmware Upgrade ] </span><span class='fg-red'><i class='fas fa-times fa-fw fg-red fa-fw'></i>You selected the option to use a custom firmware file, but failed to select a file to use for the operation. Please try again</span>")
-      }
-
-    } else {
-      // latest included firmware
-      socket.emit('flashBLOX', data)
-    }
-
 
   } else {
     console.log("no controller selected")

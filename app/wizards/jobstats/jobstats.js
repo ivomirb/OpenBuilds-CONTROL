@@ -20,7 +20,7 @@ function storeJob(completedJob) {
     pastJobs.length = 50;
   }
   localStorage.setItem('pastJobs', JSON.stringify(pastJobs));
-  console.log(JSON.stringify(pastJobs, false, 4))
+//  console.log(JSON.stringify(pastJobs, false, 4))
 }
 
 function showJobLog() {
