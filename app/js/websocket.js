@@ -533,7 +533,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
       var cpu = sysinfo.hardware.cpu[0].model;
       $("#cpuspecs").html(cpu);
 
-      var gpu = sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)";
+      var gpu = sysinfo.hardware.gpu.length > 0 ? sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)" : "NONE";
       $("#gpuspecs").html(gpu);
 
       var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
