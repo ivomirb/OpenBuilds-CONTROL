@@ -132,13 +132,13 @@ $(document).ready(function() {
       observer.observe(document.getElementById("editor"));
 
       editor.container.addEventListener("contextmenu", function(e) {
-        var bodyOffsets = document.body.getBoundingClientRect();
+
         $("#editorContextMenu").css({
-          display: 'block',
           left: e.pageX,
           top: e.pageY
-        });
-        e.preventDefault();
+        }).data('dropdown').close(true);
+        $("#editorContextToggle").click();
+
         $('.linenumber').html((editor.getSelectionRange().start.row + 1));
       }, false);
     } else {

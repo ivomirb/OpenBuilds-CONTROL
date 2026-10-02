@@ -110,8 +110,6 @@ function edit(i, evt) {
     evt.stopPropagation();
   }
 
-  // console.log("Editing " + i)
-
   if (buttonsarray[i]) {
     var icon = buttonsarray[i].icon;
     var title = buttonsarray[i].title;
@@ -416,43 +414,48 @@ function executeJS(js) {
   `)();
 }
 
+function macroContextMenu(buttonIdx) {
+  var offset = $("#macroBtn" + buttonIdx).offset();
 
-function macroContextMenu(e) {
-  console.log(e)
-  setMacroContextMenuPosition(e);
-}
-
-function setMacroContextMenuPosition(e) {
-  var offset = $("#macroBtn" + e).offset();
-
-  var menuItems = `<li onclick="edit(` + e + `)"><a href="#"><i class="fas fa-edit icon"></i> Edit Macro</span></a></li>
+  var menuItems = `<li onclick="edit(` + buttonIdx + `)"><a href="#"><i class="fas fa-edit icon"></i> Edit Macro</span></a></li>
   <li class="divider"></li>`;
 
-  if (e == 0) {
+  if (buttonIdx == 0) {
     //
   } else {
     menuItems += `
-      <li onclick="sortMacros(` + e + `, -1)"><a href="#"><i class='fas fa-fw fa-arrow-left icon'></i> Sort: Move Left</a></li>`;
+      <li onclick="sortMacros(` + buttonIdx + `, -1)"><a href="#"><i class='fas fa-fw fa-arrow-left icon'></i> Sort: Move Left</a></li>`;
   }
 
-  if (e < buttonsarray.length - 1) {
-    menuItems += `<li onclick="sortMacros(` + e + `, 1)"><a href="#"><i class='fas fa-fw fa-arrow-right icon'></i>  Sort: Move Right</a></li>`
+  if (buttonIdx < buttonsarray.length - 1) {
+    menuItems += `<li onclick="sortMacros(` + buttonIdx + `, 1)"><a href="#"><i class='fas fa-fw fa-arrow-right icon'></i>  Sort: Move Right</a></li>`
   }
 
   menuItems += `
   <li class="divider"></li>
-  <li onclick="backupMacro(` + e + `);"><a href="#"><i class="fas fa-save icon"></i> Export Macro</span></a></li>
+  <li onclick="backupMacro(` + buttonIdx + `);"><a href="#"><i class="fas fa-save icon"></i> Export Macro</span></a></li>
   <li class="divider"></li>
-  <li onclick="confirmMacroDelete(` + e + `);" class="fg-red"><a href="#"><i class="fas fa-trash icon"></i> Delete Macro</span></a></li>
+  <li onclick="confirmMacroDelete(` + buttonIdx + `);" class="fg-red"><a href="#"><i class="fas fa-trash icon"></i> Delete Macro</span></a></li>
   `
 
-  $("#macroContextMenuItems").html(menuItems)
+  $("#macroContextMenuItems").html(menuItems);
 
-  $("#macroContextMenu").css({
-    display: 'block',
-    left: offset.left + 20,
-    top: offset.top + 20
+  var menu = $("#macroContextMenu");
+  menu.css({
+    visibility: "hidden",
+    display: "block",
   });
+  const menuRect = menu[0].getBoundingClientRect();
+  const parentRect = document.body.getBoundingClientRect();
+  const left = Math.max(Math.min(offset.left + 20, parentRect.right - menuRect.width - 4), 0);
+  const top = Math.max(Math.min(offset.top + 20, parentRect.bottom - menuRect.height - 4), 0);
+
+  menu.css({
+    left: left,
+    top: top,
+    visibility: "visible",
+  }).data('dropdown').close(true);
+  $("#macroContextToggle").click();
 }
 
 function sortMacros(index, delta) {

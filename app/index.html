@@ -280,13 +280,13 @@
                   <span class="icon">
                     <span class="fas fa-folder-open fg-amber"></span>
                   </span>
-                  <span class="caption">Open<br>G-code</span>
+                  <span class="caption" style="white-space: nowrap;">Open<br>G-code</span>
                 </button>
                 <button id="reloadGcodeBtn" onclick="reloadJobFile()" class="ribbon-button disabled" title="Reload last G-Code file">
                   <span class="icon">
                     <span class="fas fa-undo-alt"></span>
                   </span>
-                  <span class="caption">Reload<br>G-code</span>
+                  <span class="caption" style="white-space: nowrap;">Reload<br>G-code</span>
                 </button>
                 <div>
                   <button id="recentFilesBtn" class="ribbon-button dropdown-toggle" style="padding-left:10px; height:78px; margin-left:-4px;" title="Open recent G-code file">
@@ -1393,21 +1393,23 @@ Restore previous origins from history.">
       </div>
     </div>
 
-    <!-- Simulator Context Menu -->
-    <ul class="d-menu context drop-shadow" id="editorContextMenu" data-role="dropdown" data-toggle-element="#context_toggle">
-      <span id="dropdowncontent">
+    <!-- Editor Context Menu -->
+    <div id="editorContextToggle">
+      <ul class="d-menu context drop-shadow pos-fixed" id="editorContextMenu" data-role="dropdown" data-toggle-element="#editorContextToggle">
         <li onclick="startFromHere(editor.getSelectionRange().start.row + 1);"><a href="#"><i class='fas fa-fw fa-route icon'></i> Recover job from Line: <span class="linenumber"></span></a></li>
         <li class="divider"></li>
         <li onclick="runSimFrom(editor.getSelectionRange().start.row + 1);"><a href="#"><i class="fas fa-fighter-jet icon"></i> Simulate from line <span class="linenumber"></span></a></li>
-      </span>
-    </ul>
-    <!--  -->
+      </ul>
+    </div>
 
-    <ul class="d-menu context drop-shadow" id="macroContextMenu" data-role="dropdown" data-toggle-element="#context_toggle">
-      <span id="macroContextMenuItems">
-        <!-- Items here -->
-      </span>
-    </ul>
+    <!-- Macro Context Menu -->
+    <div id="macroContextToggle">
+      <ul class="d-menu context drop-shadow pos-fixed" id="macroContextMenu" data-role="dropdown" data-toggle-element="#macroContextToggle">
+        <span id="macroContextMenuItems">
+          <!-- Items here -->
+        </span>
+      </ul>
+    </div>
 
     <div id="hiddendivs" style="display:none;">
 
