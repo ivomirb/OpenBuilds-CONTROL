@@ -109,7 +109,10 @@ function initDiagnostics() {
     disableAggressiveHomeReset = false;
   }
 
-  $('#disableAutoStartTick').toggle(typeof process !== "undefined" && process.platform == 'win32');
+  $('#disableAutoStartTick').toggle(typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux'));
+  if (typeof process !== "undefined" && process.platform == 'linux') {
+    $('#disableAutoStartLabel').html("Disable Tray Icon"); // no autostart on linux
+  }
 
   if (localStorage.getItem('disable4thAxis')) {
     if (JSON.parse(localStorage.getItem('disable4thAxis')) == true) {
@@ -127,7 +130,7 @@ function initDiagnostics() {
 };
 
 function toggleAutoStart() {
-  if (typeof process !== "undefined" && process.platform == 'win32') {
+  if (typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux')) {
     socket.emit('autoStart', !laststatus.misc.autoStart);
   }
 }

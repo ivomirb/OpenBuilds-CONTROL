@@ -377,20 +377,17 @@ function setAutoStart(enabled) {
     persistentConfig.autoStart = enabled;
     status.misc.autoStart = enabled;
     savePersistentConfig();
-    electronApp.setLoginItemSettings({
-      openAtLogin: enabled,
-      args: []
-    })
+    if (process.platform == 'win32') {
+      electronApp.setLoginItemSettings({
+        openAtLogin: enabled,
+        args: []
+      });
+    }
     if (enabled) {
-      if (!appIcon) {
-        createTrayIcon();
-      }
+      createTrayIcon();
     }
     else {
-      if (appIcon) {
-        appIcon.destroy();
-        appIcon = null;
-      }
+      destroyTrayIcon();
     }
   }
 }
@@ -1405,10 +1402,7 @@ io.on("connection", function(socket) {
     if (persistentConfig.autoStart) {
       jogWindow.hide();
     } else {
-      if (appIcon) {
-        appIcon.destroy();
-      }
-      electronApp.exit(0);
+      exitApp();
     }
   });
 
@@ -1435,12 +1429,7 @@ io.on("connection", function(socket) {
     }
   });
 
-  socket.on("quit", function(data) {
-    if (appIcon) {
-      appIcon.destroy();
-    }
-    electronApp.exit(0);
-  });
+  socket.on("quit", exitApp);
 
   socket.on("applyUpdate", function(data) {
     autoUpdater.quitAndInstall();
@@ -2887,7 +2876,7 @@ loadPersistentConfig();
 
     function createApp() {
       status.misc.autoStart = persistentConfig.autoStart;
-      if (process.platform != 'win32' || persistentConfig.autoStart)
+      if (persistentConfig.autoStart || (process.platform != 'win32' && process.platform != 'linux'))
         createTrayIcon();
       if (process.platform == 'darwin') {
         debug_log("Creating MacOS Menu");
@@ -2914,22 +2903,22 @@ loadPersistentConfig();
         if (process.argv.indexOf("-debug") > 0)
           jogWindow.webContents.openDevTools();
       }
+    }
 
+    function exitApp() {
+      if (appIcon) {
+        appIcon.destroy();
+      }
+      electronApp.exit(0);
     }
 
     function createMenu() {
-
       var template = [{
         label: "Application",
         submenu: [{
           label: "Quit",
           accelerator: "Command+Q",
-          click: function() {
-            if (appIcon) {
-              appIcon.destroy();
-            }
-            electronApp.exit(0);
-          }
+          click: exitApp
         }]
       }, {
         label: "Edit",
@@ -2987,9 +2976,7 @@ loadPersistentConfig();
 
     function createTrayIcon() {
       if (process.platform !== 'darwin') {
-        appIcon = new Tray(
-          nativeImage.createFromPath(iconPath)
-        )
+        appIcon = appIcon || new Tray(nativeImage.createFromPath(iconPath));
         const contextMenuTemplate = [{
           label: 'Open User Interface (GUI)',
           click() {
@@ -2998,12 +2985,7 @@ loadPersistentConfig();
           }
         }, {
           label: 'Quit OpenBuilds CONTROL (Disables all integration until started again)',
-          click() {
-            if (appIcon) {
-              appIcon.destroy();
-            }
-            electronApp.exit(0);
-          }
+          click: exitApp
         }];
         if (process.platform == 'win32') {
           contextMenuTemplate.push({type: 'separator'});
@@ -3021,6 +3003,21 @@ loadPersistentConfig();
                 appIcon.destroy();
               }
               appIcon = null;
+            }
+          });
+        } else if (process.platform == 'linux') {
+          contextMenuTemplate.push({type: 'separator'});
+          contextMenuTemplate.push({
+            label: 'Disable the Tray Icon',
+            click() {
+              showJogWindow();
+              setAutoStart(false);
+              dialog.showMessageBox(jogWindow, {
+                type: 'info',
+                buttons: ['OK'],
+                message: 'The tray icon has been disabled. It will be fully removed once the app closes.\n\nThe icon can be restored from the Application Settings menu in the Troubleshooting tab.'
+              });
+              destroyTrayIcon();
             }
           });
         }
@@ -3052,11 +3049,10 @@ loadPersistentConfig();
             content: "OpenBuilds CONTROL has started successfully"
           })
         }
-      } else {
+      } else { // darwin
         const dockMenu = Menu.buildFromTemplate([{
           label: 'Quit OpenBuilds CONTROL (Disables all integration until started again)',
           click() {
-            // appIcon.destroy();
             electronApp.exit(0);
           }
         }])
@@ -3064,6 +3060,19 @@ loadPersistentConfig();
       };
 
       console.log("Created tray icon");
+    }
+
+    function destroyTrayIcon() {
+      if (appIcon) {
+        if (process.platform == 'linux') {
+          // There is a bug with Electron on Linux that fails to properly destroy the tray icon.
+          // We keep it around but with an empty menu. It will be gone after the app closes.
+          appIcon.setContextMenu(Menu.buildFromTemplate([]));
+        } else {
+          appIcon.destroy();
+          appIcon = null;
+        }
+      }
     }
 
     function createJogWindow() {
@@ -3135,31 +3144,19 @@ loadPersistentConfig();
       forceQuit = true;
     })
 
-    electronApp.on('will-quit', function(event) {
-      // On OS X it is common for applications and their menu bar
-      // to stay active until the user quits explicitly with Cmd + Q
-      // We don't take that route, we close it completely
-      if (appIcon) {
-        appIcon.destroy();
-      }
-      electronApp.exit(0);
-    });
+    // On OS X it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    // We don't take that route, we close it completely
+    electronApp.on('will-quit', exitApp);
 
     // Quit when all windows are closed.
-    electronApp.on('window-all-closed', function() {
-      // On OS X it is common for applications and their menu bar
-      // to stay active until the user quits explicitly with Cmd + Q
-      if (appIcon) {
-        appIcon.destroy();
-      }
-      electronApp.exit(0);
-    });
+    // On OS X it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    electronApp.on('window-all-closed', exitApp);
 
-    electronApp.on('activate', function() {
-      // On OS X it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
-      createApp();
-    });
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    electronApp.on('activate', createApp);
 
     // Autostart on Login
     if (process.platform == 'win32' && persistentConfig.autoStart) {

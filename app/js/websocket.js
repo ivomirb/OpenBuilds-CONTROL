@@ -533,7 +533,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
       var cpu = sysinfo.hardware.cpu[0].model;
       $("#cpuspecs").html(cpu);
 
-      var gpu = sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)";
+      var gpu = sysinfo.hardware.gpu.length > 0 ? sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)" : "NONE";
       $("#gpuspecs").html(gpu);
 
       var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
@@ -815,7 +815,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
 
     if ((!laststatus || laststatus.misc.autoStart != status.misc.autoStart) &&
-        !isJogWidget && typeof process !== "undefined" && process.platform == 'win32') {
+        !isJogWidget && typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux')) {
       $('#mainCloseBtn').attr( "title", status.misc.autoStart ? "Close to Tray" : "Close");
       if (status.misc.autoStart) {
         $('#disableAutoStartTick').removeClass("checked");
