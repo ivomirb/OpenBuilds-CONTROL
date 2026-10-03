@@ -141,10 +141,10 @@ function edit(i, evt) {
   }
 
   var macroTemplate = `<form id="macroEditForm">
-  <div class="p-1 m-0" style="overflow-y: auto; overflow-x: hidden; height: calc(100vh - 280px);">
-      <div class="row mb-2">
+  <div class="p-1 m-0">
+      <div class="row mb-2" style="align-items:center;">
           <label class="cell-sm-3">Icon</label>
-          <div class="cell-sm-9">
+          <div class="cell-sm-4">
             <form class="inline-form">
               <div class="inline-form">
                 <button class="button outline dark " type="button" id="GetIconPicker" data-iconpicker-input="#macroicon" data-iconpicker-preview="#IconPreview">Select Icon</button>
@@ -154,6 +154,21 @@ function edit(i, evt) {
               </div>
               <input id="macroicon" type="hidden" value="` + icon + `" data-editable="true" />
             </form>
+          </div>
+          <label class="cell-sm-1" style="padding:0;">Color</label>
+          <div class="cell-sm-4">
+            <select data-role="select" id="macrocls" data-filter="false" data-drop-height="">
+              <option value="" selected>Default</option>
+              <option value="primary">Blue</option>
+              <option value="info">Light Blue</option>
+              <option value="secondary">Blue-Gray</option>
+              <option value="success">Green</option>
+              <option value="alert">Red</option>
+              <option value="warning">Orange</option>
+              <option value="yellow">Yellow</option>
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
           </div>
       </div>
       <div class="row mb-2">
@@ -177,32 +192,15 @@ function edit(i, evt) {
           </div>
           <div class="cell-sm-9">
             <div id="macroGcodeEditField">
-              <textarea  wrap="off" id="macrogcode" type="text" value="` + gcode + `" style="overflow-y: auto; height: 200px; max-height: 200px; resize: none;" rows="4"  data-editable="true"></textarea>
               <span class="text-small">Enter G-code to execute</span>
+              <textarea  wrap="off" id="macrogcode" type="text" value="` + gcode + `" style="overflow-y: auto; height: calc(100vh - 540px); resize: none;" rows="4"  data-editable="true"></textarea>
             </div>
             <div id="macroJavascriptEditField" style="display:none;" >
               <span class="text-small">Enter Javascript to execute</span><br>
-              <span class="text-small">tip: Prototype your code using (Ctrl+Shift+i > Console)</span>
-              <textarea  wrap="off" id="macrojs" type="text" value="" style="overflow-y: auto; height: 200px; max-height: 200px; resize: none;" rows="4"  data-editable="true"></textarea>
+              <span class="text-small">Tip: Prototype your code using (Ctrl+Shift+i > Console)</span>
+              <textarea  wrap="off" id="macrojs" type="text" value="" style="overflow-y: auto; height: calc(100vh - 600px); resize: none; tab-size: 2;" rows="4"  data-editable="true"></textarea>
               <input type="checkbox" data-role="checkbox" data-caption="Run Macro on startup (use with caution, no serial comms)" data-caption-position="left" data-style="2" id="jsRunOnStartup" ` + jsrunonstartup + `>
             </div>
-          </div>
-      </div>
-      <div class="row mb-2">
-          <label class="cell-sm-3">Color</label>
-          <div class="cell-sm-9">
-            <select data-role="select" id="macrocls"  data-editable="true">
-              <option value="" selected>Default</option>
-              <option value="primary">Blue</option>
-              <option value="info">Light Blue</option>
-              <option value="secondary">Blue-Gray</option>
-              <option value="success">Green</option>
-              <option value="alert">Red</option>
-              <option value="warning">Orange</option>
-              <option value="yellow">Yellow</option>
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-            </select>
           </div>
       </div>
       <div class="row mb-2">
@@ -211,7 +209,7 @@ function edit(i, evt) {
           <div class="cell-sm-9" >
             <input id="macrokeyboardshortcut" readonly class="macrokeyboardshortcutinput" type="text" value="` + macrokeyboardshortcut + `" data-role="input" data-clear-button="true" data-editable="true" onclick="onMacroShortcutInputClick()" onchange="onMacroShortcutInputChange()">
             <span class="text-small fg-red" id="alreadyAssignedWarnMacro" style="display: none;"></span>
-            <span class="text-small">Click above to assign a new Keyboard Shortcut / combination to a function. Ctrl, Alt and Shift can be added to create combinations.</span>
+            <span class="text-small">Click above to assign a new Keyboard Shortcut to the action.<br>Ctrl, Alt and Shift can be added to create combinations.</span>
           </div>
       </div>
       <input type="hidden" id="macroseq" value="` + i + `" />

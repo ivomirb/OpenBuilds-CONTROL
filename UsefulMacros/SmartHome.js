@@ -44,10 +44,7 @@ function CleanupOldVersion()
 
 function OnFeatures(features)
 {
-	if (features.contains('H'))
-		$("#homeSingleMenu").parent().show();
-	else
-		$("#homeSingleMenu").parent().hide();
+	$("#homeSingleMenu").parent().toggle(features.contains('H'));
 }
 
 $(document).ready(function()
@@ -80,6 +77,7 @@ $(document).ready(function()
 			Metro.dialog.create({
 				title: "Home All",
 				content: "The machine was recently homed. Do you want to home again?",
+				clsDialog: 'dark',
 				actions: [
 					{
 						caption: "Proceed",
@@ -94,7 +92,6 @@ $(document).ready(function()
 						}
 					}
 				],
-				closeButton: true
 			});
 		}
 		else
