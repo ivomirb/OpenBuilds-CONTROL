@@ -784,6 +784,8 @@ The editor is currently disabled. You can click the Clear button to clear the cu
       }
     }
 
+		AddRemoveClass('#resetGrblBtn, #section-grbl .group:not(.estop), #grblMetroTable', "disabled", status.comms.connectionStatus == 3 || status.comms.connectionStatus == 4);
+
     if (laststatus == undefined || status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
       $('.wcsText').html(status.machine.modals.coordinatesys)
       $('.wcsItem').removeClass('checked')

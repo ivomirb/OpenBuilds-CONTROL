@@ -948,7 +948,10 @@ function onParserData(data) {
     }
     // end of machine identification
 
+    sentBuffer.length = 0; // Dump the queue
     status.comms.blocked = false;
+    status.comms.paused = false;
+    clearGcodeQueue(false);
     if (config.aggressiveHomeReset) {
       // when aggressiveHomeReset is true (the default), reset the home state on every grbl reset
       status.machine.modals.homedRecently = false;
@@ -992,7 +995,7 @@ function onParserData(data) {
         jobStatusInternal += 2; // last command was accepted, just wait for idle
       }
     }
-  } else if (data.indexOf('ALARM') === 0) {
+  } else if (data.indexOf('ALARM') === 0 && status.comms.connectionStatus >= 2) {
     debug_log("ALARM:  " + data)
 
     var alarmCode = parseInt(data.split(':')[1]);
@@ -1019,16 +1022,16 @@ function onParserData(data) {
 
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
-  } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1) {
+  } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1 && status.comms.connectionStatus >= 2) {
     clearGcodeQueue(false);
     status.comms.connectionStatus = 2;
-  } else if (data.indexOf('Emergency Stop Requested') != -1) {
+  } else if (data.indexOf('Emergency Stop Requested') != -1 && status.comms.connectionStatus >= 2) {
     debug_log("Emergency Stop Requested")
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
   } else if (data.indexOf('wait') === 0) { // Got wait from Repetier -> ignore
     // do nothing
-  } else if (data.indexOf('error') === 0) { // Error received -> stay blocked stops queue
+  } else if (data.indexOf('error') === 0 && status.comms.connectionStatus >= 2) { // Error received -> stay blocked stops queue
     var errorCode = parseInt(data.split(':')[1]);
 
     var lastAlarm = "";
@@ -2104,7 +2107,9 @@ io.on("connection", function(socket) {
           break;
       }
       status.comms.runStatus = 'Stopped'
-      status.comms.connectionStatus = 2;
+      if (status.comms.connectionStatus >= 2) {
+        status.comms.connectionStatus = 2;
+      }
       status.comms.alarm = "";
       io.sockets.emit('errorsCleared', true);
     } else {
@@ -2332,6 +2337,7 @@ function stopPort() {
   gcodeQueue.length = 0;
   sentBuffer.length = 0; // dump bufferSizes
   queuePointer = 0;
+  jobStatusInternal = 0;
   // port.drain(port.close());
 
   if (status.comms.interfaces.type == "usb") {
@@ -2354,7 +2360,7 @@ function parseFeedback(data) {
     if (jobStatusInternal >= 3 && (new Date().getTime()) > jobStartTime + 100) {
       finalizeJob(true); // Idle after at least 100ms after the "ok" for the last line, declare the job as done
     }
-  } else if (state == "Alarm") {
+  } else if (state == "Alarm" && status.comms.connectionStatus >= 2) {
     // debug_log("ALARM:  " + data)
     status.comms.connectionStatus = 5;
   } else if (state == "Hold:0") {
@@ -2682,7 +2688,7 @@ function clearGcodeQueue(success) {
 
   if (!success) {
     finalizeJob(false); // on failure, also finalize the job right now
-  } else if (jobStatusInternal == 0) {
+  } else if (jobStatusInternal == 0 && status.comms.connectionStatus >= 2) {
     status.comms.connectionStatus = 2; // finished non-job queue
   }
 }
