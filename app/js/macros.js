@@ -2,8 +2,6 @@ var buttonsarray = [];
 var macroCodeType = "gcode";
 const JAVASCRIPT_LOAD_PREFIX = "// LOAD:"; // in dev mode (with the -devMode command line switch), javascript macros starting with this text will load from external text file
 
-var devMode = false;
-var safeMode = false;
 var fs = (typeof require == "function") ? fs = require('fs') : undefined;
 
 function saveMacroButtons() {
@@ -390,8 +388,7 @@ if (localStorage.getItem('macroButtons')) {
 
 $(document).ready(function() {
   const urlParams = new URLSearchParams(window.location.search);
-  devMode = urlParams.get("devMode") == "true";
-  safeMode = urlParams.get("safeMode") == "true";
+  const safeMode = urlParams.get("safeMode") == "true";
   populateMacroButtons(!safeMode);
   setMacroGroupView(macroGroupView);
   bindKeys();

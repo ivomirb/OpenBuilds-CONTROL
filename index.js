@@ -110,9 +110,9 @@ function loadPersistentConfig() {
     persistentConfig.spindleDelay = 0;
   }
   status.misc.spindleDelay = persistentConfig.spindleDelay;
-	for (var i = 0; i < persistentConfig.recentFiles.length; i++) {
-		allowedFilePaths.add(persistentConfig.recentFiles[i]);
-	}
+  for (var i = 0; i < persistentConfig.recentFiles.length; i++) {
+    allowedFilePaths.add(persistentConfig.recentFiles[i]);
+  }
 }
 
 // FluidNC test
@@ -608,14 +608,12 @@ app.get('/activate', (req, res) => {
   }, 500);
 })
 
-/* This is disabled because it can allow arbitrary file to be accessed
 // Upload
 app.get('/upload', (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.sendFile(__dirname + '/app/upload.html');
 })
-*/
 
 app.get('/gcode', (req, res) => {
   if (uploadedgcode.indexOf('$') != 0) { // Ignore grblSettings jobs
@@ -686,7 +684,6 @@ app.post('/saveFile', (req, res) => {
   });
 });
 
-/* This is disabled because it can allow arbitrary file to be accessed
 // File Post
 app.post('/upload', function(req, res) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -732,7 +729,6 @@ app.post('/upload', function(req, res) {
 
   res.sendFile(__dirname + '/app/upload.html');
 });
-*/
 
 app.on('certificate-error', function(event, webContents, url, error,
   certificate, callback) {
@@ -3170,9 +3166,10 @@ loadPersistentConfig();
 
       jogWindow.setOverlayIcon(nativeImage.createFromPath(iconPath), 'Icon');
 
-      var url = `http://localhost:${config.webPort}/?`;
-      url += "&devMode=" + (devMode ? "true" : "false");
-      url += "&safeMode=" + (safeMode ? "true" : "false");
+      var url = `http://localhost:${config.webPort}/`;
+      if (safeMode) {
+        url += "?safeMode=true";
+      }
       jogWindow.loadURL(url);
 
       jogWindow.on('close', function(event) {

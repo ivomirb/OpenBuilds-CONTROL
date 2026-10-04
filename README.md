@@ -11,6 +11,8 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Stores a history of work origins and allows for rolling back to a previous one
 * Corrected the math and improved the safety of the "goto zero" buttons
 * The Pause and Stop buttons remain available until the very end of the job
+* While the job is paused, the Tool Off button can stop the spindle. It will resume automatically
+* A new setting to insert a delay for a few seconds after the spindle starts up
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
 * A new setting to hide the 4th axis controls if the controller supports it but it is not used
 * The "Recover from line" feature is more reliable
@@ -49,13 +51,13 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Fix for a bug in the Surfacing Wizard, which was skipping the last row
 * New option to extend the surfaced area by the tool radius
 
-### Macro Improvements
+### Macro Management
 
 * Added ability to organize macros into groups
-* Added command to back up all macros to a single file
-* Added command to create a new macro from existing G-code or JavaScript file
+* Added menu command to back up all macros to a single file
+* Added menu command to create a new macro from existing G-code or JavaScript file
 * Added ability to automatically reload JavaScript macros from external files in development mode
-* Enabled security isolation measures to prevent scripts from accessing the file system
+* Enabled security isolation measures to prevent scripts from accessing the operating system
 
 ### Useful Macros
 
