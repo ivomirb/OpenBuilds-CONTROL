@@ -317,3 +317,19 @@ select {
 #grblSettingsTableView .table-bottom {
   display: none;
 }
+
+#macroHorizontalTabs > li,
+#macroVerticalTabs > li {
+  white-space: nowrap;
+  line-height: 1;
+  font-size: 14px;
+}
+
+#macroHorizontalTabs > li.active,
+#macroVerticalTabs > li.active {
+  background-color: lightgray;
+}
+
+#macroVerticalTabs > li > a {
+  justify-content: left;
+}

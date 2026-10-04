@@ -21,25 +21,13 @@ var g_SelectedGroup = undefined;
 
 var g_ButtonsCopy;
 
-var g_bMacroContextMenuHack = false;
-
-function MacroButtonAltContextMenu(event)
-{
-	var offset = $("#" + event.currentTarget.id).offset();
-	$("#macroContextMenuAlt").css({
-		left: offset.left + 20,
-		top: offset.top + 20
-	}).data('dropdown').close(true);
-	$('#macroContextToggle').click();
-}
-
 function SanitizeGroupName(string)
 {
 	if (string == undefined)
 	{
 		return "";
 	}
-	return string.replaceAll('&', ' ').replaceAll('<', ' ').replaceAll('>', ' ').replaceAll('"', ' ').replaceAll("'", ' ');
+	return string.replaceAll(/[\&\<\>\"\']/g, ' ');;
 }
 
 // Cleans up old instance of the plugin. useful when iterating on the code
@@ -68,17 +56,9 @@ function StoreSettings()
 	localStorage.setItem("MacroManagerSettings", JSON.stringify({tabVisibility: g_TabVisibility, currentGroupLower: g_CurrentGroupLower}));
 }
 
-function SetTabVisibility(vis)
+function StoreButtons()
 {
-	if (g_TabVisibility != vis)
-	{
-		if (vis == 0)
-		{
-			g_CurrentGroupLower = "";
-		}
-		g_TabVisibility = vis;
-		StoreSettings();
-	}
+	localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
 }
 
 function SetCurrentGroup(groupLower)
@@ -130,24 +110,14 @@ function RefreshButtonVisibility()
 {
 	for (var i = 0; i < buttonsarray.length; i++)
 	{
-		var button = buttonsarray[i];
-		var visible = g_TabVisibility == 0 || IsButtonVisible(button);
-		var element = $('#macroBtn' + i);
-		if (visible)
-		{
-			element.show();
-		}
-		else
-		{
-			element.hide();
-		}
+		$('#macroBtn' + i).toggle(g_TabVisibility == 0 || IsButtonVisible(buttonsarray[i]));
 	}
 }
 
 function RenameGroup(groupIdx, newName)
 {
 	var oldName = g_Groups[groupIdx];
-	var oldNameLower = oldName.toLowerCase()
+	var oldNameLower = oldName.toLowerCase();
 	newName = SanitizeGroupName(newName);
 	if (g_CurrentGroupLower == oldNameLower)
 	{
@@ -167,7 +137,7 @@ function RenameGroup(groupIdx, newName)
 
 	if (saveRequired)
 	{
-		localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
+		StoreButtons();
 	}
 	RebuildGroupUI();
 }
@@ -226,46 +196,46 @@ window.SelectMacroGroup = function(groupIdx)
 
 function CreateTabContents(tabs, activeIdx)
 {
-	var justify = "";
-	var space = "";
-	if (tabs.attr('id') == 'macroVerticalTabs')
-	{
-		 justify = ` style="justify-content: left;"`;
-		 space = `&nbsp;`;
-	}
 	tabs.empty();
 	const styleHtml = `
 <style>
-#macroHorizontalTabs > li,
-#macroVerticalTabs > li
-{
-	white-space: nowrap;
-	padding-left: 8px;
-	padding-right: 8px;
-}
-#macroHorizontalTabs > li.active,
-#macroVerticalTabs > li.active
-{
-	background-color: lightgray;
-}
+	#macroHorizontalTabs > li,
+	#macroVerticalTabs > li
+	{
+		white-space: nowrap;
+		line-height: 1;
+		font-size: 14px;
+	}
+
+	#macroHorizontalTabs > li.active,
+	#macroVerticalTabs > li.active
+	{
+		background-color: lightgray;
+	}
+
+	#macroVerticalTabs > li >a
+	{
+		justify-content: left;
+	}
 <style/>`;
 	tabs.append(styleHtml);
 
-	const classActiveHtml = `class="active"`;
-	var lineHtml = `<li onclick="SelectMacroGroup(0);"` + (activeIdx == 0 ? classActiveHtml : "") + `><a href="#"` + justify + `>Default` + space + `</a></li>`;
+	var lineHtml = `<li onclick="SelectMacroGroup(0);"` + (activeIdx == 0 ? `class="active"` : "") + `><a href="#">Default</a></li>`;
 	tabs.append(lineHtml);
 	for (var i = 1; i < g_Groups.length; i++)
 	{
 		lineHtml = `<li onclick="SelectMacroGroup(` + i + `);" oncontextmenu="MacroTabContextMenu(event, ` + i + `)"` +
-		(activeIdx == i ? classActiveHtml : "") + 
-		`><a href="#"` + justify + `>` + g_Groups[i] + space+space+space+ `</a></li>`;
+		(activeIdx == i ? `class="active"` : "") + `><a href="#">` + g_Groups[i] + `</a></li>`;
 		tabs.append(lineHtml);
 	}
 }
 
-function CreateGroupTabs()
+function RebuildGroupUI()
 {
-	var activeIdx = Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
+	RebuildGroupNames();
+
+	var activeIdx = g_TabVisibility == 0 ? 0 : Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
+	SetCurrentGroup(g_GroupsLower[activeIdx]);
 	if (g_TabVisibility == 1)
 	{
 		CreateTabContents($('#macroHorizontalTabs'), activeIdx);
@@ -274,12 +244,7 @@ function CreateGroupTabs()
 	{
 		CreateTabContents($('#macroVerticalTabs'), activeIdx);
 	}
-}
 
-function RebuildGroupUI()
-{
-	RebuildGroupNames();
-	CreateGroupTabs();
 	RefreshButtonVisibility();
 }
 
@@ -360,15 +325,10 @@ function OnMacrosChanged()
 	if (populateRequired)
 	{
 		populateMacroButtons(); // also saves
-		if (g_bMacroContextMenuHack)
-		{
-			$('.macrobtn').off('contextmenu');
-			$('.macrobtn').on('contextmenu', MacroButtonAltContextMenu);
-		}
 	}
 	else if (saveRequired)
 	{
-		localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
+		StoreButtons();
 	}
 
 	RebuildGroupUI();
@@ -377,38 +337,23 @@ function OnMacrosChanged()
 
 window.SetMacroTabsVisibility = function(vis)
 {
-	var activeIdx = Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
-	if (vis == 1)
+	g_TabVisibility = vis;
+	$('#macroHorGroups > a > .icon').toggle(vis == 1);
+	$('#macroVertGroups > a > .icon').toggle(vis == 2);
+	$('#macroHideGroups > a > .icon').toggle(vis == 0);
+	$('#macroHorizontalTabs').parent().toggle(vis == 1);
+	$('#macroVerticalTabs').parent().toggle(vis == 2);
+	if (vis == 0)
 	{
-		SetTabVisibility(1);
-		$('#macroHideGroups > a > .icon').hide();
-		$('#macroVertGroups > a > .icon').hide();
-		$('#macroHorGroups > a > .icon').show();
-		CreateTabContents($('#macroHorizontalTabs'), activeIdx);
-		$('#macroVerticalTabs').parent().hide();
-		$('#macroHorizontalTabs').parent().show();
-		$('#macros').css('height', 'calc(100vh - 537px)');
-	}
-	else if (vis == 2)
-	{
-		SetTabVisibility(2);
-		$('#macroHideGroups > a > .icon').hide();
-		$('#macroHorGroups > a > .icon').hide();
-		$('#macroVertGroups > a > .icon').show();
-		CreateTabContents($('#macroVerticalTabs'), activeIdx);
-		$('#macroHorizontalTabs').parent().hide();
-		$('#macroVerticalTabs').parent().show();
+		SetCurrentGroup("");
 		$('#macros').css('height', 'calc(100vh - 495px)');
 	}
 	else
 	{
-		SetTabVisibility(0);
-		$('#macroHorGroups > a > .icon').hide();
-		$('#macroVertGroups > a > .icon').hide();
-		$('#macroHideGroups > a > .icon').show();
-		$('#macroHorizontalTabs').parent().hide();
-		$('#macroVerticalTabs').parent().hide();
-		$('#macros').css('height', 'calc(100vh - 495px)');
+		var activeIdx = Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
+		SetCurrentGroup(g_GroupsLower[activeIdx]);
+		CreateTabContents($(vis == 1 ? '#macroHorizontalTabs' : '#macroVerticalTabs'), activeIdx);
+		$('#macros').css('height', vis == 1 ? 'calc(100vh - 537px)' : 'calc(100vh - 495px)');
 	}
 
 	RefreshButtonVisibility();
@@ -445,7 +390,7 @@ function ApplyMoveMacro(buttonIdx)
 
 	if (saveRequired)
 	{
-		localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
+		StoreButtons();
 	}
 	RebuildGroupUI();
 }
@@ -541,19 +486,7 @@ window.ExportAll = function()
 	var blob = new Blob([JSON.stringify(buttonsarray, null, 2)], {type: "plain/text"});
 	var date = new Date();
 
-	if (typeof invokeSaveAsDialogNew == 'function')
-	{
-		var saveFileParams = {
-			id: "macros",
-			title: "Backup Macros",
-			filters: macroFileFilters,
-			fileName: 'macro-backup-' + date.yyyymmdd() + '.json'
-		};
-		invokeSaveAsDialogNew(blob, saveFileParams);
-	}
-	else{
-		invokeSaveAsDialog(blob, 'macro-backup-' + date.yyyymmdd() + '.json');
-	}
+	invokeSaveAsDialog(blob, 'macro-backup-' + date.yyyymmdd() + '.json');
 }
 
 function FileReadError(message)
@@ -577,84 +510,58 @@ function FileReadError(message)
 	});
 }
 
-function ImportAll(data)
-{
-	var newButtons = undefined;
-	try
-	{
-		newButtons = JSON.parse(data);
-	}
-	catch (error)
-	{
-		FileReadError(error.message);
-	}
-	if (newButtons != undefined)
-	{
-		buttonsarray = newButtons;
-		populateMacroButtons();
-		if (g_bMacroContextMenuHack)
-		{
-			$('.macrobtn').off('contextmenu');
-			$('.macrobtn').on('contextmenu', MacroButtonAltContextMenu);
-		}
-	}
-}
-
-function ImportAllOld(event)
+function ImportAll(event)
 {
 	var files = event.target.files || event.dataTransfer.files;
 	var file = files[0];
 	document.getElementById('macroImportAllFile').value = '';
 	if (file)
 	{
-		var r = new FileReader();
-		r.readAsText(file);
-		r.onload = function()
+		var reader = new FileReader();
+		reader.readAsText(file);
+		reader.onload = function()
 		{
-			ImportAll(this.result);
+			var newButtons = undefined;
+			try
+			{
+				newButtons = JSON.parse(this.result);
+			}
+			catch (error)
+			{
+				FileReadError(error.message);
+			}
+			if (newButtons && Array.isArray(newButtons))
+			{
+				buttonsarray = newButtons;
+				populateMacroButtons();
+			}
+			else
+			{
+				FileReadError("JSON error: Invalid list of macros.");
+			}
 		}
-		r.onerror = function()
+		reader.onerror = function()
 		{
-			FileReadError(r.error.message);
+			FileReadError(reader.error.message);
 		}
 	}
 }
 
-window.ImportAllNew = function()
-{
-	var loadFileParams = {
-		id: "macros",
-		title: "Import All",
-		filters: macroFileFilters,
-		showErrorDlg: false,
-	};
-
-	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>
-	{
-		if (err)
-			FileReadError(err);
-		else
-			ImportAll(data);
-	});
-}
-
 const contextMenusHtml = `
-<div id="macroBackgroundContextToggle">
-	<ul class="d-menu context drop-shadow pos-fixed" id="macroBackgroundContextMenu" data-role="dropdown" data-toggle-element="#macroBackgroundContextToggle">
-		<li id="macroHorGroups"  onclick="SetMacroTabsVisibility(1)"><a href="#"><i class="fa fa-circle icon"></i> Horizontal Group Tabs</a></li>
-		<li id="macroVertGroups" onclick="SetMacroTabsVisibility(2)"><a href="#"><i class="fa fa-circle icon"></i> Vertical Group Tabs</a></li>
-		<li id="macroHideGroups" onclick="SetMacroTabsVisibility(0)"><a href="#"><i class="fa fa-circle icon"></i> Disable Groups</a></li>
-		<li class="divider"></li>
-		<li onclick="ExportAll()"><a href="#"><i class="fas fa-save icon"></i> Export All Macros</a></li>
-		<li class="btn-file" title="" id="macroImportAllOld"><a href="#"><input class="btn-file" id="macroImportAllFile" type="file" accept=".json" /><i class="fas fa-upload icon"></i> Import All Macros</a></li>
-		<li  id="macroImportAllNew" onclick="ImportAllNew()"><a href="#"><i class="fas fa-upload icon"></i> Import All Macros</a></li>
-	</ul>
-</div>
-<div id="macroTabContextToggle">
-	<ul class="d-menu context drop-shadow pos-fixed" id="macroTabContextMenu" data-role="dropdown" data-duration="40" data-toggle-element="#macroTabContextToggle">
-		<li onclick="RenameSelectedGroup()"><a href="#">Rename Group</a></li>
-	</ul>
-</div>
+<div id="macroBackgroundContextToggle"/>
+<ul class="d-menu context drop-shadow pos-fixed" id="macroBackgroundContextMenu" data-role="dropdown" data-toggle-element="#macroBackgroundContextToggle">
+	<li id="macroHorGroups"  onclick="SetMacroTabsVisibility(1)"><a href="#"><i class="mif-checkmark mif-1g icon"></i> Horizontal Group Tabs</a></li>
+	<li id="macroVertGroups" onclick="SetMacroTabsVisibility(2)"><a href="#"><i class="mif-checkmark mif-1g icon"></i> Vertical Group Tabs</a></li>
+	<li id="macroHideGroups" onclick="SetMacroTabsVisibility(0)"><a href="#"><i class="mif-checkmark mif-1g icon"></i> Disable Groups</a></li>
+	<li class="divider"></li>
+	<li onclick="ExportAll()"><a href="#"><i class="fas fa-save icon"></i> Export All Macros</a></li>
+	<li class="btn-file" title=""><a href="#"><input class="btn-file" id="macroImportAllFile" type="file" accept=".json" /><i class="fas fa-upload icon"></i> Import All Macros</a></li>
+</ul>
+
+<div id="macroTabContextToggle" />
+<ul class="d-menu context drop-shadow pos-fixed" id="macroTabContextMenu" data-role="dropdown" data-duration="40" data-toggle-element="#macroTabContextToggle">
+	<li onclick="RenameSelectedGroup()"><a href="#">Rename Group</a></li>
+</ul>
 `;
 
 const groupContextMenuHtml = `
@@ -673,15 +580,7 @@ $(document).ready(function()
 	// create context menu for the background
 	$('body').append(contextMenusHtml);
 
-if (typeof invokeOpenDialog == 'function')
-	{
-		$('#macroImportAllOld').remove();
-	}
-	else
-	{
-		$('#macroImportAllNew').remove();
-		$('#macroImportAllFile').on('change', ImportAllOld);
-	}
+	$('#macroImportAllFile').on('change', ImportAll);
 
 	// add items to button context menu
 	$('#macroContextMenuItems').after(groupContextMenuHtml);
@@ -719,7 +618,7 @@ if (typeof invokeOpenDialog == 'function')
 	$('#macros').before(`<ul id="macroVerticalTabs" data-tabs-position="vertical" data-role="tabs" data-expand="true" vertical></ul>`);
 
 	// create horizontal tabs
-	$('#macros').after(`<div id="macroHorizontalDiv" style="width:100%;"><ul id="macroHorizontalTabs" data-role="tabs" data-expand="true"></ul></div>`);
+	$('#macros').after(`<div id="macroHorizontalDiv" style="flex:1;"><ul id="macroHorizontalTabs" data-role="tabs" data-expand="true"></ul></div>`);
 	$('#macroHorizontalDiv').append($('#macros'));
 
 	var observer = new MutationObserver(OnMacrosChanged); // monitor the button elements for changes
@@ -733,34 +632,9 @@ if (typeof invokeOpenDialog == 'function')
 	$('#macroBackgroundContextMenu').prop('MacroBackgroundContextMenu', () => { return MacroBackgroundContextMenu; });
 	$('#macroBackgroundContextMenu').prop('Observer', () => { return observer; });
 
-	if ($('#macroContextMenu').attr('data-toggle-element') == '#context_toggle')
-	{
-		// Super ugly hack to fix a bug where the macro context menu has the wrong toggle parent and doesn't close the previously open menu.
-		// The hack involves doing surgery on the DOM, and then reaching deep into the Metro structures to reinitialize the dropdown object.
-		// The menu is renamed to macroContextMenuAlt to stop the code in setMacroContextMenuPosition from opening it the wrong way.
-		// The correct way to open a dropdown is by clicking the parent toggle.
-		$('#macroContextMenu').before(`<div id="macroContextToggle" />`);
-		$('#macroContextToggle').append($('#macroContextMenu'));
-		$('#macroContextMenu').addClass('pos-fixed').attr('data-toggle-element', '#macroContextToggle').attr('id', 'macroContextMenuAlt');
-		$("#macroContextMenuAlt").data('dropdown').options.toggleElement = "#macroContextToggle";
-		$("#macroContextMenuAlt").data('dropdown')._create();
-		g_bMacroContextMenuHack = true;
-		// The editor context menu has a similar issue, but it is less of a problem because there are no other context menus on that page
-	}
-	else if ($("#macroContextMenuAlt").length > 0)
-	{
-		// in case this is the second run of the macro
-		g_bMacroContextMenuHack = true;
-	}
-
-	if (g_bMacroContextMenuHack)
-	{
-		$('.macrobtn').off('contextmenu');
-		$('.macrobtn').on('contextmenu', MacroButtonAltContextMenu);
-	}
-
 	setTimeout(function()
 	{
+		// allow time for Metro to generate the tabs
 		SetMacroTabsVisibility(g_TabVisibility);
 	}, 100);
 });

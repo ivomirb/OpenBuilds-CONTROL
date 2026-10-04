@@ -1199,7 +1199,33 @@ Restore previous origins from history.">
                     <div id="conetext" style="position:absolute; top:0px; left:0px; padding:2px; display:none; z-index:100;"></div>
                   </div>
                   <div class="section" id="tab-four">
-                    <div id="macros" style="overflow-y:auto"></div>
+                    <ul id="macroVerticalTabs" data-tabs-position="vertical" data-role="tabs" data-expand="true" vertical style2="min-width:max-content;"></ul>
+                    <div style="flex:1">
+                      <ul id="macroHorizontalTabs" data-role="tabs" data-expand="true"></ul>
+                      <div id="macros" style="overflow-y:clip; display:flex; align-content:flex-start; flex-wrap:wrap;">
+                        <div class="pos-relative">
+                          <button id="macroToolsBtn" class="button light dropdown-toggle"
+                              style="width:80px; height:70px; top:4px; left:4px; line-height:1.1; margin-right:10px; box-shadow:2px 2px 1px 0 rgba(0,0,0,.4);">
+                            <span class="fas fa-tools icon" style="width:24px; height:24px; margin-bottom:4px;"></span><br>Macro<br>Tools
+                          </button>
+                          <ul class="d-menu context drop-shadow" data-role="dropdown" style="top:74px; text-align: start;">
+                            <li onclick="editMacro(-1)"><a href="#"><i class="fas fa-plus icon" style="margin-top:-7px;"></i> New Macro</a></li>
+                            <li class="divider"></li>
+                            <li onclick="importMacroBackupFile()"><a href="#"><i class="fas fa-upload icon" style="margin-top:-8px;"></i> Import Macro</a></li>
+                            <li onclick="importMacroAll()"><a href="#"><i class="mif-folder-upload icon"></i> Import All Macros</a></li>
+                            <li onclick="backupMacroAll()"><a href="#"><i class="fas fa-save icon" style="margin-top:-8px;"></i> Export All Macros</a></li>
+                            <li>
+                              <a href="#" class="dropdown-toggle"><i class="mif-books mif-1g icon" style="margin-top:-8px;"></i> Group View</a>
+                              <ul class="d-menu" data-role="dropdown">
+                                <li id="macroHorGroups"  onclick="setMacroGroupView(1)"><a href="#"><i class="mif-checkmark mif-1g icon" style="display:none;"></i> Horizontal Group Tabs</a></li>
+                                <li id="macroVertGroups" onclick="setMacroGroupView(2)"><a href="#"><i class="mif-checkmark mif-1g icon" style="display:none;"></i> Vertical Group Tabs</a></li>
+                                <li id="macroHideGroups" onclick="setMacroGroupView(0)"><a href="#"><i class="mif-checkmark mif-1g icon" style="display:none;"></i> Disable Groups</a></li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </nav>
@@ -1425,12 +1451,27 @@ Restore previous origins from history.">
       </ul>
     </div>
 
-    <!-- Macro Context Menu -->
+    <!-- Macro Context Menus -->
     <div id="macroContextToggle">
       <ul class="d-menu context drop-shadow pos-fixed" id="macroContextMenu" data-role="dropdown" data-toggle-element="#macroContextToggle">
+        <li onclick="editMacro(macroMenuIdx)"><a href="#"><i class="fas fa-edit icon"></i> Edit Macro</span></a></li>
+        <li class="divider"></li>
+        <li id="moveMacroLeft" onclick="moveMacro(macroMenuIdx, -1)"><a href="#"><i class='fas fa-fw fa-arrow-left icon'></i> Sort: Move Left</a></li>
+        <li id="moveMacroRight" onclick="moveMacro(macroMenuIdx, 1)"><a href="#"><i class='fas fa-fw fa-arrow-right icon'></i>  Sort: Move Right</a></li>
+        <li class="divider"></li>
+        <li onclick="backupMacro(macroMenuIdx)"><a href="#"><i class="fas fa-save icon"></i> Export Macro</span></a></li>
+        <li class="divider"></li>
+        <li onclick="confirmMacroDelete(macroMenuIdx)" class="fg-red"><a href="#"><i class="fas fa-trash icon"></i> Delete Macro</span></a></li>
+        <li class="divider"></li>
+        <li onclick="moveMacroToGroup(macroMenuIdx)"><a href="#"><i class="mif-books mif-1g icon" style="margin-top:-8px;"></i> Move To Group</span></a></li>
         <span id="macroContextMenuItems">
           <!-- Items here -->
         </span>
+      </ul>
+    </div>
+    <div id="macroTabContextToggle">
+      <ul class="d-menu context drop-shadow pos-fixed" id="macroTabContextMenu" data-role="dropdown" data-duration="40" data-toggle-element="#macroTabContextToggle">
+        <li onclick="renameMacroGroup(selectedMacroGroup)"><a href="#">Rename Group</a></li>
       </ul>
     </div>
 

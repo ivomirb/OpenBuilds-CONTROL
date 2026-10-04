@@ -16,26 +16,13 @@
   vertical-align: bottom;
 }
 
-.drotable button, .dro {
-  border: 1px solid lightgray;
-}
-
-.jogtable button {
-  border: 1px solid lightgray;
-}
-
-#jrocell button {
-  border: 1px solid lightgray;
-}
-
-#frocell button {
-  border: 1px solid lightgray;
-}
-
-#trocell button {
-  border: 1px solid lightgray;
-}
-
+.button.light,
+.dro,
+.drotable button,
+.jogtable button,
+#jrocell button,
+#frocell button,
+#trocell button,
 #simControls .slider button {
   border: 1px solid lightgray;
 }
