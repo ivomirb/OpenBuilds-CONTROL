@@ -1,78 +1,99 @@
 var buttonsarray = [];
 var macroCodeType = "gcode";
+const JAVASCRIPT_LOAD_PREFIX = "// LOAD:"; // in dev mode (with the -devMode command line switch), javascript macros starting with this text will load from external text file
+
+var devMode = false;
+var safeMode = false;
+var fs = (typeof require == "function") ? fs = require('fs') : undefined;
 
 function saveMacroButtons() {
   localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
 }
 
-function populateMacroButtons(firstRun) {
-
+function populateMacroButtons(runStartups) {
   $("#macroToolsBtn").parent().nextAll().remove();
 
   for (var i = 0; i < buttonsarray.length; i++) {
+    var button = buttonsarray[i];
     // Handle old created buttons that didnt have a tooltip
-    if (!buttonsarray[i].tooltip) {
-      buttonsarray[i].tooltip = ""
-    };
-    if (buttonsarray[i].macrokeyboardshortcut && buttonsarray[i].macrokeyboardshortcut.length) {
-      var keyboardAssignment = buttonsarray[i].macrokeyboardshortcut
-    } else {
-      var keyboardAssignment = "none"
+    if (!button.tooltip) {
+      button.tooltip = "";
     }
-    if (buttonsarray[i].codetype && buttonsarray[i].codetype.length) {
-      var codetype = buttonsarray[i].codetype
-      var codetypeDisplay = buttonsarray[i].codetype
+
+    if (button.macrokeyboardshortcut && button.macrokeyboardshortcut.length) {
+      var keyboardAssignment = button.macrokeyboardshortcut;
     } else {
-      buttonsarray[i].codetype = "gcode"
-      var codetype = "gcode"
-      var codetypeDisplay = "gcode"
+      var keyboardAssignment = "none";
     }
-    if (buttonsarray[i].jsrunonstartup) {
-      var codetypeDisplay = "js:autorun"
+
+    if (button.codetype && button.codetype.length) {
+      var codetype = button.codetype;
+      var codetypeDisplay = button.codetype;
+    } else {
+      button.codetype = "gcode";
+      var codetype = "gcode";
+      var codetypeDisplay = "gcode";
+    }
+    if (button.jsrunonstartup) {
+      var codetypeDisplay = "js:autorun";
     }
     if (codetype == "gcode") {
-      var button = `
-      <button id="macroBtn` + i + `" class="macrobtn m-1 command-button command-button-macro drop-shadow outline ` + buttonsarray[i].class + `" title="` + buttonsarray[i].tooltip + `" oncontextmenu="macroContextMenu(` + i + `)" onclick="sendGcode('` + buttonsarray[i].gcode.replace(/(\r\n|\n|\r)/gm, "\\n") + `');">
-        <span class="` + buttonsarray[i].icon + ` icon"></span>
-        <span class="caption mt-2">
-          ` + buttonsarray[i].title + `
-
-        </span>
+      var buttonHtml = `
+      <button id="macroBtn` + i + `" class="macrobtn m-1 command-button command-button-macro drop-shadow outline ` + button.class + `" title="` + button.tooltip + `" oncontextmenu="macroContextMenu(` + i + `)" onclick="sendGcode('` + button.gcode.replace(/(\r\n|\n|\r)/gm, "\\n") + `');">
+        <span class="` + button.icon + ` icon"></span>
+        <span class="caption mt-2">` + button.title + `</span>
         <span title="Code Type: ` + codetype + `" class="macrotype">` + codetype + `</span>
         <span class="macrokbd"><i class="far fa-fw fa-keyboard"></i>: [` + keyboardAssignment + `]</span>
       </button>
       `
     } else if (codetype == "javascript") {
-      // Future JS Macros here
-      var button = `
-      <button id="macroBtn` + i + `" class="macrobtn m-1 command-button command-button-macro drop-shadow outline ` + buttonsarray[i].class + `" title="` + buttonsarray[i].tooltip + `" oncontextmenu="macroContextMenu(` + i + `)" onclick="runJsMacro('` + i + `');">
-        <span class="` + buttonsarray[i].icon + ` icon"></span>
+      if (codetype == "javascript" && button.javascript && button.javascript.startsWith(JAVASCRIPT_LOAD_PREFIX)) {
+        button.javascript = loadJavascriptFile(button.javascript);
+      }
+
+      var buttonHtml = `
+      <button id="macroBtn` + i + `" class="macrobtn m-1 command-button command-button-macro drop-shadow outline ` + button.class + `" title="` + button.tooltip + `" oncontextmenu="macroContextMenu(` + i + `)" onclick="runJsMacro('` + i + `');">
+        <span class="` + button.icon + ` icon"></span>
         <span class="caption mt-2">
-          ` + buttonsarray[i].title + `
+          ` + button.title + `
         </span>
         <span title="Code Type: ` + codetype + `" class="macrotype">` + codetypeDisplay + `</span>
         <span class="macrokbd"><i class="far fa-fw fa-keyboard"></i>: [` + keyboardAssignment + `]</span>
       </button>
       `
     }
-    $("#macros").append(button);
+    $("#macros").append(buttonHtml);
 
 
-    if (buttonsarray[i].jsrunonstartup) {
-      if (firstRun) {
-        var icon = ""
-        var source = "macros"
-        var string = "Macro: <b>" + buttonsarray[i].title + "</b> executed on startup!"
-        var printLogCls = "fg-blue"
-        printLogModern(icon, source, string, printLogCls)
-        executeJS(buttonsarray[i].javascript)
-      }
+    if (button.jsrunonstartup && runStartups) {
+      var icon = "";
+      var source = "macros";
+      var string = "Macro: <b>" + button.title + "</b> executed on startup!";
+      var printLogCls = "fg-blue";
+      printLogModern(icon, source, string, printLogCls);
+      executeJS(button.javascript);
     }
   }
   $("#macros").append(`<small style="flex-basis:100%"><i class="fas fa-info-circle"></i>  Right click your Macro buttons to edit/sort/delete/export</small>`);
 
   saveMacroButtons();
   rebuildMacroGroups();
+}
+
+// Blocking function to load external script file in dev mode
+function loadJavascriptFile(text) {
+  if (fs) {
+    var firstLine = text.split('\n', 1)[0];
+    var filePath = firstLine.slice(JAVASCRIPT_LOAD_PREFIX.length).trim();
+    try {
+      var data = fs.readFileSync(filePath, 'utf8');
+      return firstLine + "\n" + data;
+    }
+    catch (ex) {
+      console.log(ex.toString());
+    }
+  }
+  return text;
 }
 
 function onMacroShortcutInputClick()
@@ -88,15 +109,15 @@ function onMacroShortcutInputChange()
   }
 }
 
-function editMacro(buttonIdx) {
+function editMacro(buttonIdx, fileName, script) {
   var button = undefined;
   if (buttonIdx >= 0) {
     button = buttonsarray[buttonIdx];
     var icon = button.icon;
     var title = button.title;
-    var codetype = button.codetype
+    var codetype = button.codetype;
     var gcode = button.gcode;
-    var javascript = button.javascript
+    var javascript = button.javascript;
     var cls = button.class;
     var tooltip = button.tooltip;
     if (button.macrokeyboardshortcut && button.macrokeyboardshortcut.length > 0) {
@@ -115,6 +136,26 @@ function editMacro(buttonIdx) {
     var tooltip = "";
     var macrokeyboardshortcut = "";
     var jsrunonstartup = "";
+
+    if (script) {
+      var ext = fileName.split('.').at(-1);
+      if (ext == "js") {
+        var title = fileName.slice(0, -3);
+        var codetype = "javascript";
+        var javascript = script;
+      } else if (["gcode", "gc", "tap", "nc", "cnc"].contains(ext)) {
+        var title = fileName.slice(0, -ext.length - 1);
+        var gcode = script;
+      }
+      else {
+        var title = fileName;
+        var gcode = script;
+      }
+    }
+  }
+
+  if (codetype == "javascript" && javascript && javascript.startsWith(JAVASCRIPT_LOAD_PREFIX)) {
+    javascript = loadJavascriptFile(javascript);
   }
 
   var macroTemplate = `<form id="macroEditForm">
@@ -319,7 +360,27 @@ function editMacro(buttonIdx) {
     $("#editorJavascriptModeTab").addClass("active");
     editorJavascriptMode();
   }
+}
 
+function createMacro() {
+  editMacro(-1);
+}
+
+function createMacroFromFile() {
+  var loadFileParams = {
+    id: "scripts",
+    title: "Import Script",
+    filters: [
+      {name: "JavaScript files", extensions: ["js"]},
+      {name: "G-code files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
+      {name: "All files", extensions: ["*"]},
+    ],
+    showErrorDlg: true,
+  };
+
+  invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
+    editMacro(-1, filePath.split(/[/\\]/).at(-1), data);
+  });
 }
 
 // run it to begin
@@ -328,7 +389,10 @@ if (localStorage.getItem('macroButtons')) {
 }
 
 $(document).ready(function() {
-  populateMacroButtons(true);
+  const urlParams = new URLSearchParams(window.location.search);
+  devMode = urlParams.get("devMode") == "true";
+  safeMode = urlParams.get("safeMode") == "true";
+  populateMacroButtons(!safeMode);
   setMacroGroupView(macroGroupView);
   bindKeys();
 });
@@ -355,7 +419,6 @@ function editorJavascriptMode() {
 }
 
 function runJsMacro(buttonIdx) {
-  console.log( "Running: ", buttonsarray[buttonIdx].javascript)
   if (!buttonsarray[buttonIdx].jsrunonstartup) {
     executeJS(buttonsarray[buttonIdx].javascript)
   } else {
@@ -473,6 +536,7 @@ function backupMacro(index) {
     id: "macros",
     title: "Export Macro",
     filters: macroFileFilters,
+    showErrorDlg: true,
     fileName: 'control-macro-backup-' + buttonsarray[index].title + '.json'
   };
   invokeSaveAsDialogNew(blob, saveFileParams);
@@ -486,6 +550,7 @@ function backupMacroAll() {
     id: "macros",
     title: "Backup Macros",
     filters: macroFileFilters,
+    showErrorDlg: true,
     fileName: 'macro-backup-' + date.yyyymmdd() + '.json'
   };
   invokeSaveAsDialogNew(blob, saveFileParams);
@@ -515,7 +580,7 @@ function importMacroBackupFile() {
     showErrorDlg: true,
   };
 
-  invokeOpenDialogReadFile(loadFileParams).then((data) => {
+  invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
     try {
       var newMacro = JSON.parse(data);
       if (!Array.isArray(newMacro) && newMacro.title != undefined && newMacro.codetype != undefined) {
@@ -541,7 +606,7 @@ function importMacroAll() {
     showErrorDlg: true,
   };
 
-  invokeOpenDialogReadFile(loadFileParams).then((data) => {
+  invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
     try {
       var newButtons = JSON.parse(data);
       if (newButtons && Array.isArray(newButtons)) {

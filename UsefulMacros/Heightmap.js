@@ -705,7 +705,7 @@ window.LoadHeightmapNew = function()
 		showErrorDlg: false,
 	};
 
-	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>
+	invokeOpenDialogReadFile(loadFileParams).then(({err, filePath, data}) =>
 	{
 		if (err)
 			FileReadError(err);

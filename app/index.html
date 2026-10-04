@@ -1209,11 +1209,13 @@ Restore previous origins from history.">
                             <span class="fas fa-tools icon" style="width:24px; height:24px; margin-bottom:4px;"></span><br>Macro<br>Tools
                           </button>
                           <ul class="d-menu context drop-shadow" data-role="dropdown" style="top:74px; text-align: start;">
-                            <li onclick="editMacro(-1)"><a href="#"><i class="fas fa-plus icon" style="margin-top:-7px;"></i> New Macro</a></li>
+                            <li onclick="createMacro()"><a href="#"><i class="fas fa-plus icon" style="margin-top:-7px;"></i> Create New Macro</a></li>
+                            <li onclick="createMacroFromFile()"><a href="#"><i class="mif-note-add mif-1g icon" style="margin-top:-7px;"></i> Create From Script</a></li>
                             <li class="divider"></li>
                             <li onclick="importMacroBackupFile()"><a href="#"><i class="fas fa-upload icon" style="margin-top:-8px;"></i> Import Macro</a></li>
                             <li onclick="importMacroAll()"><a href="#"><i class="mif-folder-upload icon"></i> Import All Macros</a></li>
                             <li onclick="backupMacroAll()"><a href="#"><i class="fas fa-save icon" style="margin-top:-8px;"></i> Export All Macros</a></li>
+                            <li class="divider"></li>
                             <li>
                               <a href="#" class="dropdown-toggle"><i class="mif-books mif-1g icon" style="margin-top:-8px;"></i> Group View</a>
                               <ul class="d-menu" data-role="dropdown">

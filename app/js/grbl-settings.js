@@ -16,7 +16,7 @@ function loadGrblBackupFile() {
     showErrorDlg: true,
   };
 
-  invokeOpenDialogReadFile(loadFileParams).then((data) => {
+  invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
     editedGrblParams = {};
     $("#grblSettingsAdvTab").click();
     $('#settingsModifiedFilter:checkbox').prop('checked', false);
@@ -173,6 +173,7 @@ function backupGrblSettings() {
     id: "settings",
     title: "Backup Settings",
     filters: backupFileFilters,
+    showErrorDlg: true,
   };
 
   if (laststatus.machine.name.length > 0) {

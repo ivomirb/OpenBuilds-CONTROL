@@ -49,6 +49,14 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Fix for a bug in the Surfacing Wizard, which was skipping the last row
 * New option to extend the surfaced area by the tool radius
 
+### Macro Improvements
+
+* Added ability to organize macros into groups
+* Added command to back up all macros to a single file
+* Added command to create a new macro from existing G-code or JavaScript file
+* Added ability to automatically reload JavaScript macros from external files in development mode
+* Enabled security isolation measures to prevent scripts from accessing the file system
+
 ### Useful Macros
 
 The Javascript macros and the open UI architecture of OpenBuilds make it easy to extend it with custom functionality.
@@ -59,11 +67,12 @@ You can find them in the [Useful Macros folder](UsefulMacros/UsefulMacros.md).
 Most of them are compatible with the original software.
 The most notable examples are:
 
-* Macro manager that lets you organize macros into groups
+* Macro manager - a standalone version of the macro improvements that can be used with the original software
 * Heightmap support, similar to the one in Candle (work in progress, not yet fully tested)
 * Disable the Z jog buttons for large step sizes
 * Remove the dropdown from the file open button
 * Smart Home macro that prevents accidental homing and allows homing single axis if supported
+* Measure Z macro that can measure the height without changing the work zero
 
 ## Download
 

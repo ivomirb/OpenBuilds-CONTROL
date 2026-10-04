@@ -11,10 +11,6 @@ var openDialogs = [];
 
 var MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
 
-if (typeof require == "function") {
-  var path = require("path");
-}
-
 $(document).ready(function() {
   initSocket();
 
@@ -924,7 +920,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
       var elements = ``;
       for (var i = 0; i < data.length; i++) {
         elements += `<li title="` + data[i] +`"><a href="#" onclick="reloadJobFile('` + data[i].replaceAll('\\', '\\\\') + 
-          `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + path.basename(data[i]) + `</a></li>\n`;
+          `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + data[i].split(/[/\\]/).at(-1) + `</a></li>\n`;
       }
       $('#recentFilesList').after(elements);
       EnableViaClass('#clearRecentBtn', data.length > 0);

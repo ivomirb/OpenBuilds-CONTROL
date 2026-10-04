@@ -18,6 +18,16 @@ if (process.env.DEBUGCONTROL) {
   console.log("Console Debugging Enabled")
 }
 
+var devMode = false;
+var safeMode = false;
+var bypassFileSec = false; // when false, only files from the allowedFilePaths set can be accessed
+var allowedFilePaths = new Set();
+const fileSecurityMessage = `
+
+For security reasons, only files that are picked from a file browser can be accessed.
+
+This could be caused by a buggy or malicious Javascript macro.`;
+
 function debug_log() {
   if (DEBUG) {
     console.log.apply(this, arguments);
@@ -53,6 +63,7 @@ var persistentConfig = {
   grblWaitTime1: 2, // timeout for the first handshake attempt (Cltr+X)
   grblWaitTime2: 2, // timeout for the second handshake attempt (DTR Enable)
   spindleDelay: 0,
+  forceDevMode: false,
 };
 
 var express = require("express");
@@ -99,6 +110,9 @@ function loadPersistentConfig() {
     persistentConfig.spindleDelay = 0;
   }
   status.misc.spindleDelay = persistentConfig.spindleDelay;
+	for (var i = 0; i < persistentConfig.recentFiles.length; i++) {
+		allowedFilePaths.add(persistentConfig.recentFiles[i]);
+	}
 }
 
 // FluidNC test
@@ -594,12 +608,14 @@ app.get('/activate', (req, res) => {
   }, 500);
 })
 
+/* This is disabled because it can allow arbitrary file to be accessed
 // Upload
 app.get('/upload', (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.sendFile(__dirname + '/app/upload.html');
 })
+*/
 
 app.get('/gcode', (req, res) => {
   if (uploadedgcode.indexOf('$') != 0) { // Ignore grblSettings jobs
@@ -670,6 +686,7 @@ app.post('/saveFile', (req, res) => {
   });
 });
 
+/* This is disabled because it can allow arbitrary file to be accessed
 // File Post
 app.post('/upload', function(req, res) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -700,7 +717,7 @@ app.post('/upload', function(req, res) {
   form.on('file', function(name, file) {
     debug_log('Uploaded ' + file.filepath);
     showJogWindow()
-    readFile(file.filepath, true);
+    readGcodeFile(file.filepath, true);
   });
 
   form.on('aborted', function() {
@@ -715,6 +732,7 @@ app.post('/upload', function(req, res) {
 
   res.sendFile(__dirname + '/app/upload.html');
 });
+*/
 
 app.on('certificate-error', function(event, webContents, url, error,
   certificate, callback) {
@@ -1241,6 +1259,7 @@ io.on("connection", function(socket) {
       properties: ['dontAddToRecent']
     }).then(result => {
       if (!result.canceled) {
+        allowedFilePaths.add(result.filePath);
         persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePath);
         persistentConfig.defaultPaths["last"] = path.dirname(result.filePath);
         savePersistentConfig();
@@ -1261,6 +1280,7 @@ io.on("connection", function(socket) {
       properties: ['openFile']
     }).then(result => {
       if (!result.canceled && result.filePaths.length > 0) {
+        allowedFilePaths.add(result.filePaths[0]);
         persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePaths[0]);
         persistentConfig.defaultPaths["last"] = path.dirname(result.filePaths[0]);
         savePersistentConfig();
@@ -1273,9 +1293,25 @@ io.on("connection", function(socket) {
 
   // generic function for reading a text file
   socket.on("readTextFile", function(filePath, params, callback) {
+    if (!bypassFileSec && !allowedFilePaths.has(filePath)) {
+      if (params.showErrorDlg) {
+        dialog.showMessageBox(jogWindow, {
+          type: 'error',
+          buttons: ['OK'],
+          message: "Reading file " + filePath + " is not allowed." + fileSecurityMessage
+        });
+      } else {
+        callback("Reading file " + filePath + " is not allowed." + fileSecurityMessage, "");
+      }
+      return;
+    }
+
     fs.readFile(filePath, 'utf8',
       function(err, data) {
         if (params.showErrorDlg) {
+          if (params.setJobStorage && !err) {
+            jobStorage = data;
+          }
           if (err) {
             dialog.showMessageBox(jogWindow, {
               type: 'error',
@@ -1283,16 +1319,10 @@ io.on("connection", function(socket) {
               message: err.toString()
             });
           } else {
-            if (params.setJobStorage) {
-              jobStorage = data;
-            }
             callback(data);
           }
         }
         else {
-          if (params.setJobStorage) {
-            jobStorage = data;
-          }
           callback(err ? err.toString() : "", data);
         }
       });
@@ -1313,12 +1343,13 @@ io.on("connection", function(socket) {
       console.log(result.canceled)
       console.log(result.filePaths)
       if (!result.canceled && result.filePaths.length > 0) {
+        allowedFilePaths.add(result.filePaths[0]);
         const openFilePath = result.filePaths[0];
         persistentConfig.defaultPaths["gcode"] = path.dirname(openFilePath);
         persistentConfig.defaultPaths["last"] = path.dirname(openFilePath);
         savePersistentConfig();
         debug_log("path" + openFilePath);
-        readFile(openFilePath, true, addRecentFile);
+        readGcodeFile(openFilePath, true, addRecentFile);
       }
 
     }).catch(err => {
@@ -1330,7 +1361,7 @@ io.on("connection", function(socket) {
     filePath = filePath || status.misc.lastFilePath;
     if (filePath !== "") {
       debug_log("path" + filePath);
-      readFile(filePath, true, addRecentFile);
+      readGcodeFile(filePath, true, addRecentFile);
     }
   })
 
@@ -2158,43 +2189,51 @@ io.on("connection", function(socket) {
 
 });
 
-function readFile(filePath, showErrorDlg, onSuccess) {
-  if (filePath) {
-    if (filePath.length > 1) {
-      debug_log('readfile: ' + filePath)
-      fs.readFile(filePath, 'utf8',
-        function(err, data) {
-          if (err) {
-            if (showErrorDlg) {
-              dialog.showMessageBox(jogWindow, {
-                type: 'error',
-                buttons: ['OK'],
-                message: err.toString()
-              });
+function readGcodeFile(filePath, showErrorDlg, onSuccess) {
+  if (filePath && filePath.length > 1) {
+    if (!bypassFileSec && !allowedFilePaths.has(filePath)) {
+      if (showErrorDlg) {
+        dialog.showMessageBox(jogWindow, {
+          type: 'error',
+          buttons: ['OK'],
+          message: "Reading file " + filePath + " is not allowed." + fileSecurityMessage
+        });
+      }
+      return;
+    }
+    debug_log('readfile: ' + filePath)
+    fs.readFile(filePath, 'utf8',
+      function(err, data) {
+        if (err) {
+          if (showErrorDlg) {
+            dialog.showMessageBox(jogWindow, {
+              type: 'error',
+              buttons: ['OK'],
+              message: err.toString()
+            });
+          }
+          debug_log(err);
+        } else if (data) {
+          if (filePath.endsWith('.obc')) { // OpenBuildsCAM Workspace
+            uploadedworkspace = data;
+            const {
+              shell
+            } = require('electron')
+            shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
+          } else { // GCODE
+            uploadedgcode = data;
+            status.misc.lastFilePath = filePath;
+            var payload = {
+              gcode: uploadedgcode,
+              filename: path.basename(status.misc.lastFilePath)
             }
-            debug_log(err);
-          } else if (data) {
-            if (filePath.endsWith('.obc')) { // OpenBuildsCAM Workspace
-              uploadedworkspace = data;
-              const {
-                shell
-              } = require('electron')
-              shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
-            } else { // GCODE
-              uploadedgcode = data;
-              status.misc.lastFilePath = filePath;
-              var payload = {
-                gcode: uploadedgcode,
-                filename: path.basename(status.misc.lastFilePath)
-              }
-              io.sockets.emit('gcodeupload', payload);
-              if (onSuccess) {
-                onSuccess(filePath, data);
-              }
+            io.sockets.emit('gcodeupload', payload);
+            if (onSuccess) {
+              onSuccess(filePath, data);
             }
           }
-        });
-    }
+        }
+      });
   }
 }
 
@@ -2863,7 +2902,7 @@ loadPersistentConfig();
 
       var openFilePath = commandLine.find(checkFileType);
       if (openFilePath !== "") {
-        readFile(openFilePath, false);
+        readGcodeFile(openFilePath, false);
         if (openFilePath !== undefined) {
           if (openFilePath.endsWith('.obc')) {
             lauchGUI = false;
@@ -2902,18 +2941,21 @@ loadPersistentConfig();
       if (process.platform == 'win32') {
         status.driver.operatingsystem = 'windows';
         const pathIndex = electronApp.isPackaged ? 1 : 2;
-        if (process.argv.length > pathIndex) {
+        if (pathIndex < process.argv.length) {
           var openFilePath = process.argv[pathIndex];
-          if (openFilePath !== "") {
+          if (openFilePath !== "" && openFilePath[0] != '-') {
            debug_log("path" + openFilePath);
-            readFile(openFilePath, false);
+            readGcodeFile(openFilePath, false);
           }
         }
       }
 
       foceShowGui = uploadedgcode.length > 1 || process.argv.indexOf("-showGui") > 0;
-      if (process.argv.indexOf("-resetSize") > 0)
+      if (process.argv.indexOf("-resetSize") > 0) {
         BrowserWindow.clearPersistedState('main-window');
+      }
+      devMode = process.argv.indexOf("-devMode") > 0 || persistentConfig.forceDevMode;
+      safeMode = process.argv.indexOf("-safeMode") > 0;
       if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !persistentConfig.autoStart)) {
         showJogWindow();
         if (process.argv.indexOf("-debug") > 0)
@@ -3116,9 +3158,9 @@ loadPersistentConfig();
         experimentalCanvasFeatures: true,
         offscreen: true,
         backgroundColor: "#fff",
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
+        webPreferences: { // in devMode allow everything, otherwise enable security
+          nodeIntegration: devMode,
+          contextIsolation: !devMode,
         },
         windowStatePersistence: {
           bounds: true,
@@ -3127,10 +3169,11 @@ loadPersistentConfig();
       });
 
       jogWindow.setOverlayIcon(nativeImage.createFromPath(iconPath), 'Icon');
-      var ipaddr = ip.address();
-      // jogWindow.loadURL(`//` + ipaddr + `:3000/`)
-      jogWindow.loadURL(`http://localhost:${config.webPort}/`);
-      //jogWindow.webContents.openDevTools()
+
+      var url = `http://localhost:${config.webPort}/?`;
+      url += "&devMode=" + (devMode ? "true" : "false");
+      url += "&safeMode=" + (safeMode ? "true" : "false");
+      jogWindow.loadURL(url);
 
       jogWindow.on('close', function(event) {
         if (!forceQuit) {
@@ -3225,11 +3268,19 @@ const uploadFileStorage = multer.diskStorage({
 // Used for save as
 const saveFileStorage = multer.diskStorage({
   destination: function(req, file, cb) {
-    cb(null, path.dirname(file.originalname));
+    if (bypassFileSec || allowedFilePaths.has(file.originalname)) {
+      cb(null, path.dirname(file.originalname));
+    } else {
+      cb(new Error("Saving file " + file.originalname + " is not allowed." + fileSecurityMessage), "");
+    }
   },
   // By default, multer removes file extensions so let's add them back
   filename: function(req, file, cb) {
-    cb(null, path.basename(file.originalname));
+    if (bypassFileSec || allowedFilePaths.has(file.originalname)) {
+      cb(null, path.basename(file.originalname));
+    } else {
+      cb(new Error("Saving file " + file.originalname + " is not allowed." + fileSecurityMessage), "");
+    }
   }
 });
 

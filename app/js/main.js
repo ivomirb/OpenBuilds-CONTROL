@@ -481,9 +481,9 @@ function clearGcode() {
 function saveBlobToDisk(blob, filePath, params) {
   var formData = new FormData();
   var fileOfBlob = new File([blob], filePath);
-  formData.append("file", fileOfBlob);
   formData.append("showErrorDlg", params.showErrorDlg ? "true" : "false");
   formData.append("updateLastFilePath", params.updateLastFilePath ? "true" : "false");
+  formData.append("file", fileOfBlob);
   var xhr = new XMLHttpRequest();
   var promise = new Promise((resolve) => {
     xhr.onload = function() {
@@ -534,11 +534,11 @@ function invokeOpenDialogReadFile(params) {
     socket.emit('openFileDialog', params, (filePath) => {
       if (params.showErrorDlg) {
         socket.emit('readTextFile', filePath, params, (data) => {
-          resolve(data);
+          resolve({filePath, data});
         });
       } else {
         socket.emit('readTextFile', filePath, params, (err, data) => {
-          resolve({err, data});
+          resolve({err, filePath, data});
         });
       }
     });
