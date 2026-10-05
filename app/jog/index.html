@@ -89,7 +89,7 @@
               </tr>
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Before <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                       <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -121,7 +121,7 @@
               </tr>
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Before <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                       <span class="fa-layers-text fg-green" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Y</span>
@@ -153,7 +153,7 @@
               </tr>
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Before <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                       <span class="fa-layers-text fg-blue" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Z</span>
@@ -185,7 +185,7 @@
               </tr>
               <tr>
                 <td class="p-2">
-                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
+                  <button class="button light jogbtn setzero" onclick="captureWcsHistory('Before <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
                     <span class="fa-layers fa-fw">
                       <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-18"></i>
                       <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-2" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -348,7 +348,7 @@
                 </tr>
                 <tr>
                   <td colspan="4">
-                    <div id="jrocell">
+                    <div id="jrocell" style="width: 280px;">
 
                       <input id="jro" data-on-stop="jogOverride(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-min="1" data-max="100" data-value="100" data-hint="true" data-hint-always="true"
                         data-hint-position="bottom" data-hint-mask="Jog Rate: $1%" data-cls-hint="bg-light
@@ -418,11 +418,11 @@
   <script type="text/javascript" src="../lib/lodash.core.js"></script>
   <script type="text/javascript" src="/socket.io/socket.io.js"></script>
 
+  <script type="text/javascript" src="../js/ui.js"></script>
   <script type="text/javascript" src="../js/diagnostics.js"></script>
   <script type="text/javascript" src="../js/toolchange.js"></script>
 
   <script type="text/javascript" src="../js/main.js"></script>
-  <script type="text/javascript" src="../js/ui.js"></script>
   <script type="text/javascript" src="../js/websocket.js"></script>
   <script type="text/javascript" src="../js/grbl-settings.js"></script>
   <script type="text/javascript" src="../js/grbl-settings-templates.js"></script>

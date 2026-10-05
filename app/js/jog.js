@@ -103,14 +103,9 @@ function inMode() {
 
 function toggleWCS() {
   showMCS = !showMCS;
-  if (showMCS) {
-    $('#mcsBtn, .dro').addClass('droMCS');
-    $('#Xwork, #Ywork, #Zwork, #Awork').html("MCS");
-  } else {
-    $('#mcsBtn, .dro').removeClass('droMCS');
-    $('#Xwork, #Ywork, #Zwork, #Awork').html("WORK");
-  }
   $('#mcsBtn').html(showMCS ? "MCS" : "WCS");
+  $('#Xwork, #Ywork, #Zwork, #Awork').html(showMCS ? "MCS" : "WORK");
+  AddRemoveClass('#mcsBtn, .dro', 'droMCS', showMCS);
   EnableViaClass($(".setzero"), !showMCS);
 
   if (!disableDROupdates && laststatus) {
@@ -243,7 +238,7 @@ function onDroKeydown(axis, e) {
     var value = parseFloat(input.val());
     if (!showMCS && e.shiftKey) {
       // Modify the origin (always in mm for better precision)
-      captureWcsHistory('Modified by <b>' + Axis + ' input</b>');
+      captureWcsHistory('Before <b>' + Axis + ' input</b>');
       if (axis != 'a' && unit == "in") {
         value *= 25.4;
       }

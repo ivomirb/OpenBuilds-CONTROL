@@ -16,7 +16,7 @@ function loadGrblBackupFile() {
     showErrorDlg: true,
   };
 
-  invokeOpenDialogReadFile(loadFileParams).then((data) => {
+  invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
     editedGrblParams = {};
     $("#grblSettingsAdvTab").click();
     $('#settingsModifiedFilter:checkbox').prop('checked', false);
@@ -173,6 +173,7 @@ function backupGrblSettings() {
     id: "settings",
     title: "Backup Settings",
     filters: backupFileFilters,
+    showErrorDlg: true,
   };
 
   if (laststatus.machine.name.length > 0) {
@@ -263,22 +264,19 @@ function grblSettings(data) {
     $("#grbl-settings-tab-title").html('Grbl');
   }
 
-  if (grblParams['$22'] > 0) {
-    $('#homeBtn').attr('disabled', false);
-    $('#gotozeroZmPosXYwPos, #gotozeroMPos, #gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos').removeClass('disabled');
-  } else {
-    $('#homeBtn').attr('disabled', true);
-    $('#gotozeroZmPosXYwPos, #gotozeroMPos, #gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos').addClass('disabled');
-  }
+  var homingEnabled = grblParams['$22'] > 0;
+  $('#homeBtn').attr('disabled', !homingEnabled);
+  AddRemoveClass('#gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos', 'disabled', !homingEnabled);
+  AddRemoveClass('#gotozeroZmPosXYwPos, #gotozeroMPos', 'disabled', !homingEnabled);
 
   updateGotoLimits();
   if (!isJogWidget && webgl)
     updateMachineCoordinates();
 
   if (grblParams['$32'] == 1) {
-    $('#enLaser').removeClass('alert').addClass('success').html('ON')
+    $('#enLaser').removeClass('alert').addClass('success').html('ON');
   } else {
-    $('#enLaser').removeClass('success').addClass('alert').html('OFF')
+    $('#enLaser').removeClass('success').addClass('alert').html('OFF');
   }
 
   // grblHAL - enable Servo Buttons if Spindle PWM == 50hz
@@ -453,6 +451,25 @@ function grblPopulate() {
   </div>
   <div id="grbl-settings-advanced">
       <div id="grblSettingsTableView">
+        <style>
+          .param-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .revert-button {
+            line-height: initial !important;
+            height: initial !important;
+            padding: 10px !important;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+          }
+          tr:hover .revert-button[modified] {
+            opacity: 1;
+            visibility: visible;
+          }
+        </style>
         <table id="grblMetroTable" data-role="table"
           data-table-search-title="Search for Parameters by Name or $-Key"
           data-search-fields="Key, Parameter"
@@ -471,16 +488,18 @@ function grblPopulate() {
               <th style="width: 110px; min-width: 110px !important;">Utility</th>
             </tr>
           </thead>
-          <tbody>`
+          <tbody>`;
 
   editedGrblParams = {};
 
   for (var key in grblParams) {
     var key2 = key.substr(1);
+    const revertButton = `<button class="button small revert-button" type="button" title="Revert change"` + 
+      `onclick="revertGrblSetting('` + key + `')"><i class="fas fa-undo"></i></button>`;
     if (grblSettingsTemplate[key2] !== undefined) {
       template += `<tr>
               <td>` + grblSettingsTemplate[key2].key + `</td>
-              <td>` + grblSettingsTemplate[key2].title + `</td>
+              <td><div class="param-label">` + grblSettingsTemplate[key2].title + revertButton + `</div></td>
               <td>` + grblSettingsTemplate[key2].template + `</td>
               <td>` + grblSettingsTemplate[key2].utils + `</td>
             </tr>`
@@ -488,7 +507,7 @@ function grblPopulate() {
       template += `
             <tr>
               <td>` + key + `</td>
-              <td><span class="tally alert">` + key + `</span></td>
+              <td><div class="param-label"><span class="tally alert">` + key +`</span>`  + revertButton + `</div></td>
               <td><input data-role="input" data-clear-button="false"
                   data-append="?" type="text"
                   value="` + grblParams[key] + `"
@@ -536,6 +555,19 @@ function grblPopulate() {
   populateRestoreMenu();
 }
 
+function revertGrblSetting(key) {
+  var j = key.substring(1);
+  const input = $("#val-" + j + "-input");
+  input.val(grblParams[key]);
+  delete editedGrblParams[key];
+  if (key == '$3' || key == '$23') {
+    updateDirSettingChecks();
+  }
+  else {
+    checkifchanged();
+  }
+}
+
 function checkifchanged() {
   if (!settingsUIConstructed) return;
 
@@ -544,7 +576,8 @@ function checkifchanged() {
   for (var key in grblParams) {
     if (grblParams.hasOwnProperty(key)) {
       var j = key.substring(1);
-      var newVal = $("#val-" + j + "-input").val();
+      const input = $("#val-" + j + "-input");
+      var newVal = input.val();
 
       if (newVal !== undefined) {
         // Determine if the value should be compared as text or number
@@ -556,11 +589,12 @@ function checkifchanged() {
           (!compareAsNumber && newVal !== oldVal)) {
           hasChanged = true;
           editedGrblParams[key] = newVal;
+          input.closest('tr').find('.revert-button').attr('modified', true);
 
-          if (!$("#val-" + j + "-input").parent().is('td')) {
-            $("#val-" + j + "-input").parent().addClass('alert');
-          } else if ($("#val-" + j + "-input").is('select')) {
-            $("#val-" + j + "-input").addClass('alert');
+          if (!input.parent().is('td')) {
+            input.parent().addClass('alert');
+          } else if (input.is('select')) {
+            input.addClass('alert');
           } else if (j == 3) { // axes
             if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
               $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
@@ -603,11 +637,12 @@ function checkifchanged() {
               $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
           }
         } else {
+          input.closest('tr').find('.revert-button').removeAttr('modified');
           delete editedGrblParams[key];
-          if (!$("#val-" + j + "-input").parent().is('td')) {
-            $("#val-" + j + "-input").parent().removeClass('alert');
-          } else if ($("#val-" + j + "-input").is('select')) {
-            $("#val-" + j + "-input").removeClass('alert');
+          if (!input.parent().is('td')) {
+            input.parent().removeClass('alert');
+          } else if (input.is('select')) {
+            input.removeClass('alert');
           } else if (j == 3) {
             $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
             $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
@@ -935,8 +970,6 @@ function enableScribe() {
     }
   }
   checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
 }
 
 var grblParams_laser = {
@@ -958,8 +991,6 @@ function enableLaser() {
     }
   }
   checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
 }
 
 var grblParams_router = {
@@ -981,8 +1012,6 @@ function enableRouter() {
     }
   }
   checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
 }
 
 var grblParams_plasma = {
@@ -1004,8 +1033,6 @@ function enablePlasma() {
     }
   }
   checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
 }
 
 var grblParams_vfd = {
@@ -1027,8 +1054,6 @@ function enableVFD() {
     }
   }
   checkifchanged();
-  var elm = document.getElementById("grblSettingsPWM");
-  // elm.scrollIntoView(true);
 }
 
 function isMatchingConfig(currentParams, predefinedParams) {

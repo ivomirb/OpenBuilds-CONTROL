@@ -8,7 +8,7 @@
     "@electron/notarize": "2.3.2"
   },
   "devDependencies": {
-    "electron": "^44.4.5",
+    "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
     "electron-builder-notarize": "latest",
     "electron-rebuild": "^3.2.9",

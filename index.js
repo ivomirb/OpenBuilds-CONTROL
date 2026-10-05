@@ -18,6 +18,16 @@ if (process.env.DEBUGCONTROL) {
   console.log("Console Debugging Enabled")
 }
 
+var devMode = false;
+var safeMode = false;
+var bypassFileSec = false; // when false, only files from the allowedFilePaths set can be accessed
+var allowedFilePaths = new Set();
+const fileSecurityMessage = `
+
+For security reasons, only files that are picked from a file browser can be accessed.
+
+This could be caused by a buggy or malicious Javascript macro.`;
+
 function debug_log() {
   if (DEBUG) {
     console.log.apply(this, arguments);
@@ -50,8 +60,10 @@ var persistentConfig = {
   defaultPaths: {},
   recentFiles: [],
   persistDisplayMode: false,
-  grblWaitTime1: 1, // timeout for the first handshake attempt (Cltr+X)
-  grblWaitTime2: 1, // timeout for the second handshake attempt (DTR Enable)
+  grblWaitTime1: 2, // timeout for the first handshake attempt (Cltr+X)
+  grblWaitTime2: 2, // timeout for the second handshake attempt (DTR Enable)
+  spindleDelay: 0,
+  forceDevMode: false,
 };
 
 var express = require("express");
@@ -93,6 +105,14 @@ function loadPersistentConfig() {
 
   persistentConfig.grblWaitTime1 = Math.max(persistentConfig.grblWaitTime1, 0.1);
   persistentConfig.grblWaitTime2 = Math.max(persistentConfig.grblWaitTime2, 0.1);
+
+  if (persistentConfig.spindleDelay != 3 && persistentConfig.spindleDelay != 5 && persistentConfig.spindleDelay != 8) {
+    persistentConfig.spindleDelay = 0;
+  }
+  status.misc.spindleDelay = persistentConfig.spindleDelay;
+  for (var i = 0; i < persistentConfig.recentFiles.length; i++) {
+    allowedFilePaths.add(persistentConfig.recentFiles[i]);
+  }
 }
 
 // FluidNC test
@@ -125,7 +145,6 @@ app.post('/uploadCustomFirmware', (req, res) => {
   upload(req, res, function(err) {
     // req.file contains information of uploaded file
     // req.body contains information of text fields, if there were any
-
     if (err instanceof multer.MulterError) {
       return res.send(err);
     } else if (err) {
@@ -378,20 +397,17 @@ function setAutoStart(enabled) {
     persistentConfig.autoStart = enabled;
     status.misc.autoStart = enabled;
     savePersistentConfig();
-    electronApp.setLoginItemSettings({
-      openAtLogin: enabled,
-      args: []
-    })
+    if (process.platform == 'win32') {
+      electronApp.setLoginItemSettings({
+        openAtLogin: enabled,
+        args: []
+      });
+    }
     if (enabled) {
-      if (!appIcon) {
-        createTrayIcon();
-      }
+      createTrayIcon();
     }
     else {
-      if (appIcon) {
-        appIcon.destroy();
-        appIcon = null;
-      }
+      destroyTrayIcon();
     }
   }
 }
@@ -530,6 +546,8 @@ var status = {
     jobStatus: 0, // 0 - no job, 1 - running, 2 - jog job running (can't be paused)
     autoStart: true,
     lastFilePath: "",
+    spindleDelay: 0,
+    laserMode: false,
   },
 };
 
@@ -647,14 +665,22 @@ app.post('/saveFile', (req, res) => {
   }).single('file');
 
   upload(req, res, function(err) {
-    if (err && req.body.showErrorDlg == "true") {
-      dialog.showMessageBox(jogWindow, {
-        type: 'error',
-        buttons: ['OK'],
-        message: err.toString()
-      });
+    if (err) {
+      if (req.body.showErrorDlg == "true") {
+        dialog.showMessageBox(jogWindow, {
+          type: 'error',
+          buttons: ['OK'],
+          message: err.toString()
+        });
+      }
+      res.send(err.toString());
+    } else {
+      if (req.body.updateLastFilePath == "true") {
+        status.misc.lastFilePath = req.file.originalname;
+        addRecentFile(req.file.originalname);
+      }
+      res.send("");
     }
-    res.send(err ? err.toString() : "");
   });
 });
 
@@ -688,7 +714,7 @@ app.post('/upload', function(req, res) {
   form.on('file', function(name, file) {
     debug_log('Uploaded ' + file.filepath);
     showJogWindow()
-    readFile(file.filepath, true)
+    readGcodeFile(file.filepath, true);
   });
 
   form.on('aborted', function() {
@@ -858,7 +884,7 @@ function onParserData(data) {
   };
 
   if (data.indexOf("[GC:") === 0) {
-    gotModals(data)
+    gotModals(data);
   }
 
   if (data.indexOf("[INTF:") === 0) {
@@ -936,7 +962,10 @@ function onParserData(data) {
     }
     // end of machine identification
 
+    sentBuffer.length = 0; // Dump the queue
     status.comms.blocked = false;
+    status.comms.paused = false;
+    clearGcodeQueue(false);
     if (config.aggressiveHomeReset) {
       // when aggressiveHomeReset is true (the default), reset the home state on every grbl reset
       status.machine.modals.homedRecently = false;
@@ -980,7 +1009,7 @@ function onParserData(data) {
         jobStatusInternal += 2; // last command was accepted, just wait for idle
       }
     }
-  } else if (data.indexOf('ALARM') === 0) {
+  } else if (data.indexOf('ALARM') === 0 && status.comms.connectionStatus >= 2) {
     debug_log("ALARM:  " + data)
 
     var alarmCode = parseInt(data.split(':')[1]);
@@ -1007,16 +1036,16 @@ function onParserData(data) {
 
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
-  } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1) {
+  } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1 && status.comms.connectionStatus >= 2) {
     clearGcodeQueue(false);
     status.comms.connectionStatus = 2;
-  } else if (data.indexOf('Emergency Stop Requested') != -1) {
+  } else if (data.indexOf('Emergency Stop Requested') != -1 && status.comms.connectionStatus >= 2) {
     debug_log("Emergency Stop Requested")
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
   } else if (data.indexOf('wait') === 0) { // Got wait from Repetier -> ignore
     // do nothing
-  } else if (data.indexOf('error') === 0) { // Error received -> stay blocked stops queue
+  } else if (data.indexOf('error') === 0 && status.comms.connectionStatus >= 2) { // Error received -> stay blocked stops queue
     var errorCode = parseInt(data.split(':')[1]);
 
     var lastAlarm = "";
@@ -1035,6 +1064,8 @@ function onParserData(data) {
     debug_log("error;")
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
+  } else if (data.startsWith("$32=")) {
+    status.misc.laserMode = parseInt(data.substr(4)) == 1;
   } else if (data === ' ') {
     // nothing
   } else {
@@ -1135,7 +1166,7 @@ function connectController(data) {
     debug_log("Didn't detect firmware after Ctrl+X. Lets try toggling DTR");
     var output = {
       'command': 'connect',
-      'response': "Attempting to detect Controller (4): (DTR Enable)",
+      'response': "Attempting to detect Controller (2): (DTR Enable)",
       'type': 'info'
     }
     io.sockets.emit('data', output);
@@ -1224,11 +1255,12 @@ io.on("connection", function(socket) {
       properties: ['dontAddToRecent']
     }).then(result => {
       if (!result.canceled) {
+        allowedFilePaths.add(result.filePath);
         persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePath);
         persistentConfig.defaultPaths["last"] = path.dirname(result.filePath);
         savePersistentConfig();
+        callback(result.filePath);
       }
-      callback(result.filePath);
     }).catch(err => {
       console.log(err)
     })
@@ -1244,6 +1276,7 @@ io.on("connection", function(socket) {
       properties: ['openFile']
     }).then(result => {
       if (!result.canceled && result.filePaths.length > 0) {
+        allowedFilePaths.add(result.filePaths[0]);
         persistentConfig.defaultPaths[data.id || "default"] = path.dirname(result.filePaths[0]);
         persistentConfig.defaultPaths["last"] = path.dirname(result.filePaths[0]);
         savePersistentConfig();
@@ -1256,9 +1289,25 @@ io.on("connection", function(socket) {
 
   // generic function for reading a text file
   socket.on("readTextFile", function(filePath, params, callback) {
+    if (!bypassFileSec && !allowedFilePaths.has(filePath)) {
+      if (params.showErrorDlg) {
+        dialog.showMessageBox(jogWindow, {
+          type: 'error',
+          buttons: ['OK'],
+          message: "Reading file " + filePath + " is not allowed." + fileSecurityMessage
+        });
+      } else {
+        callback("Reading file " + filePath + " is not allowed." + fileSecurityMessage, "");
+      }
+      return;
+    }
+
     fs.readFile(filePath, 'utf8',
       function(err, data) {
         if (params.showErrorDlg) {
+          if (params.setJobStorage && !err) {
+            jobStorage = data;
+          }
           if (err) {
             dialog.showMessageBox(jogWindow, {
               type: 'error',
@@ -1266,16 +1315,10 @@ io.on("connection", function(socket) {
               message: err.toString()
             });
           } else {
-            if (params.setJobStorage) {
-              jobStorage = data;
-            }
             callback(data);
           }
         }
         else {
-          if (params.setJobStorage) {
-            jobStorage = data;
-          }
           callback(err ? err.toString() : "", data);
         }
       });
@@ -1296,12 +1339,13 @@ io.on("connection", function(socket) {
       console.log(result.canceled)
       console.log(result.filePaths)
       if (!result.canceled && result.filePaths.length > 0) {
+        allowedFilePaths.add(result.filePaths[0]);
         const openFilePath = result.filePaths[0];
         persistentConfig.defaultPaths["gcode"] = path.dirname(openFilePath);
         persistentConfig.defaultPaths["last"] = path.dirname(openFilePath);
         savePersistentConfig();
         debug_log("path" + openFilePath);
-        readFile(openFilePath, true, addRecentFile);
+        readGcodeFile(openFilePath, true, addRecentFile);
       }
 
     }).catch(err => {
@@ -1313,7 +1357,7 @@ io.on("connection", function(socket) {
     filePath = filePath || status.misc.lastFilePath;
     if (filePath !== "") {
       debug_log("path" + filePath);
-      readFile(filePath, true, addRecentFile);
+      readGcodeFile(filePath, true, addRecentFile);
     }
   })
 
@@ -1398,10 +1442,7 @@ io.on("connection", function(socket) {
     if (persistentConfig.autoStart) {
       jogWindow.hide();
     } else {
-      if (appIcon) {
-        appIcon.destroy();
-      }
-      electronApp.exit(0);
+      exitApp();
     }
   });
 
@@ -1428,12 +1469,7 @@ io.on("connection", function(socket) {
     }
   });
 
-  socket.on("quit", function(data) {
-    if (appIcon) {
-      appIcon.destroy();
-    }
-    electronApp.exit(0);
-  });
+  socket.on("quit", exitApp);
 
   socket.on("applyUpdate", function(data) {
     autoUpdater.quitAndInstall();
@@ -1450,6 +1486,14 @@ io.on("connection", function(socket) {
   })
 
   socket.on("autoStart", setAutoStart);
+
+  socket.on("spindleDelay", function(data) {
+    status.misc.spindleDelay = data;
+    if (persistentConfig.spindleDelay != data) {
+      persistentConfig.spindleDelay = data;
+      savePersistentConfig();
+    }
+  });
 
   socket.on("flashGrbl", function(data) {
 
@@ -1742,7 +1786,7 @@ io.on("connection", function(socket) {
     debug_log('Run Command (' + data.replace('\n', '|') + ')');
     if (status.comms.connectionStatus > 0) {
       if (data) {
-        addLinesToQueue(data);
+        addLinesToQueue(data, false);
         status.comms.runStatus = 'Running'
         // debug_log('sending ' + JSON.stringify(gcodeQueue))
         send1Q();
@@ -2090,7 +2134,9 @@ io.on("connection", function(socket) {
           break;
       }
       status.comms.runStatus = 'Stopped'
-      status.comms.connectionStatus = 2;
+      if (status.comms.connectionStatus >= 2) {
+        status.comms.connectionStatus = 2;
+      }
       status.comms.alarm = "";
       io.sockets.emit('errorsCleared', true);
     } else {
@@ -2139,43 +2185,51 @@ io.on("connection", function(socket) {
 
 });
 
-function readFile(filePath, showErrorDlg, onSuccess) {
-  if (filePath) {
-    if (filePath.length > 1) {
-      debug_log('readfile: ' + filePath)
-      fs.readFile(filePath, 'utf8',
-        function(err, data) {
-          if (err) {
-            if (showErrorDlg) {
-              dialog.showMessageBox(jogWindow, {
-                type: 'error',
-                buttons: ['OK'],
-                message: err.toString()
-              });
+function readGcodeFile(filePath, showErrorDlg, onSuccess) {
+  if (filePath && filePath.length > 1) {
+    if (!bypassFileSec && !allowedFilePaths.has(filePath)) {
+      if (showErrorDlg) {
+        dialog.showMessageBox(jogWindow, {
+          type: 'error',
+          buttons: ['OK'],
+          message: "Reading file " + filePath + " is not allowed." + fileSecurityMessage
+        });
+      }
+      return;
+    }
+    debug_log('readfile: ' + filePath)
+    fs.readFile(filePath, 'utf8',
+      function(err, data) {
+        if (err) {
+          if (showErrorDlg) {
+            dialog.showMessageBox(jogWindow, {
+              type: 'error',
+              buttons: ['OK'],
+              message: err.toString()
+            });
+          }
+          debug_log(err);
+        } else if (data) {
+          if (filePath.endsWith('.obc')) { // OpenBuildsCAM Workspace
+            uploadedworkspace = data;
+            const {
+              shell
+            } = require('electron')
+            shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
+          } else { // GCODE
+            uploadedgcode = data;
+            status.misc.lastFilePath = filePath;
+            var payload = {
+              gcode: uploadedgcode,
+              filename: path.basename(status.misc.lastFilePath)
             }
-            debug_log(err);
-          } else if (data) {
-            if (filePath.endsWith('.obc')) { // OpenBuildsCAM Workspace
-              uploadedworkspace = data;
-              const {
-                shell
-              } = require('electron')
-              shell.openExternal('https://github.com/OpenBuilds/OpenBuilds-CAM')
-            } else { // GCODE
-              uploadedgcode = data;
-              status.misc.lastFilePath = filePath;
-              var payload = {
-                gcode: uploadedgcode,
-                filename: path.basename(status.misc.lastFilePath)
-              }
-              io.sockets.emit('gcodeupload', payload);
-              if (onSuccess) {
-                onSuccess(filePath, data);
-              }
+            io.sockets.emit('gcodeupload', payload);
+            if (onSuccess) {
+              onSuccess(filePath, data);
             }
           }
-        });
-    }
+        }
+      });
   }
 }
 
@@ -2228,8 +2282,8 @@ function machineSend(gcode) {
 
 // Splits the data into lines and adds them to the queue
 // Removes comments
-function addLinesToQueue(data) {
-  var lineCount = 0;
+function addLinesToQueue(data, isJob) {
+  var empty = true;
   data = data.split('\n');
   for (var i = 0; i < data.length; i++) {
 
@@ -2249,12 +2303,16 @@ function addLinesToQueue(data) {
 
     var tosend = line.trim();
     if (tosend.length > 0) {
-      addQToEnd(tosend);
-      lineCount++;
+      if (addQToEnd(tosend) && isJob && status.misc.spindleDelay > 0 && !status.misc.laserMode) {
+        if (tosend.indexOf("M3") >= 0 || tosend.indexOf("M4") >= 0 || tosend.indexOf("M03") >= 0 || tosend.indexOf("M04") >= 0) {
+          addQToEnd("G4 P" + parseInt(status.misc.spindleDelay) + ".");
+        }
+      }
+      empty = false;
     }
   }
 
-  return lineCount > 0;
+  return !empty;
 }
 
 function runJob(object) {
@@ -2280,7 +2338,7 @@ function runJob(object) {
     debug_log('ERROR: Another job still in progress.');
     return;
   }
-  if (data && addLinesToQueue(data)) {
+  if (data && addLinesToQueue(data, true)) {
     // Start interval for qCount messages to socket clients
     queueCounter = setInterval(function() {
       status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
@@ -2314,6 +2372,7 @@ function stopPort() {
   gcodeQueue.length = 0;
   sentBuffer.length = 0; // dump bufferSizes
   queuePointer = 0;
+  jobStatusInternal = 0;
   // port.drain(port.close());
 
   if (status.comms.interfaces.type == "usb") {
@@ -2336,7 +2395,7 @@ function parseFeedback(data) {
     if (jobStatusInternal >= 3 && (new Date().getTime()) > jobStartTime + 100) {
       finalizeJob(true); // Idle after at least 100ms after the "ok" for the last line, declare the job as done
     }
-  } else if (state == "Alarm") {
+  } else if (state == "Alarm" && status.comms.connectionStatus >= 2) {
     // debug_log("ALARM:  " + data)
     status.comms.connectionStatus = 5;
   } else if (state == "Hold:0") {
@@ -2556,21 +2615,6 @@ function gotModals(data) {
     if (coolantStateCommands.includes(data[i])) {
       status.machine.modals.coolantstate = data[i]; // handle M7, M8, M9
     }
-
-    // //   status.machine.modals.tool = "0",
-    // if (data[i].indexOf("T") === 0) {
-    //   status.machine.modals.tool = parseFloat(data[i].substr(1))
-    // }
-    //
-    // //   status.machine.modals.spindle = "0"
-    // if (data[i].indexOf("S") === 0) {
-    //   status.machine.modals.spindle = parseFloat(data[i].substr(1))
-    // }
-    //
-    // //   status.machine.modals.feedrate = "0"
-    // if (data[i].indexOf("F") === 0) {
-    //   status.machine.modals.feedrate = parseFloat(data[i].substr(1))
-    // }
   }
 } // end gotModals
 
@@ -2679,7 +2723,7 @@ function clearGcodeQueue(success) {
 
   if (!success) {
     finalizeJob(false); // on failure, also finalize the job right now
-  } else if (jobStatusInternal == 0) {
+  } else if (jobStatusInternal == 0 && status.comms.connectionStatus >= 2) {
     status.comms.connectionStatus = 2; // finished non-job queue
   }
 }
@@ -2703,9 +2747,10 @@ function finalizeJob(success) {
   }
 }
 
-var modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M4', 'M5', 'M7', 'M8', 'M9']
+var modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M03', 'M4', 'M04', 'M5', 'M7', 'M8', 'M9']
 var modalCommandsRegExp = new RegExp(modalCommands.join("|"));
 
+// Returns true if a modal command was found
 function addQToEnd(gcode) {
   // debug_log('added ' + gcode)
   gcodeQueue.push(gcode);
@@ -2719,10 +2764,12 @@ function addQToEnd(gcode) {
   }
   if (!gcode.startsWith("$J=") && modalCommandsRegExp.test(testGcode)) {
     gcodeQueue.push("$G");
-  }
-  if (gcode.match(/T([\d.]+)/i)) {
+    return true;
+  } else if (gcode.match(/T([\d.]+)/i)) {
     gcodeQueue.push("$G");
+    return true;
   }
+  return false;
 }
 
 // Adds a line to the queue and kicks the sender if currently idle
@@ -2851,7 +2898,7 @@ loadPersistentConfig();
 
       var openFilePath = commandLine.find(checkFileType);
       if (openFilePath !== "") {
-        readFile(openFilePath, false);
+        readGcodeFile(openFilePath, false);
         if (openFilePath !== undefined) {
           if (openFilePath.endsWith('.obc')) {
             lauchGUI = false;
@@ -2880,7 +2927,7 @@ loadPersistentConfig();
 
     function createApp() {
       status.misc.autoStart = persistentConfig.autoStart;
-      if (process.platform != 'win32' || persistentConfig.autoStart)
+      if (persistentConfig.autoStart || (process.platform != 'win32' && process.platform != 'linux'))
         createTrayIcon();
       if (process.platform == 'darwin') {
         debug_log("Creating MacOS Menu");
@@ -2889,39 +2936,43 @@ loadPersistentConfig();
       }
       if (process.platform == 'win32') {
         status.driver.operatingsystem = 'windows';
-        if (process.argv.length >= 2) {
-          var openFilePath = process.argv[1];
-          if (openFilePath !== "") {
+        const pathIndex = electronApp.isPackaged ? 1 : 2;
+        if (pathIndex < process.argv.length) {
+          var openFilePath = process.argv[pathIndex];
+          if (openFilePath !== "" && openFilePath[0] != '-') {
            debug_log("path" + openFilePath);
-            readFile(openFilePath, false);
+            readGcodeFile(openFilePath, false);
           }
         }
       }
 
       foceShowGui = uploadedgcode.length > 1 || process.argv.indexOf("-showGui") > 0;
-      if (process.argv.indexOf("-resetSize") > 0)
+      if (process.argv.indexOf("-resetSize") > 0) {
         BrowserWindow.clearPersistedState('main-window');
+      }
+      devMode = process.argv.indexOf("-devMode") > 0 || persistentConfig.forceDevMode;
+      safeMode = process.argv.indexOf("-safeMode") > 0;
       if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !persistentConfig.autoStart)) {
         showJogWindow();
-      if (process.argv.indexOf("-debug") > 0)
-        jogWindow.webContents.openDevTools();
+        if (process.argv.indexOf("-debug") > 0)
+          jogWindow.webContents.openDevTools();
       }
+    }
 
+    function exitApp() {
+      if (appIcon) {
+        appIcon.destroy();
+      }
+      electronApp.exit(0);
     }
 
     function createMenu() {
-
       var template = [{
         label: "Application",
         submenu: [{
           label: "Quit",
           accelerator: "Command+Q",
-          click: function() {
-            if (appIcon) {
-              appIcon.destroy();
-            }
-            electronApp.exit(0);
-          }
+          click: exitApp
         }]
       }, {
         label: "Edit",
@@ -2979,9 +3030,7 @@ loadPersistentConfig();
 
     function createTrayIcon() {
       if (process.platform !== 'darwin') {
-        appIcon = new Tray(
-          nativeImage.createFromPath(iconPath)
-        )
+        appIcon = appIcon || new Tray(nativeImage.createFromPath(iconPath));
         const contextMenuTemplate = [{
           label: 'Open User Interface (GUI)',
           click() {
@@ -2990,12 +3039,7 @@ loadPersistentConfig();
           }
         }, {
           label: 'Quit OpenBuilds CONTROL (Disables all integration until started again)',
-          click() {
-            if (appIcon) {
-              appIcon.destroy();
-            }
-            electronApp.exit(0);
-          }
+          click: exitApp
         }];
         if (process.platform == 'win32') {
           contextMenuTemplate.push({type: 'separator'});
@@ -3013,6 +3057,21 @@ loadPersistentConfig();
                 appIcon.destroy();
               }
               appIcon = null;
+            }
+          });
+        } else if (process.platform == 'linux') {
+          contextMenuTemplate.push({type: 'separator'});
+          contextMenuTemplate.push({
+            label: 'Disable the Tray Icon',
+            click() {
+              showJogWindow();
+              setAutoStart(false);
+              dialog.showMessageBox(jogWindow, {
+                type: 'info',
+                buttons: ['OK'],
+                message: 'The tray icon has been disabled. It will be fully removed once the app closes.\n\nThe icon can be restored from the Application Settings menu in the Troubleshooting tab.'
+              });
+              destroyTrayIcon();
             }
           });
         }
@@ -3044,11 +3103,10 @@ loadPersistentConfig();
             content: "OpenBuilds CONTROL has started successfully"
           })
         }
-      } else {
+      } else { // darwin
         const dockMenu = Menu.buildFromTemplate([{
           label: 'Quit OpenBuilds CONTROL (Disables all integration until started again)',
           click() {
-            // appIcon.destroy();
             electronApp.exit(0);
           }
         }])
@@ -3056,6 +3114,19 @@ loadPersistentConfig();
       };
 
       console.log("Created tray icon");
+    }
+
+    function destroyTrayIcon() {
+      if (appIcon) {
+        if (process.platform == 'linux') {
+          // There is a bug with Electron on Linux that fails to properly destroy the tray icon.
+          // We keep it around but with an empty menu. It will be gone after the app closes.
+          appIcon.setContextMenu(Menu.buildFromTemplate([]));
+        } else {
+          appIcon.destroy();
+          appIcon = null;
+        }
+      }
     }
 
     function createJogWindow() {
@@ -3083,9 +3154,9 @@ loadPersistentConfig();
         experimentalCanvasFeatures: true,
         offscreen: true,
         backgroundColor: "#fff",
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
+        webPreferences: { // in devMode allow everything, otherwise enable security
+          nodeIntegration: devMode,
+          contextIsolation: !devMode,
         },
         windowStatePersistence: {
           bounds: true,
@@ -3094,10 +3165,12 @@ loadPersistentConfig();
       });
 
       jogWindow.setOverlayIcon(nativeImage.createFromPath(iconPath), 'Icon');
-      var ipaddr = ip.address();
-      // jogWindow.loadURL(`//` + ipaddr + `:3000/`)
-      jogWindow.loadURL(`http://localhost:${config.webPort}/`);
-      //jogWindow.webContents.openDevTools()
+
+      var url = `http://localhost:${config.webPort}/`;
+      if (safeMode) {
+        url += "?safeMode=true";
+      }
+      jogWindow.loadURL(url);
 
       jogWindow.on('close', function(event) {
         if (!forceQuit) {
@@ -3127,31 +3200,19 @@ loadPersistentConfig();
       forceQuit = true;
     })
 
-    electronApp.on('will-quit', function(event) {
-      // On OS X it is common for applications and their menu bar
-      // to stay active until the user quits explicitly with Cmd + Q
-      // We don't take that route, we close it completely
-      if (appIcon) {
-        appIcon.destroy();
-      }
-      electronApp.exit(0);
-    });
+    // On OS X it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    // We don't take that route, we close it completely
+    electronApp.on('will-quit', exitApp);
 
     // Quit when all windows are closed.
-    electronApp.on('window-all-closed', function() {
-      // On OS X it is common for applications and their menu bar
-      // to stay active until the user quits explicitly with Cmd + Q
-      if (appIcon) {
-        appIcon.destroy();
-      }
-      electronApp.exit(0);
-    });
+    // On OS X it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    electronApp.on('window-all-closed', exitApp);
 
-    electronApp.on('activate', function() {
-      // On OS X it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
-      createApp();
-    });
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    electronApp.on('activate', createApp);
 
     // Autostart on Login
     if (process.platform == 'win32' && persistentConfig.autoStart) {
@@ -3204,11 +3265,19 @@ const uploadFileStorage = multer.diskStorage({
 // Used for save as
 const saveFileStorage = multer.diskStorage({
   destination: function(req, file, cb) {
-    cb(null, path.dirname(file.originalname));
+    if (bypassFileSec || allowedFilePaths.has(file.originalname)) {
+      cb(null, path.dirname(file.originalname));
+    } else {
+      cb(new Error("Saving file " + file.originalname + " is not allowed." + fileSecurityMessage), "");
+    }
   },
   // By default, multer removes file extensions so let's add them back
   filename: function(req, file, cb) {
-    cb(null, path.basename(file.originalname));
+    if (bypassFileSec || allowedFilePaths.has(file.originalname)) {
+      cb(null, path.basename(file.originalname));
+    } else {
+      cb(new Error("Saving file " + file.originalname + " is not allowed." + fileSecurityMessage), "");
+    }
   }
 });
 

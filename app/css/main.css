@@ -77,7 +77,7 @@ body {
 #console {
   /*font-family: "Courier New", Courier, monospace;*/
   font-family: "Lucida Console", Monaco, monospace;
-  height: calc(100vh - 535px);
+  height: calc(100vh - 537px);
   width: 100%;
   overflow-y: auto;
   overflow-x: none;
@@ -316,4 +316,20 @@ select {
 
 #grblSettingsTableView .table-bottom {
   display: none;
+}
+
+#macroHorizontalTabs > li,
+#macroVerticalTabs > li {
+  white-space: nowrap;
+  line-height: 1;
+  font-size: 14px;
+}
+
+#macroHorizontalTabs > li.active,
+#macroVerticalTabs > li.active {
+  background-color: lightgray;
+}
+
+#macroVerticalTabs > li > a {
+  justify-content: left;
 }

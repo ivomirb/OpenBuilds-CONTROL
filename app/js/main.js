@@ -1,7 +1,7 @@
-var gcode;
-var loadedFileName = "";
-var savedFileName = "";
+var currentGcode = ""; // this should always match what is in the 3d view, but the editor contents may be different
+var loadedFileName = ""; // name for the contents of the editor, usually the last loaded file
 var editor;
+var useEditor = false; // if false, currentGcode is used instead of the contents of the editor
 var isJogWidget = false;
 var lastJobStartTime = false;
 
@@ -15,22 +15,22 @@ function setWindowTitle(status) {
   var string = ""
 
   if (status) {
-    string += " v" + status.driver.version
+    string += " v" + status.driver.version;
   } else if (laststatus) {
-    string += " v" + laststatus.driver.version
+    string += " v" + laststatus.driver.version;
   }
 
 
   if (loadedFileName.length > 0) {
-    string += " / " + loadedFileName
+    string += " / " + loadedFileName;
   }
 
   if (!nostatusyet && laststatus.comms.interfaces.activePort) {
-    string += " / connected to " + laststatus.comms.interfaces.activePort
+    string += " / connected to " + laststatus.comms.interfaces.activePort;
   }
 
   $('#windowtitle').html(string)
-  document.title = "OpenBuilds CONTROL" + string
+  document.title = "OpenBuilds CONTROL" + string;
 
 }
 
@@ -106,49 +106,67 @@ $(document).ready(function() {
 
   if (!isJogWidget) {
     init3D();
+
+    if (typeof ace !== 'undefined') {
+      editor = ace.edit("editor");
+      editor.$blockScrolling = Infinity;
+      editor.session.setMode("ace/mode/cncpro");
+      if (typeof process !== "undefined") {
+        if (process.platform == 'win32') {
+          editor.session.setNewLineMode("windows");
+        } else {
+          editor.session.setNewLineMode("unix");
+        }
+      }
+      editor.setTheme('ace/theme/sqlserver')
+      editor.setAutoScrollEditorIntoView(true);
+      editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
+      editor.setShowPrintMargin(false);
+      $('#editor').addClass("editorEnabled");
+
+      // The editor doesn't update when its text changes, unless it is visible.
+      // The observer forces an update when the editor becomes visible.
+      const observer = new IntersectionObserver(
+        () => { editor.resize(); },
+        {root: document.documentElement});
+      observer.observe(document.getElementById("editor"));
+
+      editor.container.addEventListener("contextmenu", function(e) {
+
+        $("#editorContextMenu").css({
+          left: e.pageX,
+          top: e.pageY
+        }).data('dropdown').close(true);
+        $("#editorContextToggle").click();
+
+        $('.linenumber').html((editor.getSelectionRange().start.row + 1));
+      }, false);
+    } else {
+    $('#gcodeeditortab').hide();
+    }
+
+    if (!webgl) {
+      $('#gcodeviewertab').hide();
+    }
+
+    if (disableSerialLog) {
+      $('#consoletab').hide();
+    }
+
+    // determine the preferred starting tab
+    if (!webgl) {
+      if (!disableSerialLog) {
+        $('#consoletab').click();
+      } else if (editor) {
+        $('#gcodeeditortab').click();
+      }
+      else {
+        $('#macrostab').click();
+      }
+    }
   }
 
-  if (typeof ace !== 'undefined') {
-    editor = ace.edit("editor");
-    editor.$blockScrolling = Infinity;
-    editor.session.setMode("ace/mode/cncpro");
-    editor.setTheme('ace/theme/sqlserver')
-    editor.setAutoScrollEditorIntoView(true);
-    editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
-    editor.setShowPrintMargin(false);
-
-    // The editor doesn't update when its text changes, unless it is visible.
-    // The observer forces an update when the editor becomes visible.
-    const observer = new IntersectionObserver(
-      () => { editor.resize(); },
-      {root: document.documentElement});
-    observer.observe(document.getElementById("editor"));
-  }
-
-
-  function setposition(e) {
-    var bodyOffsets = document.body.getBoundingClientRect();
-    tempX = e.pageX //- bodyOffsets.left;
-    tempY = e.pageY;
-    // console.log(tempX);
-    var offset = $("#editorContextMenu").offset();
-    $("#editorContextMenu").css({
-      display: 'block',
-      left: e.pageX,
-      top: e.pageY
-    });
-  }
-
-  if (editor) {
-    editor.container.addEventListener("contextmenu", function(e) {
-      setposition(e);
-      e.preventDefault();
-      $('.linenumber').html((editor.getSelectionRange().start.row + 1));
-      // alert('success! - rightclicked line ' + (editor.getSelectionRange().start.row + 1));
-    }, false);
-  }
-
-  getChangelog()
+  getChangelog();
 
   setInterval(function() {
     setWindowTitle();
@@ -193,51 +211,83 @@ $(document).ready(function() {
 });
 
 function runJobFile() {
+  const gcode = useEditor ? editor.getValue() : currentGcode;
+  if (!jobNeedsHoming(gcode)) {
+    runJobFileInternal(gcode);
+  }
+}
+
+function runJobFileInternal(gcode) {
   var formData = new FormData();
-  var blob = new Blob([gcode || editor.getValue()], {
+  var blob = new Blob([gcode], {
     type: 'text/plain'
   });
 
   var fileOfBlob = new File([blob], 'upload.gcode');
   formData.append("file", fileOfBlob);
   var xhr = new XMLHttpRequest();
-  xhr.onload = function() {
-    if (xhr.status == 200) {
-      console.log(xhr.response)
-    }
-  };
-  // Add any event handlers here...
+
   captureWcsHistory("", "", true);
   xhr.open('POST', '/runjob', true);
   xhr.send(formData);
-  if (gcode) {
-    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
-  } else {
+  if (useEditor) {
     printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from gcode editor) sent to backend </span>`);
+  } else {
+    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
   }
 
   lastJobStartTime = new Date().getTime();
 }
 
-function jobNeedsHoming() {
-  if (editor.getValue().lastIndexOf("G53") != -1 || editor.getValue().lastIndexOf("g53") != -1) {
-    if (laststatus !== undefined) {
-      if (laststatus.machine.modals.homedRecently == false) {
-        var dialog = Metro.dialog.create({
-          clsDialog: 'dark',
-          title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates:",
-          content: "<i class='fas fa-exclamation-triangle fg-darkRed'></i> Tip: The G-code file you loaded contains G53 commands. Please make sure to HOME the machine to establish the Machine Coordinate (G53) System properly to prevent crashes.",
-          actions: [{
-            caption: "Close",
-            cls: "js-dialog-close",
-            onclick: function() {
-              //
-            }
-          }]
-        });
-      }
-    }
+function jobNeedsHoming(gcode) {
+  if (laststatus && laststatus.machine.modals.homedRecently) {
+    return false;
   }
+
+  if (localStorage.getItem('disableJobNeedsHoming') == "true") {
+    return false;
+  }
+
+  var command;
+  if (gcode.indexOf("G28") >= 0 || editor.getValue().indexOf("g28") >= 0) {
+    command = "G28";
+  } else if (gcode.indexOf("G30") >= 0 || editor.getValue().indexOf("g30") >= 0) {
+    command = "G30";
+  } else if (gcode.indexOf("G53") >= 0 || editor.getValue().indexOf("g53") >= 0) {
+    command = "G53";
+  } else {
+    return false;
+  }
+
+  var dialog = Metro.dialog.create({
+    clsDialog: 'dark',
+    title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates",
+    content: `<i class='fas fa-exclamation-triangle fg-darkRed'></i> Alert: The job you are about to run contains a ` + command + ` command, which uses machine coordinates and requires homing.<br><br>` +
+`The homing state of the machine cannot be determined at the moment.<br>` +
+`Please make sure to home the machine to establish the Machine Coordinate (G53) System and prevent crashes.<br><br>` +
+`<input id="DisableJobHomeCheck" type="checkbox" data-role="checkbox" data-style="2" data-caption="Don't show this again"/>`,
+    actions: [{
+      caption: "Run Job Anyway",
+      cls: "js-dialog-close warning",
+      onclick: function() {
+        if ($('#DisableJobHomeCheck').prop('checked')) {
+          localStorage.setItem('disableJobNeedsHoming', "true");
+        }
+        runJobFileInternal(gcode);
+      }
+    },
+    {
+      caption: "Abort",
+      cls: "js-dialog-close",
+      onclick: function() {
+        if ($('#DisableJobHomeCheck').prop('checked')) {
+          localStorage.setItem('disableJobNeedsHoming', "true");
+        }
+      }
+    }]
+  });
+
+  return true;
 }
 
 function loadJobFile() {
@@ -390,6 +440,10 @@ var webgl = (function() {
 
 })();
 
+function previewGcode() {
+  parseGcodeInWebWorker(editor.getValue());
+}
+
 function saveGcode() {
   var saveFileParams = {
     id: "gcode",
@@ -398,18 +452,19 @@ function saveGcode() {
       {name: "G-code files", extensions: ["gcode", "gc", "tap", "nc", "cnc"]},
       {name: "All files", extensions: ["*"]},
     ],
-    fileName: savedFileName || loadedFileName,
+    fileName: loadedFileName,
+    updateLastFilePath: true,
   };
 
   socket.emit('saveFileDialog', saveFileParams, (filePath) => {
-    var blob = new Blob([gcode || editor.getValue()], {
+  var blob = new Blob([editor.getValue()], {
       type: 'text/plain'
     });
-    saveBlobToDisk(blob, filePath, true).then((err) => {
-			if (!err) {
-				savedFileName = path.basename(filePath);
-			}
-		});
+    saveBlobToDisk(blob, filePath, saveFileParams).then((err) => {
+      if (!err) {
+        loadedFileName = path.basename(filePath);
+      }
+    });
   });
 }
 
@@ -418,15 +473,17 @@ function clearGcode() {
   editor.execCommand('del');
   parseGcodeInWebWorker("");
   loadedFileName = '';
-  gcode = false;
+  useEditor = true;
+  EnableViaClass('.editorEnabled', true);
   setWindowTitle();
 }
 
-function saveBlobToDisk(blob, filePath, showErrorDlg) {
+function saveBlobToDisk(blob, filePath, params) {
   var formData = new FormData();
   var fileOfBlob = new File([blob], filePath);
+  formData.append("showErrorDlg", params.showErrorDlg ? "true" : "false");
+  formData.append("updateLastFilePath", params.updateLastFilePath ? "true" : "false");
   formData.append("file", fileOfBlob);
-  formData.append("showErrorDlg", showErrorDlg ? "true" : "false");
   var xhr = new XMLHttpRequest();
   var promise = new Promise((resolve) => {
     xhr.onload = function() {
@@ -455,7 +512,7 @@ function invokeSaveAsDialogNew(blob, params) {
   }
 
   socket.emit('saveFileDialog', params, (filePath) => {
-    saveBlobToDisk(blob, filePath);
+    saveBlobToDisk(blob, filePath, params);
   });
 }
 
@@ -477,11 +534,11 @@ function invokeOpenDialogReadFile(params) {
     socket.emit('openFileDialog', params, (filePath) => {
       if (params.showErrorDlg) {
         socket.emit('readTextFile', filePath, params, (data) => {
-          resolve(data);
+          resolve({filePath, data});
         });
       } else {
         socket.emit('readTextFile', filePath, params, (err, data) => {
-          resolve({err, data});
+          resolve({err, filePath, data});
         });
       }
     });

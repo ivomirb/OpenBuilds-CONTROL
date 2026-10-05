@@ -12,7 +12,7 @@ function findCenter() {
 
   socket.off('prbResult'); // Disable old listeners
 
-  captureWcsHistory('Modified by <b>Hole Finder</b>');
+  captureWcsHistory('Before <b>Hole Finder</b>');
   var holefindermacroStep1 = `
   ; Header
 

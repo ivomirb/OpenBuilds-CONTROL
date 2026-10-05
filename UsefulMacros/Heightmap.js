@@ -2,7 +2,8 @@ const PRIMARY_GRID_COLOR = 0xF6A91C;
 const SECONDARY_GRID_COLOR = 0x1CB9F6;
 const FACE_COLOR = 0x1CB9F6;
 const FACE_OPACITY = 0.3;
-const HEIGHTMAP_GCODE_HEADER1 = "; This G-code was modified by the Heightmap tool. To restore the original state, select Heightmap -> Revert G-code changes";
+const HEIGHTMAP_GCODE_HEADER1a = "; This G-code was modified by the Heightmap tool. To restore the original state, select Heightmap -> Revert G-code changes";
+const HEIGHTMAP_GCODE_HEADER1b = "; This G-code was modified by the Heightmap tool.";
 const HEIGHTMAP_GCODE_HEADER2 = "; The original lines that were removed are prefixed with 'HM'. The new lines added in their place end with 'HM'";
 const HEIGHTMAP_GCODE_END_MARKER = " ; HM";
 const HEIGHTMAP_GCODE_START_MARKER = "; HM: ";
@@ -23,12 +24,13 @@ var g_bShowHeightmap = false;
 var g_HeightmapGeo = undefined;
 
 // Heightmap settings (persistent)
-var g_HeghtmapSettings =
+var g_HeightmapSettings =
 {
 	minSegmentLength: 1, // minimum length for linear and arc segments
 	zThreshold: 0.01, // maximum Z deviation between the toolpath and the heightmap
 	arcThreshold: 0.005, // maximum deviation when converting arcs to lines
 	modifyRapids: false, // modify the height of rapid moves (G0 commands)
+	allowRevert: true, // preserve original lines as comments
 };
 
 const heightmapFilters = [
@@ -209,8 +211,15 @@ Smaller numbers will produce more accurate results, but will generate larger and
     <label title="When this is checked, the rapid moves will also be modified to follow the surface.
 This could be useful for very uneven heightmaps.">Apply To Rapids</label>
   </div>
+  <div class="cell-sm-4">
+    <input id="HeightmapRapids" type="checkbox" data-role="checkbox" data-style="2"/>
+  </div>
   <div class="cell-sm-3">
-    <input id="HeightmapRaids" type="checkbox" data-role="checkbox" data-style="2"/>
+    <label title="When this is checked, the original G-code lines will be preserved as comments and the changes can be undone.
+You can uncheck it for large files to reduce the final size.">Preserve original lines</label>
+  </div>
+  <div class="cell-sm-1">
+    <input id="HeightmapAllowRevert" type="checkbox" data-role="checkbox" data-style="2"/>
   </div>
 </div>
 `;
@@ -239,12 +248,13 @@ function ReadHeightmapSettings()
 	g_HeigtmapFeed = Math.max(Number($('#heightmapFeed').val()), 1);
 	g_HeightmapRetract = Math.max(Number($('#heightmapRetract').val()), 0.1);
 
-	g_HeghtmapSettings.minSegmentLength = Math.max(Number($('#HeightmapMinLength').val()), 1);
-	g_HeghtmapSettings.zThreshold = Math.max(Number($('#HeightmapZThreshold').val()), 0.01);
-	g_HeghtmapSettings.arcThreshold = Math.max(Number($('#HeightmapArcThreshold').val()), 0.001);
-	g_HeghtmapSettings.modifyRapids = $('#HeightmapRaids').prop('checked');
+	g_HeightmapSettings.minSegmentLength = Math.max(Number($('#HeightmapMinLength').val()), 1);
+	g_HeightmapSettings.zThreshold = Math.max(Number($('#HeightmapZThreshold').val()), 0.01);
+	g_HeightmapSettings.arcThreshold = Math.max(Number($('#HeightmapArcThreshold').val()), 0.001);
+	g_HeightmapSettings.modifyRapids = $('#HeightmapRapids').prop('checked');
+	g_HeightmapSettings.allowRevert = $('#HeightmapAllowRevert').prop('checked');
 
-	localStorage.setItem("HeightmapSettings", JSON.stringify(g_HeghtmapSettings));
+	localStorage.setItem("HeightmapSettings", JSON.stringify(g_HeightmapSettings));
 }
 
 window.HeightmapAutoSize = function()
@@ -298,10 +308,11 @@ window.EditHeightmapSettings = function()
 	$('#heightmapFeed').val(g_HeigtmapFeed);
 	$('#heightmapRetract').val(g_HeightmapRetract);
 
-	$('#HeightmapMinLength').val(g_HeghtmapSettings.minSegmentLength);
-	$('#HeightmapZThreshold').val(g_HeghtmapSettings.zThreshold);
-	$('#HeightmapArcThreshold').val(g_HeghtmapSettings.arcThreshold);
-	$('#HeightmapRaids').prop('checked', g_HeghtmapSettings.modifyRapids);
+	$('#HeightmapMinLength').val(g_HeightmapSettings.minSegmentLength);
+	$('#HeightmapZThreshold').val(g_HeightmapSettings.zThreshold);
+	$('#HeightmapArcThreshold').val(g_HeightmapSettings.arcThreshold);
+	$('#HeightmapRapids').prop('checked', g_HeightmapSettings.modifyRapids);
+	$('#HeightmapAllowRevert').prop('checked', g_HeightmapSettings.allowRevert);
 
 	$('#HeightmapAutoSize').prop('disabled', !object);
 	if (g_bHeightmapDataValid)
@@ -694,7 +705,7 @@ window.LoadHeightmapNew = function()
 		showErrorDlg: false,
 	};
 
-	invokeOpenDialogReadFile(loadFileParams).then(({err, data}) =>
+	invokeOpenDialogReadFile(loadFileParams).then(({err, filePath, data}) =>
 	{
 		if (err)
 			FileReadError(err);
@@ -758,7 +769,7 @@ function ClearGCodeMarkers()
 	for (var lineIdx = 0; lineIdx < lineCount; lineIdx++)
 	{
 		var currentLine = editor.session.getLine(lineIdx);
-		if (currentLine == HEIGHTMAP_GCODE_HEADER1 ||currentLine == HEIGHTMAP_GCODE_HEADER2 || currentLine.endsWith(HEIGHTMAP_GCODE_END_MARKER))
+		if (currentLine == HEIGHTMAP_GCODE_HEADER1a ||currentLine == HEIGHTMAP_GCODE_HEADER2 || currentLine.endsWith(HEIGHTMAP_GCODE_END_MARKER))
 			continue;
 
 		if (currentLine.startsWith(HEIGHTMAP_GCODE_START_MARKER))
@@ -798,11 +809,11 @@ function ParseGCode()
 
 	for (var lineIdx = 0; lineIdx < lineCount; lineIdx++)
 	{
-		var currentLine = editor.session.getLine(lineIdx);
-		var lineInfo = {text: currentLine};
+		var line = editor.session.getLine(lineIdx);
+		var lineInfo = {text: line};
 		lineInfos[lineIdx] = lineInfo;
-		currentLine = currentLine.split(/[;(]/); // Remove everything after ; or ( = comment
-		var line = currentLine[0];
+		line = line.replace(/\(.*?\)/g, ""); // remove block comments
+		line = line.replace(/;.*$/g, ""); // remove line comments
 		if (line.length == 0) continue;
 		line = line.toUpperCase();
 
@@ -1036,7 +1047,7 @@ function GenerateLineSegments(x1, y1, z1, x2, y2, z2, minSegmentLength, zThresho
 			gcode += space + "Z" + parseFloat(z2h.toFixed(3));
 		}
 
-		gcode += HEIGHTMAP_GCODE_END_MARKER + "\n";
+		gcode += g_HeightmapSettings.allowRevert ? HEIGHTMAP_GCODE_END_MARKER + "\n" : "\n";
 		return gcode;
 	}
 
@@ -1083,7 +1094,7 @@ function GenerateLineSegments(x1, y1, z1, x2, y2, z2, minSegmentLength, zThresho
 			lastz = sample.z;
 		}
 
-		gcode += HEIGHTMAP_GCODE_END_MARKER + "\n";
+		gcode += g_HeightmapSettings.allowRevert ? HEIGHTMAP_GCODE_END_MARKER + "\n" : "\n";
 	}
 
 	return gcode;
@@ -1141,8 +1152,15 @@ function DecodeArc(x1, y1, x2, y2, moveType, r, i, j, units)
 
 window.ApplyHeightmap = function()
 {
+	const line0 = editor.session.getLine(0);
+	if (line0 == HEIGHTMAP_GCODE_HEADER1b)
+	{
+		ShowHeightmapError("This file has already been modified by the heightmapper. You will need to reload the original and try again.");
+		return;
+	}
+
 	var editorDirty = false;
-	if (editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1)
+	if (line0 == HEIGHTMAP_GCODE_HEADER1a)
 	{
 		const gcode = ClearGCodeMarkers();
 		editor.session.setValue("");
@@ -1165,11 +1183,11 @@ window.ApplyHeightmap = function()
 	const units = parseResult.units;
 
 	// Generate new G-code
-	var gcode = HEIGHTMAP_GCODE_HEADER1 + "\n" + HEIGHTMAP_GCODE_HEADER2 + "\n";
+	var gcode = g_HeightmapSettings.allowRevert ? (HEIGHTMAP_GCODE_HEADER1a + "\n" + HEIGHTMAP_GCODE_HEADER2 + "\n") : (HEIGHTMAP_GCODE_HEADER1b + "\n");
 	var moveType = undefined;
-	var minSegmentLength = g_HeghtmapSettings.minSegmentLength;
-	var zThreshold = g_HeghtmapSettings.zThreshold;
-	var arcThreshold = g_HeghtmapSettings.arcThreshold;
+	var minSegmentLength = g_HeightmapSettings.minSegmentLength;
+	var zThreshold = g_HeightmapSettings.zThreshold;
+	var arcThreshold = g_HeightmapSettings.arcThreshold;
 	if (units == 20)
 	{
 		minSegmentLength /= 25.4;
@@ -1180,17 +1198,20 @@ window.ApplyHeightmap = function()
 	for (var infoIdx = 0; infoIdx < lineInfos.length; infoIdx++)
 	{
 		var lineInfo = lineInfos[infoIdx];
-		if (!lineInfo.isMove || (lineInfo.moveType == 0 && !g_HeghtmapSettings.modifyRapids))
+		if (!lineInfo.isMove || (lineInfo.moveType == 0 && !g_HeightmapSettings.modifyRapids))
 		{
 			moveType = undefined;
 			gcode += lineInfo.text + "\n";
 			continue;
 		}
 
-		gcode += HEIGHTMAP_GCODE_START_MARKER + lineInfo.text + "\n";
+		if (g_HeightmapSettings.allowRevert) {
+			gcode += HEIGHTMAP_GCODE_START_MARKER + lineInfo.text + "\n";
+		}
 		if (lineInfo.Frange != undefined)
 		{
-			gcode += lineInfo.text.slice(lineInfo.Frange.start, lineInfo.Frange.end) + HEIGHTMAP_GCODE_END_MARKER + "\n";
+			gcode += lineInfo.text.slice(lineInfo.Frange.start, lineInfo.Frange.end);
+			gcode += g_HeightmapSettings.allowRevert ? HEIGHTMAP_GCODE_END_MARKER + "\n" : "\n";
 		}
 
 		if (lineInfo.start == undefined)
@@ -1199,7 +1220,8 @@ window.ApplyHeightmap = function()
 			const z = ComputeHeightmapNewZ(lineInfo.end.x, lineInfo.end.y, lineInfo.end.z, units);
 			gcode += "G" + lineInfo.moveType + " X" + parseFloat(lineInfo.end.x.toFixed(3)) +
 				" Y" + parseFloat(lineInfo.end.y.toFixed(3)) +
-				" Z" + parseFloat(z.toFixed(3)) + HEIGHTMAP_GCODE_END_MARKER + "\n";
+				" Z" + parseFloat(z.toFixed(3));
+			gcode += g_HeightmapSettings.allowRevert ? HEIGHTMAP_GCODE_END_MARKER + "\n" : "\n";
 			moveType = undefined;
 			continue;
 		}
@@ -1261,7 +1283,8 @@ window.ApplyHeightmap = function()
 					line += " R" + Number(lineInfo.arc.r.toFixed(3));
 				else
 					line += " I" + Number(lineInfo.arc.i.toFixed(3)) + " J" + Number(lineInfo.arc.j.toFixed(3));
-				gcode += line + HEIGHTMAP_GCODE_END_MARKER + "\n";
+				gcode += line;
+				gcode += g_HeightmapSettings.allowRevert ? HEIGHTMAP_GCODE_END_MARKER + "\n" : "\n";
 				moveType = undefined;
 				continue;
 			}
@@ -1354,7 +1377,7 @@ window.UpdateHeightmapMenu =function()
 		CheckMenuItem('#heightmapShowToolpath', object && object.visible);
 	}
 
-	EnableMenuItem('#revertGCode', editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1 && laststatus.comms.connectionStatus != 3);
+	EnableMenuItem('#revertGCode', editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1a && laststatus.comms.connectionStatus != 3);
 }
 
 const heightmapBtnHtml1a = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 6px 9px;">
@@ -1412,9 +1435,9 @@ $(document).ready(function()
 	{
 		for (var prop in settings)
 		{
-			if (prop in g_HeghtmapSettings && typeof(settings[prop]) == typeof(g_HeghtmapSettings[prop]))
+			if (prop in g_HeightmapSettings && typeof(settings[prop]) == typeof(g_HeightmapSettings[prop]))
 			{
-				g_HeghtmapSettings[prop] = settings[prop];
+				g_HeightmapSettings[prop] = settings[prop];
 			}
 		}
 	}

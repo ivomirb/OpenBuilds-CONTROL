@@ -21,7 +21,7 @@ function ExecuteNextStep()
 	var gcode = g_OnStep(g_CurrentStep);
 	if (gcode)
 	{
-		socket.emit('runJob', {data: gcode});
+		sendGcode(gcode);
 
 		// Due to the async nature of the gcode sending, it is not possible to know when exactly the code starts executing.
 		// Let's wait for 1000ms to ensure grbl has started, and then wait until it is idle

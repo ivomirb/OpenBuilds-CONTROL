@@ -9,9 +9,7 @@ var bellstate = false;
 var waitingForStatus = false;
 var openDialogs = [];
 
-const MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
-
-var path = require("path");
+var MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
 
 $(document).ready(function() {
   initSocket();
@@ -126,12 +124,20 @@ function initSocket() {
     printLogModern('', "api", "Received new G-code from API", "fg-darkGreen");
     printLogModern('', "api", "API called window into focus", "fg-darkGreen");
 
-    if (data.gcode.length > MAX_GCODE_IN_EDITOR) {
-      gcode = data.gcode
-      editor.session.setValue("G-code " + data.filename + " is too large (" + (data.gcode.length / (1024*1024)).toFixed(1) + " MB) to load into the G-code Editor. \nIf you need to edit it inside CONTROL, please use a standalone text editing application and reload it");
+    currentGcode = data.gcode;
+    if (!editor) {
+      useEditor = false;
+    } else if (data.gcode.length > MAX_GCODE_IN_EDITOR) {
+      EnableViaClass('.editorEnabled', false);
+      editor.session.setValue(
+`The G-code file ` + data.filename + ` is too large (` + (data.gcode.length / (1024*1024)).toFixed(1) + ` MB) to load into the G-code Editor.
+If you need to edit it, please use a standalone text editing application and reload it.
+The editor is currently disabled. You can click the Clear button to clear the current G-code and type a new program here.`);
+      useEditor = false;
     } else {
+      EnableViaClass('.editorEnabled', true);
       editor.session.setValue(data.gcode);
-      gcode = false;
+      useEditor = true;
     }
 
     loadedFileName = data.filename;
@@ -139,14 +145,13 @@ function initSocket() {
     setWindowTitle()
     $('#reloadGcodeBtn').attr('title', "Reload " + loadedFileName);
     $('#reloadGcodeBtn').removeClass('disabled');
-    parseGcodeInWebWorker(data.gcode)
+    parseGcodeInWebWorker(data.gcode);
     $('#controlTab').click()
     if (webgl) {
       $('#gcodeviewertab').click();
     } else {
-      $('#gcodeeditortab').click()
+      $('#gcodeeditortab').click();
     }
-    jobNeedsHoming();
   });
 
   socket.on('integrationpopup', function(data) {
@@ -367,7 +372,7 @@ function initSocket() {
 
     if (laststatus) {
       if (typeof object !== 'undefined' && done > 0) {
-        if (object.userData !== 'undefined' && object.userData && object.userData.linePoints.length > 2) {
+        if (object.userData !== 'undefined' && object.userData && object.userData.pointCount > 2) {
           var timeremain = object.userData.totalTime;
           if (!isNaN(timeremain)) {
             if (lastJobStartTime) {
@@ -515,38 +520,33 @@ function initSocket() {
   });
 
   socket.on('sysinfo', function(sysinfo) {
-    console.log(sysinfo)
-    lastsysinfo = sysinfo;
+    if (sysinfo) {
+      lastsysinfo = sysinfo;
 
-    var mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model
-    $("#mobospecs").html(mobo)
+      var mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model;
+      $("#mobospecs").html(mobo);
 
+      var cpu = sysinfo.hardware.cpu[0].model;
+      $("#cpuspecs").html(cpu);
 
-    var cpu = sysinfo.hardware.cpu[0].model
-    $("#cpuspecs").html(cpu)
+      var gpu = sysinfo.hardware.gpu.length > 0 ? sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)" : "NONE";
+      $("#gpuspecs").html(gpu);
 
-    var gpu = sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)"
-    $("#gpuspecs").html(gpu)
+      var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
+      $("#memoryspecs").html(memory);
 
-    var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
-    $("#memoryspecs").html(memory)
+      var operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
+      $("#osspecs").html(operatingsys);
 
-    var operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
-    $("#osspecs").html(operatingsys)
-
-
-
-    var ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
-    $("#ipspecs").html(ipaddresses)
-
-
-
+      var ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
+      $("#ipspecs").html(ipaddresses);
+    }
   });
 
   socket.on('status', function(status) {
 
     if (nostatusyet && !isJogWidget) {
-      setWindowTitle(status)
+      setWindowTitle(status);
       if (status.driver.operatingsystem == "rpi") {
         $('#windowtitlebar').hide();
       }
@@ -601,18 +601,18 @@ function initSocket() {
       var doorType = status.comms.runStatus.split(":")[1]
       var doorMsg = "";
       if (doorType == 0) {
-        doorMsg += "Closed: Ready to Resume"
+        doorMsg += "Door Closed: Ready to Resume"
       }
       if (doorType == 1) {
-        doorMsg += "Open: Paused"
+        doorMsg += "Door Open: Paused"
       }
       if (doorType == 2) {
-        doorMsg += "De-energising"
+        doorMsg += "Door Open: Tool Stopping"
       }
-      if (doorType == 3) {
-        doorMsg += "Re-energising"
+      if (doorType == 3 || doorType == 4) {
+        doorMsg += "Door Closed: Tool Starting Up"
       }
-      $('#runStatus').html("Door: " + doorMsg);
+      $('#runStatus').html(doorMsg);
     } else {
       $('#runStatus').html("Controller: " + status.comms.runStatus);
     }
@@ -780,6 +780,8 @@ function initSocket() {
       }
     }
 
+		AddRemoveClass('#resetGrblBtn, #section-grbl .group:not(.estop), #grblMetroTable', "disabled", status.comms.connectionStatus == 3 || status.comms.connectionStatus == 4);
+
     if (laststatus == undefined || status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
       $('.wcsText').html(status.machine.modals.coordinatesys)
       $('.wcsItem').removeClass('checked')
@@ -811,13 +813,9 @@ function initSocket() {
     $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
 
     if ((!laststatus || laststatus.misc.autoStart != status.misc.autoStart) &&
-        !isJogWidget && typeof process !== "undefined" && process.platform == 'win32') {
+        !isJogWidget && typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux')) {
       $('#mainCloseBtn').attr( "title", status.misc.autoStart ? "Close to Tray" : "Close");
-      if (status.misc.autoStart) {
-        $('#disableAutoStartTick').removeClass("checked");
-      } else {
-        $('#disableAutoStartTick').addClass("checked");
-      }
+      AddRemoveClass('#disableAutoStartTick', "checked", !status.misc.autoStart);
     }
 
     laststatus = status;
@@ -922,7 +920,7 @@ function initSocket() {
       var elements = ``;
       for (var i = 0; i < data.length; i++) {
         elements += `<li title="` + data[i] +`"><a href="#" onclick="reloadJobFile('` + data[i].replaceAll('\\', '\\\\') + 
-          `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + path.basename(data[i]) + `</a></li>\n`;
+          `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + data[i].split(/[/\\]/).at(-1) + `</a></li>\n`;
       }
       $('#recentFilesList').after(elements);
       EnableViaClass('#clearRecentBtn', data.length > 0);
@@ -1125,6 +1123,36 @@ function spindleOverride(step) {
   if (socket) {
     socket.emit('spindleOverride', step);
     $('#tro').data('slider').buff(((step - 10) * 100) / (200 - 10))
+  }
+}
+
+function spindleDelay(sec) {
+  if (socket) {
+    socket.emit('spindleDelay', sec);
+  }
+}
+
+function pauseSpindle() {
+  if (socket) {
+    socket.emit('serialInject', String.fromCharCode(0x84));
+
+    if (localStorage.getItem('disablePauseSpindleDlg') != "true") {
+      var dialog = Metro.dialog.create({
+        clsDialog: 'dark',
+        title: "<i class='fas fa-exclamation-triangle'></i> Spindle Paused",
+        content: `The spindle will automatically turn back on when the job is resumed.<br>The movement will continue a few seconds later.<br><br>` +
+    `<input id="DisablePauseSpindleDlg" type="checkbox" data-role="checkbox" data-style="2" data-caption="Don't show this again"/>`,
+        actions: [{
+          caption: "OK",
+          cls: "js-dialog-close",
+          onclick: function() {
+            if ($('#DisablePauseSpindleDlg').prop('checked')) {
+              localStorage.setItem('disablePauseSpindleDlg', "true");
+            }
+          }
+        }]
+      });
+    }
   }
 }
 

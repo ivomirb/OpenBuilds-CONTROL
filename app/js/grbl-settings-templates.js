@@ -157,9 +157,7 @@ var grblSettingsTemplate = {
     key: `$20`,
     title: `Soft limits enable, boolean`,
     description: `Soft limits is a safety feature to help prevent your machine from traveling too far and beyond the limits of travel, crashing or breaking something expensive. It works by knowing the maximum travel limits for each axis and where Grbl is in machine coordinates. Whenever a new G-code motion is sent to Grbl, it checks whether or not you accidentally have exceeded your machine space. If you do, Grbl will issue an immediate feed hold wherever it is, shutdown the spindle and coolant, and then set the system alarm indicating the problem. Machine position will be retained afterwards, since it's not due to an immediate forced stop like hard limits. NOTE: Soft limits requires homing to be enabled and accurate axis maximum travel settings, because Grbl needs to know where it is. $20=1 to enable, and $20=0 to disable.`,
-    template: `
-          <span id="grblSettingsLimits">&nbsp;</span>
-          <select id="val-20-input">
+    template: `<select id="val-20-input">
              <option value="0">&#x2717; Disable</option>
              <option value="1">&#x2713; Enable</option>
           </select>`,
@@ -293,9 +291,7 @@ var grblSettingsTemplate = {
     key: `$30`,
     title: `Maximum spindle speed, RPM`,
     description: `This sets the spindle speed for the maximum 5V PWM pin output. For example, if you want to set 10000rpm at 5V, program $30=10000. For 255rpm at 5V, program $30=255. If a program tries to set a higher spindle RPM greater than the $30 max spindle speed, Grbl will just output the max 5V, since it can't go any faster. By default, Grbl linearly relates the max-min RPMs to 5V-0.02V PWM pin output in 255 equally spaced increments. When the PWM pin reads 0V, this indicates spindle disabled. Note that there are additional configuration options are available in config.h to tweak how this operates.`,
-    template: `
-    <span id="grblSettingsPWM">&nbsp;</span>
-    <input id="val-30-input" data-role="input" data-clear-button="false" data-append="RPM" type="text">`,
+    template: `<input id="val-30-input" data-role="input" data-clear-button="false" data-append="RPM" type="text">`,
     utils: ``
   },
   31: {
@@ -518,8 +514,7 @@ var grblSettingsTemplate = {
     key: `$33`,
     title: `Spindle PWM frequency`,
     description: ``,
-    template: `
-    <input id="val-33-input" data-role="input" data-clear-button="false" data-append="Hz" type="text" >`,
+    template: `<input id="val-33-input" data-role="input" data-clear-button="false" data-append="Hz" type="text" >`,
     utils: ``
   },
   34: {

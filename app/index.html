@@ -260,7 +260,7 @@
 
                     <div class="ribbon-group" id="grblButtons">
                       <hr>
-                      <button class="ribbon-icon-button" onclick="socket.emit('resetMachine')">
+                      <button id="resetGrblBtn" class="ribbon-icon-button" onclick="socket.emit('resetMachine')">
                         <span class="icon">
                           <span class="mif-loop"></span>
                         </span>
@@ -280,13 +280,13 @@
                   <span class="icon">
                     <span class="fas fa-folder-open fg-amber"></span>
                   </span>
-                  <span class="caption">Open<br>G-code</span>
+                  <span class="caption" style="white-space: nowrap;">Open<br>G-code</span>
                 </button>
                 <button id="reloadGcodeBtn" onclick="reloadJobFile()" class="ribbon-button disabled" title="Reload last G-Code file">
                   <span class="icon">
                     <span class="fas fa-undo-alt"></span>
                   </span>
-                  <span class="caption">Reload<br>G-code</span>
+                  <span class="caption" style="white-space: nowrap;">Reload<br>G-code</span>
                 </button>
                 <div>
                   <button id="recentFilesBtn" class="ribbon-button dropdown-toggle" style="padding-left:10px; height:78px; margin-left:-4px;" title="Open recent G-code file">
@@ -382,7 +382,16 @@
                     <li class="divider fg-gray"></li>
                     <li id="menuMisting" style="display: none;" onclick="sendGcode('M7')"><a class="grblmode" href="#">Misting On (M7)</a></li>
                     <li onclick="sendGcode('M8')"><a class="grblmode" href="#">Coolant On (M8)</a></li>
-
+                    <li>
+                      <a href="#" class="dropdown-toggle" title="Insert a pause after the spindle starts (for grblHAL use setting $394 instead).
+Not available in Laser mode.">Spindle Delay</a>
+                      <ul class="ribbon-dropdown" data-role="dropdown">
+                        <li id="spinDelay0" onclick="spindleDelay(0)"><a href="#">No Delay</a></li>
+                        <li id="spinDelay3" onclick="spindleDelay(3)"><a href="#">Delay 3 sec (G4 P3)</a></li>
+                        <li id="spinDelay5" onclick="spindleDelay(5)"><a href="#">Delay 5 sec (G4 P5)</a></li>
+                        <li id="spinDelay8" onclick="spindleDelay(8)"><a href="#">Delay 8 sec (G4 P8)</a></li>
+                      </ul>
+                    </li>
                   </ul>
                 </div>
 
@@ -403,6 +412,20 @@
                     <li onclick="sendGcode('M9')"><a class="grblmode" href="#">Coolant Off (M9)</a></li>
 
                   </ul>
+                </div>
+
+                <div>
+                  <button id="toolBtn3" class="ribbon-button" onclick="pauseSpindle()" title="Stops the spindle while the job is paused.
+The spindle will automatically start when the job is resumed.">
+                    <span class="icon">
+                      <span class="fa-layers fa-fw">
+                        <i class="fas fa-bookmark" data-fa-transform="rotate-180"></i>
+                        <i class="fas fa-screwdriver" data-fa-transform="rotate-135 down-3"></i>
+                        <i class="fas fa-times fg-red" data-fa-transform="down-3"></i>
+                      </span>
+                    </span>
+                    <span class="caption">Tool<br>Off</span>
+                  </button>
                 </div>
 
                 <button id="grblProbeMenu" class="ribbon-button" onclick="openProbeDialog();" disabled>
@@ -542,7 +565,7 @@
                     <span class="caption">Application<br>Settings</span>
                   </button>
                   <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
-                    <li onclick="toggleAutoStart();" id="disableAutoStartTick" style="display:none"><a href="#"><i class="fas fa-fw fa-running"></i> Disable Auto Start and Tray Icon</a></li>
+                    <li onclick="toggleAutoStart();" id="disableAutoStartTick" style="display:none"><a href="#"><i class="fas fa-fw fa-running"></i> <span id="disableAutoStartLabel">Disable Auto Start and Tray Icon</span></a></li>
                     <li onclick="disableAggressiveHomeReset = !disableAggressiveHomeReset; saveDiagnostics();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
                     <li onclick="disable4thAxis = !disable4thAxis; saveDiagnostics();" id="disable4thAxisTick" class="4thaxis-present" style="display:none"><a href="#"><i class="fas fa-fw fa-chess-rook"></i> Disable 4th axis</a></li>
                   </ul>
@@ -652,7 +675,7 @@ Restore previous origins from history.">
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn setzero" id="setZeroX" onclick="captureWcsHistory('Modified by <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
+                        <button class="button light jogbtn setzero" id="setZeroX" onclick="captureWcsHistory('Before <b>Set Zero X</b>'); sendGcode('G10 P0 L20 X0')" style="width: 60px;" data-role="ripple" data-ripple-color="#e21b1b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -688,7 +711,7 @@ Restore previous origins from history.">
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn setzero" id="setZeroY" onclick="captureWcsHistory('Modified by <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
+                        <button class="button light jogbtn setzero" id="setZeroY" onclick="captureWcsHistory('Before <b>Set Zero Y</b>'); sendGcode('G10 P0 L20 Y0')" style="width: 60px;" data-role="ripple" data-ripple-color="#5de21b">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-green" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Y</span>
@@ -724,7 +747,7 @@ Restore previous origins from history.">
                     </tr>
                     <tr>
                       <td>
-                        <button class="button light jogbtn setzero" id="setZeroZ" onclick="captureWcsHistory('Modified by <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn setzero" id="setZeroZ" onclick="captureWcsHistory('Before <b>Set Zero Z</b>'); sendGcode('G10 P0 L20 Z0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-blue" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">Z</span>
@@ -761,7 +784,7 @@ Restore previous origins from history.">
 
                     <tr class="4thaxis-active" style="display: none;">
                       <td>
-                        <button class="button light jogbtn setzero" id="setZeroA" onclick="captureWcsHistory('Modified by <b>Set Zero A</b>'); sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
+                        <button class="button light jogbtn setzero" id="setZeroA" onclick="captureWcsHistory('Before <b>Set Zero A</b>'); sendGcode('G10 P0 L20 A0')" style="width: 60px;" data-role="ripple" data-ripple-color="#1ba1e2">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-12"></i>
                             <span class="fa-layers-text fg-orange" data-fa-transform="down-9 right-8" style="font-weight:900; font-family: Arial; font-size: 12px;">A</span>
@@ -795,7 +818,7 @@ Restore previous origins from history.">
 
                     <tr>
                       <td>
-                        <button class="button light jogbtn setzero" id="setZeroXYZ" onclick="captureWcsHistory('Modified by <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
+                        <button class="button light jogbtn setzero" id="setZeroXYZ" onclick="captureWcsHistory('Before <b>Set Zero XYZ</b>'); sendGcode('G10 P0 L20 X0 Y0 Z0')" style="width: 60px;" data-role="ripple">
                           <span class="fa-layers fa-fw">
                             <i class="fas fa-crosshairs fg-openbuilds" data-fa-transform="shrink-2 down-8 left-18"></i>
                             <span class="fa-layers-text fg-red" data-fa-transform="down-9 right-2" style="font-weight:900; font-family: Arial; font-size: 12px;">X</span>
@@ -1075,14 +1098,14 @@ Restore previous origins from history.">
 
                     <div class="fixed-bottom m-3 mb-9">
                       <!-- <form class="inline-form"> -->
-                      <button title="Update the 3D View with the edited G-code" class="button success" onclick="parseGcodeInWebWorker(editor.getValue())"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
-                      <button title="Save G-code to file" class="button primary" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
-                      <button title="Find and Replace" class="button dark" onclick="editor.execCommand('replace')"><i class="fas fa-search"></i> Find/Replace</button>&nbsp;
-                      <button title="Select All" class="button dark" onclick="editor.execCommand('selectall')"><i class="far fa-check-square"></i> Select All</button>&nbsp;
-                      <button title="Undo" class="button dark" onclick="editor.execCommand('undo')"><i class="fas fa-undo"></i> Undo</button>&nbsp;
-                      <button title="Redo" class="button dark" onclick="editor.execCommand('redo')"><i class="fas fa-redo"></i> Redo</button>&nbsp;
-                      <button title="Go to End" class="button dark" onclick="editor.execCommand('gotoend')"><i class="fas fa-chevron-down"></i></button>&nbsp;
-                      <button title="Go to Start" class="button dark" onclick="editor.execCommand('gotostart')"><i class="fas fa-chevron-up"></i></button>&nbsp;
+                      <button title="Update the 3D View with the edited G-code" class="button success editorEnabled" onclick="previewGcode()"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
+                      <button title="Save G-code to file" class="button primary editorEnabled" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
+                      <button title="Find and Replace" class="button dark editorEnabled" onclick="editor.execCommand('replace')"><i class="fas fa-search"></i> Find/Replace</button>&nbsp;
+                      <button title="Select All" class="button dark editorEnabled" onclick="editor.execCommand('selectall')"><i class="far fa-check-square"></i> Select All</button>&nbsp;
+                      <button title="Undo" class="button dark editorEnabled" onclick="editor.execCommand('undo')"><i class="fas fa-undo"></i> Undo</button>&nbsp;
+                      <button title="Redo" class="button dark editorEnabled" onclick="editor.execCommand('redo')"><i class="fas fa-redo"></i> Redo</button>&nbsp;
+                      <button title="Go to End" class="button dark editorEnabled" onclick="editor.execCommand('gotoend')"><i class="fas fa-chevron-down"></i></button>&nbsp;
+                      <button title="Go to Start" class="button dark editorEnabled" onclick="editor.execCommand('gotostart')"><i class="fas fa-chevron-up"></i></button>&nbsp;
                       <button title="Clear Editor" class="button dark" onclick="clearGcode()"><i class="fas fa-eraser"></i>
                         Clear</button>&nbsp;
                       <!-- </form> -->
@@ -1154,10 +1177,10 @@ Restore previous origins from history.">
                         <input id="simProgress" class="thin cycle-marker" data-on-start="simDragStart()" data-on-stop="simDragStop()" data-on-change="if (typeof simSetProgress == 'function') simSetProgress(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-size="100%" data-min="0" data-max="100" data-value="0" data-hint="true"
                          data-hint-position="top" data-hint-always="true" data-hint-mask="$1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                         <button id="stopSimBtn" title="Stop Sim" class="button dark" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>
-                        <button id="simBackBtn" disabled title="Previous Line" class="button dark" onclick="simStepBack()"><i class="fas fa-angle-double-left" data-fa-transform="grow-8"></i></button>
+                        <button id="simBackBtn" disabled title="Previous Line" class="button dark" onclick="simStepBack()"><i class="fas fa-step-backward"></i></button>
                         <button id="pauseSimBtn" title="Pause Sim" class="button dark" onclick="simpause()"><i class="fas fa-pause"></i></button>
                         <button id="resumeSimBtn" title="Play Sim" class="button dark" onclick="simresume()"><i class="fas fa-play"></i></button>
-                        <button id="simForwardBtn" disabled title="Next Line" class="button dark" onclick="simStepForward()"><i class="fas fa-angle-double-right" data-fa-transform="grow-8"></i></button>
+                        <button id="simForwardBtn" disabled title="Next Line" class="button dark" onclick="simStepForward()"><i class="fas fa-step-forward"></i></button>
                         <div class="pos-relative" style="display:inline-block; margin-right:1px;">
                           <button class="button dark" title="Select Speed" style=""><span class="icon"><span class="fas fa-tachometer-alt"></span></span> <span class="caption"><span id="simspeedval">1</span>x</span></button>
                           <ul class="d-menu context drop-up" id="simSpeedMenu" data-role="dropdown" data-duration="100" style="margin-bottom:5px;">
@@ -1176,7 +1199,35 @@ Restore previous origins from history.">
                     <div id="conetext" style="position:absolute; top:0px; left:0px; padding:2px; display:none; z-index:100;"></div>
                   </div>
                   <div class="section" id="tab-four">
-                    <div id="macros"></div>
+                    <ul id="macroVerticalTabs" data-tabs-position="vertical" data-role="tabs" data-expand="true" vertical style2="min-width:max-content;"></ul>
+                    <div style="flex:1">
+                      <ul id="macroHorizontalTabs" data-role="tabs" data-expand="true"></ul>
+                      <div id="macros" style="overflow-y:clip; display:flex; align-content:flex-start; flex-wrap:wrap;">
+                        <div class="pos-relative">
+                          <button id="macroToolsBtn" class="button light dropdown-toggle"
+                              style="width:80px; height:70px; top:4px; left:4px; line-height:1.1; margin-right:10px; box-shadow:2px 2px 1px 0 rgba(0,0,0,.4);">
+                            <span class="fas fa-tools icon" style="width:24px; height:24px; margin-bottom:4px;"></span><br>Macro<br>Tools
+                          </button>
+                          <ul class="d-menu context drop-shadow" data-role="dropdown" style="top:74px; text-align: start;">
+                            <li onclick="createMacro()"><a href="#"><i class="fas fa-plus icon" style="margin-top:-7px;"></i> Create New Macro</a></li>
+                            <li onclick="createMacroFromFile()"><a href="#"><i class="mif-note-add mif-1g icon" style="margin-top:-7px;"></i> Create From Script</a></li>
+                            <li class="divider"></li>
+                            <li onclick="importMacroBackupFile()"><a href="#"><i class="fas fa-upload icon" style="margin-top:-8px;"></i> Import Macro</a></li>
+                            <li onclick="importMacroAll()"><a href="#"><i class="mif-folder-upload icon"></i> Import All Macros</a></li>
+                            <li onclick="backupMacroAll()"><a href="#"><i class="fas fa-save icon" style="margin-top:-8px;"></i> Export All Macros</a></li>
+                            <li class="divider"></li>
+                            <li>
+                              <a href="#" class="dropdown-toggle"><i class="mif-books mif-1g icon" style="margin-top:-8px;"></i> Group View</a>
+                              <ul class="d-menu" data-role="dropdown">
+                                <li id="macroHorGroups"  onclick="setMacroGroupView(1)"><a href="#"><i class="mif-checkmark mif-1g icon" style="display:none;"></i> Horizontal Group Tabs</a></li>
+                                <li id="macroVertGroups" onclick="setMacroGroupView(2)"><a href="#"><i class="mif-checkmark mif-1g icon" style="display:none;"></i> Vertical Group Tabs</a></li>
+                                <li id="macroHideGroups" onclick="setMacroGroupView(0)"><a href="#"><i class="mif-checkmark mif-1g icon" style="display:none;"></i> Disable Groups</a></li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </nav>
@@ -1393,21 +1444,38 @@ Restore previous origins from history.">
       </div>
     </div>
 
-    <!-- Simulator Context Menu -->
-    <ul class="d-menu context drop-shadow" id="editorContextMenu" data-role="dropdown" data-toggle-element="#context_toggle">
-      <span id="dropdowncontent">
+    <!-- Editor Context Menu -->
+    <div id="editorContextToggle">
+      <ul class="d-menu context drop-shadow pos-fixed" id="editorContextMenu" data-role="dropdown" data-toggle-element="#editorContextToggle">
         <li onclick="startFromHere(editor.getSelectionRange().start.row + 1);"><a href="#"><i class='fas fa-fw fa-route icon'></i> Recover job from Line: <span class="linenumber"></span></a></li>
         <li class="divider"></li>
         <li onclick="runSimFrom(editor.getSelectionRange().start.row + 1);"><a href="#"><i class="fas fa-fighter-jet icon"></i> Simulate from line <span class="linenumber"></span></a></li>
-      </span>
-    </ul>
-    <!--  -->
+      </ul>
+    </div>
 
-    <ul class="d-menu context drop-shadow" id="macroContextMenu" data-role="dropdown" data-toggle-element="#context_toggle">
-      <span id="macroContextMenuItems">
-        <!-- Items here -->
-      </span>
-    </ul>
+    <!-- Macro Context Menus -->
+    <div id="macroContextToggle">
+      <ul class="d-menu context drop-shadow pos-fixed" id="macroContextMenu" data-role="dropdown" data-toggle-element="#macroContextToggle">
+        <li onclick="editMacro(macroMenuIdx)"><a href="#"><i class="fas fa-edit icon"></i> Edit Macro</span></a></li>
+        <li class="divider"></li>
+        <li id="moveMacroLeft" onclick="moveMacro(macroMenuIdx, -1)"><a href="#"><i class='fas fa-fw fa-arrow-left icon'></i> Sort: Move Left</a></li>
+        <li id="moveMacroRight" onclick="moveMacro(macroMenuIdx, 1)"><a href="#"><i class='fas fa-fw fa-arrow-right icon'></i> Sort: Move Right</a></li>
+        <li class="divider"></li>
+        <li onclick="backupMacro(macroMenuIdx)"><a href="#"><i class="fas fa-save icon"></i> Export Macro</span></a></li>
+        <li class="divider"></li>
+        <li onclick="confirmMacroDelete(macroMenuIdx)" class="fg-red"><a href="#"><i class="fas fa-trash icon"></i> Delete Macro</span></a></li>
+        <li class="divider"></li>
+        <li onclick="moveMacroToGroup(macroMenuIdx)"><a href="#"><i class="mif-books mif-1g icon" style="margin-top:-8px;"></i> Move To Group</span></a></li>
+        <span id="macroContextMenuItems">
+          <!-- Items here -->
+        </span>
+      </ul>
+    </div>
+    <div id="macroTabContextToggle">
+      <ul class="d-menu context drop-shadow pos-fixed" id="macroTabContextMenu" data-role="dropdown" data-duration="40" data-toggle-element="#macroTabContextToggle">
+        <li onclick="renameMacroGroup(selectedMacroGroup)"><a href="#">Rename Group</a></li>
+      </ul>
+    </div>
 
     <div id="hiddendivs" style="display:none;">
 
@@ -1586,7 +1654,7 @@ Restore previous origins from history.">
 
                   <div class="row">
                     <div class="cell-sm-7">
-                      <input id="probediameterxyz" type="number" value="6.35" data-role="input" data-prepend="<img class='fa-fw' src='https://cam.openbuilds.com/images/endmilldia.svg' width='16px' height='16px'>" data-clear-button="false">
+                      <input id="probediameterxyz" type="number" value="6.35" data-role="input" data-prepend="<i class='fas fa-pencil-ruler'></i>" data-clear-button="false">
                     </div>
                     <div class="cell-sm-5">
                       <select data-role="select" data-filter="false" id="probeunitxyz" data-editable="true">
@@ -1795,6 +1863,8 @@ Restore previous origins from history.">
   <script type="text/javascript" src="lib/jquery/jquery-input-history.min.js"></script>
 
   <!-- Theme  -->
+  <script type="text/javascript" src="js/ui.js"></script>
+
   <script type="text/javascript" src="js/theme.js"></script>
 
   <script type="text/javascript" src="js/diagnostics.js"></script>
@@ -1831,7 +1901,6 @@ Restore previous origins from history.">
 
   <script type="text/javascript" src="js/main.js"></script>
   <script type="text/javascript" src="js/updates.js"></script>
-  <script type="text/javascript" src="js/ui.js"></script>
 
   <script type="text/javascript" src="js/grbl-settings-defaults.js"></script>
   <script type="text/javascript" src="js/grbl-settings-templates.js"></script>

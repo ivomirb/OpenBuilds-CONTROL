@@ -5,22 +5,25 @@ This is a fork by Ivo Beltchev with multiple improvements.
 
 ### Workflow
 
-* New option to reload the last gcode file
-* More reliable jogging features, better compatibilty with different firmware and homing settings
+* New button to reload the last G-code file with a list of recent files
+* More reliable and safe jogging features, more compatible with a variety of homing settings
 * Ability to view and set machine coordinates
 * Stores a history of work origins and allows for rolling back to a previous one
 * Corrected the math and improved the safety of the "goto zero" buttons
 * The Pause and Stop buttons remain available until the very end of the job
+* While the job is paused, the Tool Off button can stop the spindle. It will resume automatically
+* A new setting to insert a delay for a few seconds after the spindle starts up
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
 * A new setting to hide the 4th axis controls if the controller supports it but it is not used
+* The "Recover from line" feature is more reliable
 
 ### User Interface
 
-* **Windows only:** A new setting to disable the autostart and the tray icon, making it behave like a regular Windows app
+* A new setting to disable the autostart and the tray icon, making it behave like a regular desktop app
 * Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
-* The dialogs for opening and saving files have independent default directories for gcode, macros and grbl settings
+* The dialogs for opening and saving files have independent default directories for G-code, macros and grbl settings
 * The position of the main window is preserved between runs
-* Fix for dragging sliders with the mouse (bug in the external Metro UI library)
+* Fix for dragging sliders with the mouse
 * Improved readability for Light and Dark themes
 
 ### 3D View
@@ -30,11 +33,14 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Added playback controls to the simulation and fixed many bugs
 * Fixed the wrong bounding box for the machine area
 * Fixed the grid alignment and sizing
+* Optimized memory usage to allow for loading larger files
 * Fixed GPU memory leaks
 
 ### Grbl Settings Editor
 
 * The "Advanced" tab is selected by default because it is more useful for non-OpenBuilds customers
+* Added a new option to view only the modified settings, and buttons to revert each change
+* Fixed a bug where using the search filter loses all unsaved changes
 * Fixed the broken tooltips for the setting descriptions
 * Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
 * Added more known GrblHAL settings and updated wrong descriptions
@@ -44,6 +50,14 @@ This is a fork by Ivo Beltchev with multiple improvements.
 
 * Fix for a bug in the Surfacing Wizard, which was skipping the last row
 * New option to extend the surfaced area by the tool radius
+
+### Macro Management
+
+* Added ability to organize macros into groups
+* Added menu command to back up all macros to a single file
+* Added menu command to create a new macro from existing G-code or JavaScript file
+* Added ability to automatically reload JavaScript macros from external files in development mode
+* Enabled security isolation measures to prevent scripts from accessing the operating system
 
 ### Useful Macros
 
@@ -55,11 +69,12 @@ You can find them in the [Useful Macros folder](UsefulMacros/UsefulMacros.md).
 Most of them are compatible with the original software.
 The most notable examples are:
 
-* Macro manager that lets you organize macros into groups
+* Macro manager - a standalone version of the macro improvements that can be used with the original software
 * Heightmap support, similar to the one in Candle (work in progress, not yet fully tested)
 * Disable the Z jog buttons for large step sizes
 * Remove the dropdown from the file open button
 * Smart Home macro that prevents accidental homing and allows homing single axis if supported
+* Measure Z macro that can measure the height without changing the work zero
 
 ## Download
 
