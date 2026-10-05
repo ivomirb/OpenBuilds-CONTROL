@@ -492,7 +492,7 @@ function moveMacro(index, direction) {
       }
     }
   }
-};
+}
 
 function confirmMacroDelete(buttonIdx) {
 

@@ -18,29 +18,18 @@ var g_CurrentGroupLower = ""; // empty when g_TabVisibility is 0
 var g_Groups = [ "" ]; // first item is always empty string
 var g_GroupsLower = [ "" ];
 var g_SelectedGroup = undefined;
-
-var g_ButtonsCopy;
-
-function SanitizeGroupName(string)
-{
-	if (string == undefined)
-	{
-		return "";
-	}
-	return string.replaceAll(/[\&\<\>\"\']/g, ' ');;
-}
+var g_ButtonCount;
+var g_SelectedMacro = undefined;
 
 // Cleans up old instance of the plugin. useful when iterating on the code
 function CleanupOldVersion()
 {
-	var observer = $('#macroBackgroundContextMenu').prop('Observer');
-	if (observer) observer.disconnect();
-
-	$('#macroBackgroundContextMenu').remove();
-	$('#macroManagerContextMenuItems').remove();
-	$('#macroTabContextMenu').remove();
 	$('#macroBackgroundContextToggle').remove();
+	$('#macroBackgroundContextMenu').remove();
 	$('#macroTabContextToggle').remove();
+	$('#macroTabContextMenu').remove();
+	$('#macroContextToggle').remove();
+	$('#macroContextMenuNew').remove();
 
 	$('#macroVerticalTabs').parent().remove();
 	$('#macroHorizontalDiv').after($('#macros'));
@@ -48,7 +37,18 @@ function CleanupOldVersion()
 
 	$('#macros').off('contextmenu');
 	$('#macrostab').off('contextmenu');
-	$('.macrobtn').off('contextmenu');
+	$('#macrostab').children().off('contextmenu');
+
+	if (window.populateMacroButtonsOld)
+	{
+		window.populateMacroButtons = window.populateMacroButtonsOld;
+		window.populateMacroButtonsOld = undefined;
+	}
+	if (window.setMacroContextMenuPositionOld)
+	{
+		window.setMacroContextMenuPosition = window.setMacroContextMenuPositionOld;
+		window.setMacroContextMenuPositionOld = undefined;
+	}
 }
 
 function StoreSettings()
@@ -70,32 +70,18 @@ function SetCurrentGroup(groupLower)
 	}
 }
 
-function RebuildGroupNames()
+function SanitizeGroupName(string)
 {
-	g_Groups = [ "" ];
-	g_GroupsLower = [ "" ];
-	for (var i = 0; i < buttonsarray.length; i++)
+	if (string == undefined)
 	{
-		var groupName = SanitizeGroupName(buttonsarray[i].group);
-		var groupNameLower = groupName.toLowerCase();
-		if (g_GroupsLower.indexOf(groupNameLower) == -1)
-		{
-			g_Groups.push(groupName);
-			g_GroupsLower.push(groupNameLower);
-		}
+		return "";
 	}
-
-	g_Groups.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-
-	g_GroupsLower = [];
-	for (var i = 0; i < g_Groups.length; i++)
-	{
-		g_GroupsLower.push(g_Groups[i].toLowerCase());
-	}
+	return string.replaceAll(/[\&\<\>\"\']/g, ' ');;
 }
 
 function IsButtonVisible(button)
 {
+	if (g_TabVisibility == 0) return true;
 	if (button.group == undefined)
 	{
 		return g_CurrentGroupLower == "";
@@ -177,6 +163,12 @@ window.RenameSelectedGroup = function()
 	$('#MacroGroupRename').val(g_Groups[g_SelectedGroup]);
 }
 
+window.SelectMacroGroup = function(groupIdx)
+{
+	SetCurrentGroup(g_GroupsLower[groupIdx]);
+	RefreshButtonVisibility();
+}
+
 window.MacroTabContextMenu = function(event, groupIdx)
 {
 	g_SelectedGroup = groupIdx;
@@ -186,12 +178,6 @@ window.MacroTabContextMenu = function(event, groupIdx)
 		top: event.clientY
 	}).data('dropdown').close(true);
 	$("#macroTabContextToggle").click();
-}
-
-window.SelectMacroGroup = function(groupIdx)
-{
-	SetCurrentGroup(g_GroupsLower[groupIdx]);
-	RefreshButtonVisibility();
 }
 
 function CreateTabContents(tabs, activeIdx)
@@ -230,111 +216,6 @@ function CreateTabContents(tabs, activeIdx)
 	}
 }
 
-function RebuildGroupUI()
-{
-	RebuildGroupNames();
-
-	var activeIdx = g_TabVisibility == 0 ? 0 : Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
-	SetCurrentGroup(g_GroupsLower[activeIdx]);
-	if (g_TabVisibility == 1)
-	{
-		CreateTabContents($('#macroHorizontalTabs'), activeIdx);
-	}
-	if (g_TabVisibility == 2)
-	{
-		CreateTabContents($('#macroVerticalTabs'), activeIdx);
-	}
-
-	RefreshButtonVisibility();
-}
-
-var g_bInOnMacrosChanged = false;
-
-function OnMacrosChanged()
-{
-	if (g_bInOnMacrosChanged) return; // attempt to prevent reentrancy (may not be necessary)
-	g_bInOnMacrosChanged = true;
-
-	var populateRequired = false;
-	var saveRequired = false;
-
-	// Look for a swapped pair to detect move left/right. If a visible button was moved after
-	// a hidden button, move further until the order in the group actually changes.
-	if (g_TabVisibility != 0 && buttonsarray.length == g_ButtonsCopy.length)
-	{
-		for (var i = 0; i < buttonsarray.length - 1; i++)
-		{
-			if (g_ButtonsCopy[i] == buttonsarray[i+1] && g_ButtonsCopy[i+1] == buttonsarray[i])
-			{
-				var vis1 = IsButtonVisible(buttonsarray[i]);
-				var vis2 = IsButtonVisible(buttonsarray[i+1]);
-				if (vis1 && !vis2)
-				{
-					// button i+1 was moved left to i, move before the prevoius visible
-					for (var j = i - 1; j >= 0; j--)
-					{
-						if (IsButtonVisible(buttonsarray[j]))
-						{
-							// move i before j
-							var button = buttonsarray[i];
-							buttonsarray.splice(i, 1);
-							buttonsarray.splice(j, 0, button);
-							populateRequired = true;
-							break;
-						}
-					}
-					break;
-				}
-				else if (!vis1 && vis2)
-				{
-					// button i was moved right to i+1, move after the next visible
-					for (var j = i + 2; j < buttonsarray.length; j++)
-					{
-						if (IsButtonVisible(buttonsarray[j]))
-						{
-							// move i+1 after j
-							var button = buttonsarray[i+1];
-							buttonsarray.splice(i+1, 1);
-							buttonsarray.splice(j, 0, button);
-							populateRequired = true;
-							break;
-						}
-					}
-					break;
-				}
-			}
-		}
-	}
-
-	// capture new button order
-	g_ButtonsCopy = [];
-	for (var i = 0; i < buttonsarray.length; i++)
-	{
-		var button = buttonsarray[i];
-		g_ButtonsCopy.push(button);
-
-		// move newly created buttons to the current group
-		if (button.group == undefined)
-		{
-			var activeIdx = g_TabVisibility == 0 ? 0 : Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
-			button.group = g_Groups[activeIdx];
-			saveRequired = true;
-		}
-	}
-
-	if (populateRequired)
-	{
-		populateMacroButtons(); // also saves
-	}
-	else if (saveRequired)
-	{
-		StoreButtons();
-	}
-
-	RebuildGroupUI();
-	g_bInOnMacrosChanged = false;
-}
-
 window.SetMacroTabsVisibility = function(vis)
 {
 	g_TabVisibility = vis;
@@ -354,6 +235,43 @@ window.SetMacroTabsVisibility = function(vis)
 		SetCurrentGroup(g_GroupsLower[activeIdx]);
 		CreateTabContents($(vis == 1 ? '#macroHorizontalTabs' : '#macroVerticalTabs'), activeIdx);
 		$('#macros').css('height', vis == 1 ? 'calc(100vh - 537px)' : 'calc(100vh - 495px)');
+	}
+
+	RefreshButtonVisibility();
+}
+
+function RebuildGroupNames()
+{
+	g_Groups = [ "" ];
+	g_GroupsLower = [ "" ];
+	for (var i = 0; i < buttonsarray.length; i++)
+	{
+		var groupName = SanitizeGroupName(buttonsarray[i].group);
+		var groupNameLower = groupName.toLowerCase();
+		if (g_GroupsLower.indexOf(groupNameLower) == -1)
+		{
+			g_Groups.push(groupName);
+			g_GroupsLower.push(groupNameLower);
+		}
+	}
+
+	g_Groups.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+	g_GroupsLower = g_Groups.map((x) => x.toLowerCase());
+}
+
+function RebuildGroupUI()
+{
+	RebuildGroupNames();
+
+	var activeIdx = g_TabVisibility == 0 ? 0 : Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
+	SetCurrentGroup(g_GroupsLower[activeIdx]);
+	if (g_TabVisibility == 1)
+	{
+		CreateTabContents($('#macroHorizontalTabs'), activeIdx);
+	}
+	if (g_TabVisibility == 2)
+	{
+		CreateTabContents($('#macroVerticalTabs'), activeIdx);
 	}
 
 	RefreshButtonVisibility();
@@ -397,27 +315,20 @@ function ApplyMoveMacro(buttonIdx)
 
 window.MoveMacroToGroup = function()
 {
-	var src = window.event.srcElement;
-	var onclick = src.parentElement.parentElement.parentElement.firstElementChild.firstElementChild.getAttribute("onclick");
-	if (typeof(onclick) == 'string' && onclick.startsWith("edit("))
-	{
-		var buttonIdx = Number(onclick.substring(5).split(')')[0]);
-		if (buttonIdx >= 0 && buttonIdx < buttonsarray.length)
-		{
-			var dialogContent = `
+	var dialogContent = `
 <div class="row mb-2">
   <label class="cell-sm-4 pt-1" title="Move to existing group">Group:</label>
   <div class="cell-sm-6">
   <select id="MacroGroup" data-role="select" data-clear-button="true" data-filter="false" onchange="if (Number($('#MacroGroup').val()) == -1) $('#MacroGroupNameRow').show(); else $('#MacroGroupNameRow').hide()">
     <option value="0">Default</option>
 `;
-			for (var i = 1; i < g_Groups.length; i++)
-			{
-				dialogContent += `
+	for (var i = 1; i < g_Groups.length; i++)
+	{
+		dialogContent += `
 <option value="` + i + `">` + g_Groups[i] + `</option>
 `;
-			}
-			dialogContent += `
+	}
+	dialogContent += `
     <option value="-1">&amp;lt;New Group&amp;gt;</option>
   </select>
   </div>
@@ -429,33 +340,34 @@ window.MoveMacroToGroup = function()
   </div>
 </div>
 `;
-			Metro.dialog.create({
-				title: "Move Macro To Group",
-				clsDialog: "dark",
-				width: 600,
-				content: dialogContent,
-				dataToTop: true,
-				actions: [{
-						caption: "Cancel",
-						cls: "js-dialog-close",
-						onclick: function() {}
-					},
-					{
-						caption: "Apply",
-						cls: "js-dialog-close success",
-						onclick: function() {
-							ApplyMoveMacro(buttonIdx);
-						}
-					}
-				]
-			});
 
-			var groupName = SanitizeGroupName(buttonsarray[buttonIdx].group);
-			var groupNameLower = groupName.toLowerCase();
-			var groupIdx = Math.max(0, g_GroupsLower.indexOf(groupNameLower));
-			$('#MacroGroup').val(groupIdx);
-		}
-	}
+	var buttonIdx = g_SelectedMacro;
+	g_SelectedMacro = undefined;
+	Metro.dialog.create({
+		title: "Move Macro To Group",
+		clsDialog: "dark",
+		width: 600,
+		content: dialogContent,
+		dataToTop: true,
+		actions: [{
+				caption: "Cancel",
+				cls: "js-dialog-close",
+				onclick: function() {}
+			},
+			{
+				caption: "Apply",
+				cls: "js-dialog-close success",
+				onclick: function() {
+					ApplyMoveMacro(buttonIdx);
+				}
+			}
+		]
+	});
+
+	var groupName = SanitizeGroupName(buttonsarray[buttonIdx].group);
+	var groupNameLower = groupName.toLowerCase();
+	var groupIdx = Math.max(0, g_GroupsLower.indexOf(groupNameLower));
+	$('#MacroGroup').val(groupIdx);
 }
 
 function MacroBackgroundContextMenu(event)
@@ -547,6 +459,126 @@ function ImportAll(event)
 	}
 }
 
+window.MoveMacro = function(direction)
+{
+	var index = g_SelectedMacro;
+	g_SelectedMacro = undefined;
+
+	var button = buttonsarray[index];
+	if (direction == -1) {
+		// find the previous visible button and move before it. there must be one or the option won't be available
+		for (var i = index - 1; i >= 0; i--) {
+			if (IsButtonVisible(buttonsarray[i])) {
+				buttonsarray.splice(index, 1);
+				buttonsarray.splice(i, 0, button);
+				populateMacroButtons();
+				return;
+			}
+		}
+	}
+	if (direction == 1) {
+		// find the next visible button and move after it. there must be one or the option won't be available
+		for (var i = index + 1; i < buttonsarray.length; i++) {
+			if (IsButtonVisible(buttonsarray[i])) {
+				buttonsarray.splice(index, 1);
+				buttonsarray.splice(i, 0, button);
+				populateMacroButtons();
+				return;
+			}
+		}
+	}
+}
+
+window.EditMacro = function()
+{
+	edit(g_SelectedMacro);
+	g_SelectedMacro = undefined;
+}
+
+window.BackupMacro = function()
+{
+	backupMacro(g_SelectedMacro);
+	g_SelectedMacro = undefined;
+}
+
+window.ConfirmMacroDelete = function()
+{
+	confirmMacroDelete(g_SelectedMacro);
+	g_SelectedMacro = undefined;
+}
+
+function populateMacroButtonsNew(firstRun)
+{
+	if (!firstRun)
+	{
+		// add new buttons to the current group
+		var activeIdx = g_TabVisibility == 0 ? 0 : Math.max(0, g_GroupsLower.indexOf(g_CurrentGroupLower));
+		for (var i = g_ButtonCount; i < buttonsarray.length; i++)
+		{
+			buttonsarray[i].group = g_Groups[activeIdx];
+		}
+	}
+	g_ButtonCount = buttonsarray.length;
+
+	populateMacroButtonsOld(firstRun);
+	RebuildGroupUI();
+}
+
+function setMacroContextMenuPositionNew(buttonIdx)
+{
+	g_SelectedMacro = buttonIdx;
+
+	// find where the button is in the visible order
+	var visIdx = undefined;
+	var visCount = 0;
+	for (var i = 0; i < buttonsarray.length; i++)
+	{
+		if (IsButtonVisible(buttonsarray[i]))
+		{
+			if (i == buttonIdx)
+			{
+				visIdx = visCount;
+			}
+			visCount++;
+		}
+	}
+	if (visIdx == undefined || visIdx == 0)
+	{
+		$('#moveMacroLeft').addClass('disabled');
+	}
+	else
+	{
+		$('#moveMacroLeft').removeClass('disabled');
+	}
+
+	if (visIdx == undefined || visIdx == visCount - 1)
+	{
+		$('#moveMacroRight').addClass('disabled');
+	}
+	else
+	{
+		$('#moveMacroRight').removeClass('disabled');
+	}
+
+	var menu = $("#macroContextMenuNew");
+	menu.css({
+		visibility: "hidden",
+		display: "block",
+	});
+	const offset = $("#macroBtn" + buttonIdx).offset();
+	const menuRect = menu[0].getBoundingClientRect();
+	const parentRect = document.body.getBoundingClientRect();
+	const left = Math.max(Math.min(offset.left + 20, parentRect.right - menuRect.width - 4), 0);
+	const top = Math.max(Math.min(offset.top + 20, parentRect.bottom - menuRect.height - 4), 0);
+
+	menu.css({
+		left: left,
+		top: top,
+		visibility: "visible",
+	}).data('dropdown').close(true);
+	$("#macroContextToggle").click();
+}
+
 const contextMenusHtml = `
 <div id="macroBackgroundContextToggle"/>
 <ul class="d-menu context drop-shadow pos-fixed" id="macroBackgroundContextMenu" data-role="dropdown" data-toggle-element="#macroBackgroundContextToggle">
@@ -562,13 +594,20 @@ const contextMenusHtml = `
 <ul class="d-menu context drop-shadow pos-fixed" id="macroTabContextMenu" data-role="dropdown" data-duration="40" data-toggle-element="#macroTabContextToggle">
 	<li onclick="RenameSelectedGroup()"><a href="#">Rename Group</a></li>
 </ul>
-`;
 
-const groupContextMenuHtml = `
-<span id="macroManagerContextMenuItems">
+<div id="macroContextToggle" />
+<ul class="d-menu context drop-shadow pos-fixed" id="macroContextMenuNew" data-role="dropdown" data-toggle-element="#macroContextToggle">
+	<li onclick="EditMacro()"><a href="#"><i class="fas fa-edit icon"></i> Edit Macro</span></a></li>
 	<li class="divider"></li>
-	<li onclick="MoveMacroToGroup()"><a href="#">Move To Group</a></li>
-</span>
+	<li id="moveMacroLeft" onclick="MoveMacro(-1)"><a href="#"><i class='fas fa-fw fa-arrow-left icon'></i> Sort: Move Left</a></li>
+	<li id="moveMacroRight" onclick="MoveMacro(1)"><a href="#"><i class='fas fa-fw fa-arrow-right icon'></i> Sort: Move Right</a></li>
+	<li class="divider"></li>
+	<li onclick="BackupMacro()"><a href="#"><i class="fas fa-save icon"></i> Export Macro</span></a></li>
+	<li class="divider"></li>
+	<li onclick="ConfirmMacroDelete()" class="fg-red"><a href="#"><i class="fas fa-trash icon"></i> Delete Macro</span></a></li>
+	<li class="divider"></li>
+	<li onclick="MoveMacroToGroup()"><a href="#"><i class="mif-books mif-1g icon" style="margin-top:-8px;"></i> Move To Group</span></a></li>
+</ul>
 `;
 
 $(document).ready(function()
@@ -582,22 +621,16 @@ $(document).ready(function()
 
 	$('#macroImportAllFile').on('change', ImportAll);
 
-	// add items to button context menu
-	$('#macroContextMenuItems').after(groupContextMenuHtml);
-
-	RebuildGroupNames();
-
-	// make copy of the buttons to track changes
-	g_ButtonsCopy = [];
+	// set default group for all buttons that don't have one
 	for (var i = 0; i < buttonsarray.length; i++)
 	{
-		var button = buttonsarray[i];
-		g_ButtonsCopy.push(button);
-		if (button.group == undefined)
+		if (buttonsarray[i].group == undefined)
 		{
-			button.group = "";
+			buttonsarray[i].group = "";
 		}
 	}
+	g_ButtonCount = buttonsarray.length;
+	RebuildGroupNames();
 
 	// read and validate settings
 	if (localStorage.getItem("MacroManagerSettings"))
@@ -621,20 +654,19 @@ $(document).ready(function()
 	$('#macros').after(`<div id="macroHorizontalDiv" style="flex:1;"><ul id="macroHorizontalTabs" data-role="tabs" data-expand="true"></ul></div>`);
 	$('#macroHorizontalDiv').append($('#macros'));
 
-	var observer = new MutationObserver(OnMacrosChanged); // monitor the button elements for changes
-	observer.observe(macrosElement, { childList: true, subtree: false});
-
+	// register background menu
 	$('#macros').on('contextmenu', MacroBackgroundContextMenu);
 	$('#macrostab').on('contextmenu', MacroBackgroundContextMenu);
-	$('#macrostab').children().css('pointer-events', 'none');
+	$('#macrostab').children().on('contextmenu', MacroBackgroundContextMenu);
 
-	// store some objects in props to be cleaned up later
-	$('#macroBackgroundContextMenu').prop('MacroBackgroundContextMenu', () => { return MacroBackgroundContextMenu; });
-	$('#macroBackgroundContextMenu').prop('Observer', () => { return observer; });
+	window.populateMacroButtonsOld = window.populateMacroButtons;
+	window.populateMacroButtons = populateMacroButtonsNew;
+	window.setMacroContextMenuPositionOld = window.setMacroContextMenuPosition;
+	window.setMacroContextMenuPosition = setMacroContextMenuPositionNew;
 
 	setTimeout(function()
 	{
-		// allow time for Metro to generate the tabs
+		// allow time for Metro to generate the tab structure
 		SetMacroTabsVisibility(g_TabVisibility);
-	}, 100);
+	}, 0);
 });
