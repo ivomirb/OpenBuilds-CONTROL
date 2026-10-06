@@ -265,27 +265,18 @@ function grblSettings(data) {
   }
 
   var homingEnabled = grblParams['$22'] > 0;
-  $('#homeBtn').attr('disabled', !homingEnabled);
+  $('#homeBtn, #homeSingleMenu').attr('disabled', !homingEnabled);
   AddRemoveClass('#gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos', 'disabled', !homingEnabled);
   AddRemoveClass('#gotozeroZmPosXYwPos, #gotozeroMPos', 'disabled', !homingEnabled);
 
   updateGotoLimits();
-  if (!isJogWidget && webgl)
+  if (!isJogWidget && webgl) {
     updateMachineCoordinates();
-
-  if (grblParams['$32'] == 1) {
-    $('#enLaser').removeClass('alert').addClass('success').html('ON');
-  } else {
-    $('#enLaser').removeClass('success').addClass('alert').html('OFF');
   }
 
-  // grblHAL - enable Servo Buttons if Spindle PWM == 50hz
-  if (grblParams['$33'] == 50) {
-    $('#enServo').removeClass('alert').addClass('success').html('ON')
-    $(".servo-active").show()
-  } else {
-    $('#enServo').removeClass('success').addClass('alert').html('OFF')
-    $(".servo-active").hide()
+  if (laststatus.machine.firmware.platform == "grblHAL") {
+    // grblHAL - enable Servo Buttons if Spindle PWM == 50hz (Ivo: HUH?)
+    $(".servo-active").toggle(grblParams['$33'] == 50);
   }
 
   updateToolOnSValues();

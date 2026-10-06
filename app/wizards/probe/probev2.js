@@ -310,7 +310,7 @@ function probezplatetab() {
   $("#zplatesettings").show();
   $(".img-probe").hide();
   $("#img-probe-zplate").show();
-  $("#toggle-probe-advanced").show();
+  $("#toggle-probe-advanced").hide();
   $("#endmilldiameterform").hide();
   $("#toggle-probe-advanced-content").data('collapse').collapse()
   $('#runNewProbeBtn').addClass("disabled")
@@ -396,7 +396,7 @@ function probetype(type) {
   } else if (type == "z") {
     $(".needsXYZProbe").hide()
     probemode.probe = zprobeplate // customprobeplate, xyzprobeplate, zprobeplate
-    var template = `<span class="icon"><img src="/img/xyzprobe/ztouch.png"/></span>OpenBuilds Z Touch Plate`;
+    var template = `<span class="icon"><img src="/img/xyzprobe/ztouch.png"/></span> Z Touch Plate`;
     $("#probetypebtn").html(template)
     $(".probetabxyz").hide();
     $(".probetabz").show();
