@@ -780,7 +780,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
       }
     }
 
-		AddRemoveClass('#resetGrblBtn, #section-grbl .group:not(.estop), #grblMetroTable', "disabled", status.comms.connectionStatus == 3 || status.comms.connectionStatus == 4);
+    AddRemoveClass('#resetGrblBtn, #section-grbl .group:not(.estop), #grblMetroTable', "disabled", status.comms.connectionStatus == 3 || status.comms.connectionStatus == 4);
 
     if (laststatus == undefined || status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
       $('.wcsText').html(status.machine.modals.coordinatesys)
@@ -829,14 +829,14 @@ The editor is currently disabled. You can click the Clear button to clear the cu
   });
 
   socket.on('features', function(data) {
-    // console.log('FEATURES', data)
+
+/* Ivo: none of these UI elements exist anymore. Besides, there is no code to revert the state if the feature disappears. Disabling the entire thing.
     for (var i = 0; i < data.length; i++) {
       switch (data[i]) {
         case 'Q':
           // console.log('SPINDLE_IS_SERVO Enabled')
           // Also enabled for grblHAL from grbl-settings if $33=50
           $('#enServo').removeClass('alert').addClass('success').html('ON')
-          $(".servo-active").show()
           break;
         case 'V': // Variable spindle enabled
           // console.log('Variable spindle enabled')
@@ -848,7 +848,6 @@ The editor is currently disabled. You can click the Clear button to clear the cu
           break;
         case 'M': // Mist coolant enabled
           // console.log('Mist coolant enabled')
-          $('#menuMisting').show();
           $('#enMisting').removeClass('alert').addClass('success').html('ON')
           break;
         case 'C': // CoreXY enabled
@@ -901,6 +900,12 @@ The editor is currently disabled. You can click the Clear button to clear the cu
           break;
       }
     }
+*/
+    if (laststatus.machine.firmware.platform != "grblHAL") {
+      $(".servo-active").toggle(data.contains('Q')); // the grblHAL case is handled by setting $33
+    }
+    $('#menuMisting').toggle(data.contains('M'));
+    $("#homeSingleMenu").parent().toggle(data.contains('H'));
   })
 
   socket.on("interfaceOutdated", function(status) {

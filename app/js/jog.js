@@ -719,7 +719,7 @@ $(document).ready(function() {
 
 
   $('#homeBtn').on('click', function() {
-    home();
+    smartHome();
   })
 
   $('#chkSize').on('click', function() {
@@ -762,6 +762,30 @@ function jogXY(xincrement, yincrement, feed = null) {
 
 function home() {
   sendGcode('$H');
+}
+
+function smartHome() {
+	if (laststatus.machine.modals.homedRecently) {
+		Metro.dialog.create({
+			title: "Home All",
+			content: "The machine was recently homed. Do you want to home again?",
+			clsDialog: 'dark',
+			actions: [{
+					caption: "Proceed",
+					cls: "js-dialog-close success",
+					onclick: home
+				},
+				{
+					caption: "Cancel",
+					cls: "js-dialog-close",
+					onclick: function() {
+						// do nothing
+					}
+				}],
+		});
+	} else {
+		home();
+	}
 }
 
 function toastJogWillHit(axis) {

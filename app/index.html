@@ -451,6 +451,16 @@ The spindle will automatically start when the job is resumed.">
                   </span>
                   <span class="caption grblmode">Home<br>All</span>
                 </button>
+                <div style="display:none">
+                  <button id="homeSingleMenu" class="ribbon-button dropdown-toggle" style="padding-left:10px; height:78px; margin-left:-4px;" title="Home single axis">
+                  </button>
+                  <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
+                    <li onclick="sendGcode('$HX');"><a href="#"><span class="fg-red" style="font-weight:900;padding-right:5px;">X</span> Home X axis</a></li>
+                    <li onclick="sendGcode('$HY');"><a href="#"><span class="fg-green" style="font-weight: 900; padding-right: 5px; ">Y</span> Home Y axis</a></li>
+                    <li onclick="sendGcode('$HZ');"><a href="#"><span class="fg-blue" style="font-weight: 900; padding-right: 5px; ">Z</span> Home Z axis</a></li>
+                    <li class="4thaxis-active" onclick="sendGcode('$HA');" style="display:none;"><a href="#"><span class="fg-orange" style="font-weight: 900; padding-right: 5px; ">A</span> Home A axis</a></li>
+                  </ul>
+                </div>
 
                 <span class="title">Control</span>
               </div>
