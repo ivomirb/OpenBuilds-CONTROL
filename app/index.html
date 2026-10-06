@@ -566,7 +566,7 @@ The spindle will automatically start when the job is resumed.">
                   </button>
                   <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
                     <li onclick="toggleAutoStart();" id="disableAutoStartTick" style="display:none"><a href="#"><i class="fas fa-fw fa-running"></i> <span id="disableAutoStartLabel">Disable Auto Start and Tray Icon</span></a></li>
-                    <li onclick="disableAggressiveHomeReset = !disableAggressiveHomeReset; saveDiagnostics();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
+                    <li onclick="toggleAggressiveHomeReset();" id="disableAggressiveHomeResetTick"><a href="#"><i class="fas fa-fw fa-home"></i> Disable Aggressive Home Reset</a></li>
                     <li onclick="disable4thAxis = !disable4thAxis; saveDiagnostics();" id="disable4thAxisTick" class="4thaxis-present" style="display:none"><a href="#"><i class="fas fa-fw fa-chess-rook"></i> Disable 4th axis</a></li>
                   </ul>
                 </div>

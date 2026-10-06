@@ -5,7 +5,6 @@ var disable3Drealtimepos = false;
 var disable3Dgcodepreview = false;
 var disableSerialLog = false;
 var disableDROupdates = false;
-var disableAggressiveHomeReset = false;
 var disable4thAxis = false;
 
 function saveDiagnostics() {
@@ -16,9 +15,6 @@ function saveDiagnostics() {
   localStorage.setItem('disable3Dgcodepreview', disable3Dgcodepreview);
   localStorage.setItem('disableSerialLog', disableSerialLog);
   localStorage.setItem('disableDROupdates', disableDROupdates);
-
-  localStorage.setItem('disableAggressiveHomeReset', disableAggressiveHomeReset);
-  AddRemoveClass('#disableAggressiveHomeResetTick', "checked", disableAggressiveHomeReset);
 
   localStorage.setItem('disable4thAxis', disable4thAxis);
   AddRemoveClass('#disable4thAxisTick', "checked", disable4thAxis);
@@ -50,11 +46,6 @@ function initDiagnostics() {
   disableAggressiveHomeReset = localStorage.getItem('disableAggressiveHomeReset') && (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true);
   AddRemoveClass('#disableAggressiveHomeResetTick', "checked", disableAggressiveHomeReset);
 
-  $('#disableAutoStartTick').toggle(typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux'));
-  if (typeof process !== "undefined" && process.platform == 'linux') {
-    $('#disableAutoStartLabel').html("Disable Tray Icon"); // no autostart on linux
-  }
-
   disable4thAxis = localStorage.getItem('disable4thAxis') && (JSON.parse(localStorage.getItem('disable4thAxis')) == true);
   AddRemoveClass('#disable4thAxisTick', "checked", disable4thAxis);
 
@@ -62,9 +53,12 @@ function initDiagnostics() {
 };
 
 function toggleAutoStart() {
-  if (typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux')) {
-    socket.emit('autoStart', !laststatus.misc.autoStart);
-  }
+  socket.emit('autoStart', !laststatus.misc.autoStart);
+}
+
+function toggleAggressiveHomeReset() {
+  AddRemoveClass('#disableAggressiveHomeResetTick', "checked", laststatus.misc.aggressiveHomeReset);
+  socket.emit('aggressiveHomeReset', !laststatus.misc.aggressiveHomeReset);
 }
 
 initDiagnostics();

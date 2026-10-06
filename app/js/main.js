@@ -96,28 +96,37 @@ function getChangelog() {
 }
 
 $(document).ready(function() {
-
   $('#openbuildslogosplash').fadeIn(100);
   setTimeout(function() {
     $('#splash').fadeOut(500);
   }, 1400)
 
-  initDiagnostics(); // run second time to ensure checkboxes are ticked
-
   if (!isJogWidget) {
     init3D();
+
+    jogDocReady();
+    keyboardDocReady();
+    macrosDocReady();
+    servoDocReady();
+    themeDocReady();
+    updatesDocReady();
+
+    $("#command").inputHistory({
+      enter: function() {
+        $("#sendCommand").click();
+      }
+    });
+
+    $("form").submit(function() {
+      return false;
+    });
+
+    initDiagnostics(); // run second time to ensure checkboxes are ticked
 
     if (typeof ace !== 'undefined') {
       editor = ace.edit("editor");
       editor.$blockScrolling = Infinity;
       editor.session.setMode("ace/mode/cncpro");
-      if (typeof process !== "undefined") {
-        if (process.platform == 'win32') {
-          editor.session.setNewLineMode("windows");
-        } else {
-          editor.session.setNewLineMode("unix");
-        }
-      }
       editor.setTheme('ace/theme/sqlserver')
       editor.setAutoScrollEditorIntoView(true);
       editor.session.setValue('; No G-code yet - please Load a G-code file from the Open G-code button');
@@ -172,10 +181,15 @@ $(document).ready(function() {
     setWindowTitle();
   }, 1000)
 
+  initSocket();
+  socket.emit('docReady', onDocReady);
+
+/* This seems to be a broken attempt to show api help text when the dev tools are open, however it doesn't work.
+If this is needed, it may be better triggered from the backend using jogWindow.webContents.on('devtools-opened' ...).
+However it may be rude to show the full text every time. Maybe only print "for help type help()", which then will print the entire doc
   const element = new Image();
   Object.defineProperty(element, 'id', {
     get: function() {
-      /* Call callback function here */
       socket.emit("maximize", true)
       console.log("%c                        ", "background-image: url('https://openbuilds.com/styles/uix/uix/OpenBuildsHeader_logo.png'); font-size: 41px; background-repeat: no-repeat; background-size: 183px 41px; ");
       console.log('%cOpenBuilds CONTROL Devtools', 'font-weight: bold; font-size: 20px;color: rgb(50,80,188); text-shadow: 1px 1px 0 rgb(0,00,39)');
@@ -207,8 +221,24 @@ $(document).ready(function() {
     }
   });
   console.log('%c', element);
-
+*/
 });
+
+function onDocReady(data) {
+  onGrbl(data.firmware);
+  onGcodeUpload(data.gcode, data.filename);
+  onRecentFiles(data.recentFiles);
+  onSysInfo(data.sysInfo);
+
+  $('#disableAutoStartTick').toggle(data.platform == 'win32' || data.platform == 'linux');
+  editor.session.setNewLineMode(data.platform == 'win32' ? "windows" : "unix");
+
+  if (data.platform == 'linux') {
+    $('#disableAutoStartLabel').html("Disable Tray Icon"); // no autostart on linux
+  }
+
+  AddRemoveClass('#disableAggressiveHomeResetTick', "checked", !data.aggressiveHomeReset);
+}
 
 function runJobFile() {
   const gcode = useEditor ? editor.getValue() : currentGcode;
@@ -462,7 +492,7 @@ function saveGcode() {
     });
     saveBlobToDisk(blob, filePath, saveFileParams).then((err) => {
       if (!err) {
-        loadedFileName = path.basename(filePath);
+        loadedFileName = filePath.split(/[/\\]/).at(-1);
       }
     });
   });

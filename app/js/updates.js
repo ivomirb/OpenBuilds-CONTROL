@@ -1,8 +1,8 @@
 var updateCountdown = 10
-$(document).ready(function() {
+function updatesDocReady() {
 // Ivo: disable update checks because the app is no longer in development
-//  checkUpdate()
-});
+  checkUpdate()
+}
 
 
 function checkUpdate() {

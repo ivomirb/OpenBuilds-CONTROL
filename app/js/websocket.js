@@ -11,22 +11,6 @@ var openDialogs = [];
 
 var MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
 
-$(document).ready(function() {
-  initSocket();
-
-  $("#command").inputHistory({
-    enter: function() {
-      $("#sendCommand").click();
-    }
-  });
-
-  $("form").submit(function() {
-    return false;
-  });
-
-  socket.emit('refreshGui');
-});
-
 function printLogModern(icon, source, string, printLogCls) {
   if (!disableSerialLog) {
     if (document.getElementById("console") !== null) {
@@ -80,12 +64,105 @@ function printLog(string) {
   }
 };
 
+function onGcodeUpload(gcode, filename) {
+  if (isJogWidget) return;
+  printLogModern('', "api", "Received new G-code from API", "fg-darkGreen");
+  printLogModern('', "api", "API called window into focus", "fg-darkGreen");
+
+  currentGcode = gcode;
+  loadedFileName = filename;
+
+  if (!editor) {
+    useEditor = false;
+  } else if (gcode.length > MAX_GCODE_IN_EDITOR) {
+    EnableViaClass('.editorEnabled', false);
+    editor.session.setValue(
+`The G-code file ` + filename + ` is too large (` + (gcode.length / (1024*1024)).toFixed(1) + ` MB) to load into the G-code Editor.
+If you need to edit it, please use a standalone text editing application and reload it.
+The editor is currently disabled. You can click the Clear button to clear the current G-code and type a new program here.`);
+    useEditor = false;
+  } else {
+    EnableViaClass('.editorEnabled', true);
+    editor.session.setValue(gcode);
+    useEditor = true;
+  }
+
+  setWindowTitle()
+  $('#reloadGcodeBtn').attr('title', "Reload " + loadedFileName);
+  $('#reloadGcodeBtn').removeClass('disabled');
+  parseGcodeInWebWorker(gcode);
+  $('#controlTab').click()
+  if (webgl) {
+    $('#gcodeviewertab').click();
+  } else {
+    $('#gcodeeditortab').click();
+  }
+}
+
+function onGrbl(firmware) {
+  if (firmware.type != "grbl") return;
+  grblParams = {};
+  if (firmware.platform == "grblHAL" || firmware.platform == "gnea") { // Doesn't use $$ settings, uses config.yaml
+    setTimeout(function() {
+      sendGcode('$$\n$I');
+    }, 500);
+  } else if (firmware.platform == "FluidNC") {
+    // Show FluidNC specific tabs and buttons
+    setTimeout(function() {
+      sendGcode('$CD\n$I');
+    }, 500);
+  }
+
+  $("#grblButtons").show();
+  $("#firmwarename").html(firmware.platform);
+  if (localStorage.getItem('jogOverride')) {
+    jogOverride(localStorage.getItem('jogOverride'));
+  }
+}
+
+function onRecentFiles(recentFiles) {
+  if (!isJogWidget) {
+    $('#recentFilesList').nextAll().remove();
+
+    var elements = ``;
+    for (var i = 0; i < recentFiles.length; i++) {
+      elements += `<li title="` + recentFiles[i] +`"><a href="#" onclick="reloadJobFile('` + recentFiles[i].replaceAll('\\', '\\\\') + 
+        `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + recentFiles[i].split(/[/\\]/).at(-1) + `</a></li>\n`;
+    }
+    $('#recentFilesList').after(elements);
+    EnableViaClass('#clearRecentBtn', recentFiles.length > 0);
+  }
+}
+
+function onSysInfo(sysinfo) {
+  if (sysinfo) {
+    lastsysinfo = sysinfo;
+
+    var mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model;
+    $("#mobospecs").html(mobo);
+
+    var cpu = sysinfo.hardware.cpu[0].model;
+    $("#cpuspecs").html(cpu);
+
+    var gpu = sysinfo.hardware.gpu.length > 0 ? sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)" : "NONE";
+    $("#gpuspecs").html(gpu);
+
+    var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
+    $("#memoryspecs").html(memory);
+
+    var operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
+    $("#osspecs").html(operatingsys);
+
+    var ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
+    $("#ipspecs").html(ipaddresses);
+  }
+}
+
 function initSocket() {
   socket = io.connect(server, {
     'timeout': 60000,
     'connect timeout': 60000
   }); // socket.io init
-  socket.emit('aggrressiveHomeReset', !disableAggressiveHomeReset);
   var icon = ''
   var source = "websocket"
   var string = "Bidirectional Websocket Interface Started Succesfully"
@@ -119,40 +196,7 @@ function initSocket() {
     }
   })
 
-  socket.on('gcodeupload', function(data) {
-    if (isJogWidget) return;
-    printLogModern('', "api", "Received new G-code from API", "fg-darkGreen");
-    printLogModern('', "api", "API called window into focus", "fg-darkGreen");
-
-    currentGcode = data.gcode;
-    if (!editor) {
-      useEditor = false;
-    } else if (data.gcode.length > MAX_GCODE_IN_EDITOR) {
-      EnableViaClass('.editorEnabled', false);
-      editor.session.setValue(
-`The G-code file ` + data.filename + ` is too large (` + (data.gcode.length / (1024*1024)).toFixed(1) + ` MB) to load into the G-code Editor.
-If you need to edit it, please use a standalone text editing application and reload it.
-The editor is currently disabled. You can click the Clear button to clear the current G-code and type a new program here.`);
-      useEditor = false;
-    } else {
-      EnableViaClass('.editorEnabled', true);
-      editor.session.setValue(data.gcode);
-      useEditor = true;
-    }
-
-    loadedFileName = data.filename;
-
-    setWindowTitle()
-    $('#reloadGcodeBtn').attr('title', "Reload " + loadedFileName);
-    $('#reloadGcodeBtn').removeClass('disabled');
-    parseGcodeInWebWorker(data.gcode);
-    $('#controlTab').click()
-    if (webgl) {
-      $('#gcodeviewertab').click();
-    } else {
-      $('#gcodeeditortab').click();
-    }
-  });
+  socket.on('gcodeupload', function(data) { onGcodeUpload(data.gcode, data.filename); });
 
   socket.on('integrationpopup', function(data) {
     var icon = ''
@@ -519,29 +563,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     }
   });
 
-  socket.on('sysinfo', function(sysinfo) {
-    if (sysinfo) {
-      lastsysinfo = sysinfo;
-
-      var mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model;
-      $("#mobospecs").html(mobo);
-
-      var cpu = sysinfo.hardware.cpu[0].model;
-      $("#cpuspecs").html(cpu);
-
-      var gpu = sysinfo.hardware.gpu.length > 0 ? sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)" : "NONE";
-      $("#gpuspecs").html(gpu);
-
-      var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
-      $("#memoryspecs").html(memory);
-
-      var operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
-      $("#osspecs").html(operatingsys);
-
-      var ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
-      $("#ipspecs").html(ipaddresses);
-    }
-  });
+  socket.on('sysinfo', onSysInfo);
 
   socket.on('status', function(status) {
 
@@ -780,7 +802,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
       }
     }
 
-		AddRemoveClass('#resetGrblBtn, #section-grbl .group:not(.estop), #grblMetroTable', "disabled", status.comms.connectionStatus == 3 || status.comms.connectionStatus == 4);
+    AddRemoveClass('#resetGrblBtn, #section-grbl .group:not(.estop), #grblMetroTable', "disabled", status.comms.connectionStatus == 3 || status.comms.connectionStatus == 4);
 
     if (laststatus == undefined || status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
       $('.wcsText').html(status.machine.modals.coordinatesys)
@@ -813,7 +835,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
 
     if ((!laststatus || laststatus.misc.autoStart != status.misc.autoStart) &&
-        !isJogWidget && typeof process !== "undefined" && (process.platform == 'win32' || process.platform == 'linux')) {
+        !isJogWidget && (status.driver.platform == 'win32' || status.driver.platform == 'linux')) {
       $('#mainCloseBtn').attr( "title", status.misc.autoStart ? "Close to Tray" : "Close");
       AddRemoveClass('#disableAutoStartTick', "checked", !status.misc.autoStart);
     }
@@ -913,19 +935,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     }
   });
 
-  socket.on('recentFiles', function(data) {
-    if (!isJogWidget) {
-      $('#recentFilesList').nextAll().remove();
-
-      var elements = ``;
-      for (var i = 0; i < data.length; i++) {
-        elements += `<li title="` + data[i] +`"><a href="#" onclick="reloadJobFile('` + data[i].replaceAll('\\', '\\\\') + 
-          `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + data[i].split(/[/\\]/).at(-1) + `</a></li>\n`;
-      }
-      $('#recentFilesList').after(elements);
-      EnableViaClass('#clearRecentBtn', data.length > 0);
-    }
-  });
+  socket.on('recentFiles', onRecentFiles);
 
   $('#sendCommand').on('click', function() {
     var commandValue = $('#command').val();
@@ -954,7 +964,7 @@ The editor is currently disabled. You can click the Clear button to clear the cu
     }
   }, 200);
 
-};
+}
 
 
 
@@ -1036,7 +1046,6 @@ function selectPort(port) {
   } else {
     printLog("[connect] No Ports/IP selected/entered")
   }
-  // socket.emit('connectTo', 'usb,' + $("#portUSB").val() + ',' + '115200');
 };
 
 function closePort() {

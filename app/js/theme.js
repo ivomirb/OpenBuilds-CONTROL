@@ -241,7 +241,7 @@ const Theme = new Proxy(ThemeData, {
 });
 ThemeData.init();
 
-$(document).ready(function() {
+function themeDocReady() {
   // Commented out Dropdown menu item creating - will use when we have more theme options
   //
   // -- Dropdown Ribbon Button
@@ -273,4 +273,4 @@ $(document).ready(function() {
 
   }
   ThemeData.init();
-});
+}
