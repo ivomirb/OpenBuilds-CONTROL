@@ -782,7 +782,6 @@ function clearSettings() {
         caption: "Cancel",
         cls: "js-dialog-close",
         onclick: function() {
-          refreshGrblSettings();
         }
       }
     ]
@@ -806,7 +805,6 @@ function clearWCO() {
         caption: "Cancel",
         cls: "js-dialog-close",
         onclick: function() {
-          refreshGrblSettings();
         }
       }
     ]
@@ -830,7 +828,6 @@ function clearEEPROM() {
         caption: "Cancel",
         cls: "js-dialog-close",
         onclick: function() {
-          refreshGrblSettings();
         }
       }
     ]
