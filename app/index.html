@@ -1666,16 +1666,14 @@ Restore previous origins from history.">
 
 
                 </div>
+                <div id="zplatesettings" class="probe-tab-content">
+                  <label>Plate Thickness</label>
+                  <input id="z0platethickness" type="number" value="20" data-role="input" data-append="mm" data-prepend="<i class='fas fa-ruler-vertical'></i>" data-clear-button="false">
+                </div>
                 <hr>
                 <button class="button" id="toggle-probe-advanced"><i class="fas fa-fw fa-cogs"></i> Advanced</button>
                 <div class="pos-relative">
                   <div data-role="collapse" data-toggle-element="#toggle-probe-advanced" data-collapsed="true" id="toggle-probe-advanced-content">
-
-                    <div id="zplatesettings" class="probe-tab-content">
-                      <label>Plate Thickness</label>
-                      <input id="z0platethickness" type="number" value="20" data-role="input" data-append="mm" data-prepend="<i class='fas fa-ruler-vertical'></i>" data-clear-button="false">
-                    </div>
-
                     <div id="xyzdatum" class="probe-tab-content">
 
                       <small>Where is the XY Zero Datum / Origin in your CAM setup, relative to the front-left corner we are
@@ -1767,7 +1765,7 @@ Restore previous origins from history.">
             <a class="button" id="context_toggle"><span id="probetypebtn"><span class="icon"><img src="./img/xyzprobe/xyztouch.png" /></span> OpenBuilds XYZ Probe Plus</a>
             <ul class="d-menu context" data-role="dropdown" data-toggle-element="#context_toggle">
               <li onclick="probetype('xyz');"><a href="#"><span class="icon"><img src="./img/xyzprobe/xyztouch.png" /></span> OpenBuilds XYZ Probe Plus</a></li>
-              <li onclick="probetype('z');"><a href="#"><span class="icon"><img src="./img/xyzprobe/ztouch.png" /></span>OpenBuilds Z Touch Plate</a></li>
+              <li onclick="probetype('z');"><a href="#"><span class="icon"><img src="./img/xyzprobe/ztouch.png" /></span> Z Touch Plate</a></li>
               <li onclick="probetype('custom');"><a href="#"><span class="icon"><img src="./img/xyzprobe/custom.png" /></span> Custom XYZ Probe</a></li>
 
               <li class="divider"></li>
