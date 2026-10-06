@@ -298,9 +298,9 @@ function parseModals(data) {
 
 // Parses the version string: [VER:1.1f.20260908:minimill]
 function parseVersion(data) {
-	const parts = data.split(/:|\]/);
+  const parts = data.split(/:|\]/);
   // Extracting the full version (1.1f)
-	const versionParts = parts[1].split('.');
+  const versionParts = parts[1].split('.');
   const version = versionParts[0] + '.' + versionParts[1];
   // Extracting the date (.20260908)
   const date = versionParts[2];
@@ -319,7 +319,7 @@ function parseOptions(data) {
 
   var features = [];
 
-	for (var i = 0; i < featuresStr.length; i++) {
+  for (var i = 0; i < featuresStr.length; i++) {
     features.push(featuresStr[i]);
     switch (featuresStr[i]) {
       case 'Q':
@@ -428,17 +428,17 @@ function handleGreeting(data, command) {
       status.machine.firmware.platform = "grblHAL";
       status.machine.firmware.version = data.substr(8, 4); // get version
     }
-		else if (data.startsWith("[FIRMWARE:grblHAL]")) {
+    else if (data.startsWith("[FIRMWARE:grblHAL]")) {
       status.machine.firmware.type = "grbl";
       status.machine.firmware.platform = "grblHAL";
       // Parse version from seperate [VER:...] line not here for this response
     }
-		else if (data.indexOf("FluidNC") != -1) { // Grbl 3.6 [FluidNC v3.6.5 (wifi) '$' for help]
+    else if (data.indexOf("FluidNC") != -1) { // Grbl 3.6 [FluidNC v3.6.5 (wifi) '$' for help]
       status.machine.firmware.type = "grbl";
       status.machine.firmware.platform = "FluidNC";
       status.machine.firmware.version = data.substr(19, 5); // get version
     }
-		else {
+    else {
       status.machine.firmware.type = "grbl";
       status.machine.firmware.platform = "gnea";
       status.machine.firmware.version = data.substr(5, 4); // get version
@@ -465,7 +465,7 @@ function handleGreeting(data, command) {
   }
   // end of machine identification
 
-	// handle Grbl reset
+  // handle Grbl reset
   sentBuffer.length = 0; // Dump the queue
   status.comms.blocked = false;
   status.comms.paused = false;
@@ -518,19 +518,19 @@ function handleOK(data, command) {
   if (queuePointer < gcodeQueue.length) {
     send1Q();
   }
-	else if (sentBuffer.length == 0) {
+  else if (sentBuffer.length == 0) {
     clearGcodeQueue(true);
     if (jobStatusInternal == 1 || jobStatusInternal == 2) {
       jobStatusInternal += 2; // last command was accepted, just wait for idle
     }
-	}
+  }
 }
 
 function handleAlarm(data, command) {
   debug_log("ALARM:  " + data)
 
   const alarmCode = parseInt(data.split(':')[1]);
-	const alarmMessage = alarmCode + ' - ' + grblStrings.alarms(alarmCode);
+  const alarmMessage = alarmCode + ' - ' + grblStrings.alarms(alarmCode);
 
   if (!persistentConfig.aggressiveHomeReset) {
     // when aggressiveHomeReset is false, certain alarm codes will be safe and will not reset the home state
@@ -582,27 +582,27 @@ function onParserData(data) {
     fluidncConfig += data + "\n";
   }
   else if (data.startsWith("[VER:")) {
-		parseVersion(data);
-		serverEmit("status", status);
-		serverEmit("machinename", status.machine.name);
+    parseVersion(data);
+    serverEmit("status", status);
+    serverEmit("machinename", status.machine.name);
   }
   else if (data.startsWith("[OPT:")) {
-		parseOptions(data);
-	  serverEmit("features", status.machine.firmware.features);
+    parseOptions(data);
+    serverEmit("features", status.machine.firmware.features);
   }
-	else if (data.startsWith("[GC:")) {
+  else if (data.startsWith("[GC:")) {
     parseModals(data);
   }
-	else if (data.startsWith("[PRB:")) {
-		handleProbe(data, command != "$#" && command != undefined);
+  else if (data.startsWith("[PRB:")) {
+    handleProbe(data, command != "$#" && command != undefined);
   }
-	else if (data.startsWith("[INTF:")) {
-		parseInterface(data);
+  else if (data.startsWith("[INTF:")) {
+    parseInterface(data);
   }
-	else if (data.startsWith("Grbl") || data.startsWith("[FIRMWARE:grblHAL]")) { // Check if it's Grbl
-		handleGreeting(data, command);
+  else if (data.startsWith("Grbl") || data.startsWith("[FIRMWARE:grblHAL]")) { // Check if it's Grbl
+    handleGreeting(data, command);
   }
-	else if (data.startsWith("<")) {
+  else if (data.startsWith("<")) {
     parseStatusReport(data);
     if (command == "?") {
       serverEmitOutput({
@@ -611,18 +611,18 @@ function onParserData(data) {
         type: 'info'
       });
     }
-	}
-  else if (data.startsWith("ok")) {
-		handleOK(data, command); // Got an OK so we are clear to send
   }
-	else if (data.startsWith('ALARM') && status.comms.connectionStatus >= 2) {
-		handleAlarm(data, command);
-	}
+  else if (data.startsWith("ok")) {
+    handleOK(data, command); // Got an OK so we are clear to send
+  }
+  else if (data.startsWith('ALARM') && status.comms.connectionStatus >= 2) {
+    handleAlarm(data, command);
+  }
   else if (data.startsWith('error') && status.comms.connectionStatus >= 2) {
-		handleError(data, command); // Error received -> stay blocked stops queue
-	}
-	else if (data.startsWith("$32=")) {
-		// detect laser mode to know if the spindle delay should be used
+    handleError(data, command); // Error received -> stay blocked stops queue
+  }
+  else if (data.startsWith("$32=")) {
+    // detect laser mode to know if the spindle delay should be used
     status.misc.laserMode = (parseInt(data.substr(4)) == 1);
   }
   else if (data.startsWith("[MSG:Reset to continue]")) {
@@ -630,11 +630,11 @@ function onParserData(data) {
     debug_log("[MSG:Reset to continue] -> Sending Reset")
     addQRealtime(String.fromCharCode(0x18)); // ctrl-x
   }
-	else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1 && status.comms.connectionStatus >= 2) {
+  else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1 && status.comms.connectionStatus >= 2) {
     clearGcodeQueue(false);
     status.comms.connectionStatus = 2;
   }
-	else if (data.indexOf('Emergency Stop Requested') != -1 && status.comms.connectionStatus >= 2) {
+  else if (data.indexOf('Emergency Stop Requested') != -1 && status.comms.connectionStatus >= 2) {
     debug_log("Emergency Stop Requested")
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
@@ -984,7 +984,7 @@ function addQToEnd(gcode) {
     gcodeQueue.push("$G");
     return true;
   }
-	else if (testGcode.match(/T([\d.]+)/i)) {
+  else if (testGcode.match(/T([\d.]+)/i)) {
     gcodeQueue.push("$G");
     return true;
   }
@@ -996,7 +996,7 @@ function addQToEndAndKick(gcode) {
   addQToEnd(gcode);
   if (sentBuffer.length == 0) {
     send1Q(); // nothing in the pending buffer, start the queue
-	}
+  }
 }
 
 function addQRealtime(gcode) {
