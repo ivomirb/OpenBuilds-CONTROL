@@ -101,7 +101,10 @@ $(document).ready(function() {
     $('#splash').fadeOut(500);
   }, 1400)
 
-  if (!isJogWidget) {
+  if (isJogWidget) {
+    jogDocReady();
+  }
+  else {
     init3D();
 
     jogDocReady();
@@ -173,9 +176,9 @@ $(document).ready(function() {
         $('#macrostab').click();
       }
     }
-  }
 
-  getChangelog();
+    getChangelog();
+  }
 
   setInterval(function() {
     setWindowTitle();
@@ -226,18 +229,22 @@ However it may be rude to show the full text every time. Maybe only print "for h
 
 function onDocReady(data) {
   onGrbl(data.firmware);
-  onGcodeUpload(data.gcode, data.filename);
-  onRecentFiles(data.recentFiles);
-  onSysInfo(data.sysInfo);
+  if (!isJogWidget) {
+    onGcodeUpload(data.gcode, data.filename);
+    onRecentFiles(data.recentFiles);
+    onSysInfo(data.sysInfo);
 
-  $('#disableAutoStartTick').toggle(data.platform == 'win32' || data.platform == 'linux');
-  editor.session.setNewLineMode(data.platform == 'win32' ? "windows" : "unix");
+    $('#disableAutoStartTick').toggle(data.platform == 'win32' || data.platform == 'linux');
+    if (editor) {
+      editor.session.setNewLineMode(data.platform == 'win32' ? "windows" : "unix");
+    }
 
-  if (data.platform == 'linux') {
-    $('#disableAutoStartLabel').html("Disable Tray Icon"); // no autostart on linux
+    if (data.platform == 'linux') {
+      $('#disableAutoStartLabel').html("Disable Tray Icon"); // no autostart on linux
+    }
+
+    AddRemoveClass('#disableAggressiveHomeResetTick', "checked", !data.aggressiveHomeReset);
   }
-
-  AddRemoveClass('#disableAggressiveHomeResetTick', "checked", !data.aggressiveHomeReset);
 }
 
 function runJobFile() {
