@@ -192,6 +192,8 @@ function connectTo(data) { // If a user picks a port to connect to, open a Node 
 
 function closePort() {
   portCloseHandlers.forEach((x) => x());
+  if (!port) return;
+
   if (status.comms.interfaces.type == "usb") {
     if (port.isOpen) {
       port.drain(port.close());

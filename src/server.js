@@ -61,6 +61,7 @@ function httpServerError(error) {
   // If unable to start (port in use) - try next port in array from config.nextWebPort()
   console.error(error.message);
   httpServer.listen(config.nextWebPort());
+  status.driver.webport = config.webPort;
 }
 
 function initServer() {

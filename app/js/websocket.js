@@ -188,7 +188,7 @@ function initSocket() {
 
   socket.on('interfaceDrive', function(data) {
     console.log(data)
-    if (data.length > 1) {
+    if (data && data.length > 1) {
       $("#interfaceDriveLetterBtn").html("<i class='fab fa-usb'></i> Selected: " + data)
       if ($("#profileTargetController").val() != "") {
         $(".interfaceCopyBtn").removeClass('disabled');

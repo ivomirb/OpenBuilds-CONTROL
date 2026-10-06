@@ -6,6 +6,8 @@
 // System dependencies
 var fs = require('fs');
 var path = require("path");
+var ip = require('ip');
+var os = require('os');
 const {
   app: electronApp,
 } = require('electron');
@@ -48,11 +50,33 @@ const persistentConfig = {
 
 const configFilePath = path.join(electronApp.getPath('userData'), "config.json");
 
+function findLocalIpAddress() {
+  const virtKeywords = ['virtual', 'vbox', 'virtualbox', 'vmware', 'wsl', 'docker', 'vpn', 'vethernet'];
+  const virtPrefixes = ['veth', 'br-', 'bridge', 'utun', 'vnet', 'lo'];
+
+  const interfaces = os.networkInterfaces();
+  for (const adapter in interfaces) {
+    const name = adapter.toLowerCase();
+    if (!virtKeywords.some(x => name.includes(x)) && !virtPrefixes.some(x => name.startsWith(x))) {
+      const adapters = interfaces[adapter];
+      for (var i = 0; i < adapters.length; i++) {
+        const adapter = adapters[i];
+        if (adapter.family == "IPv4" && !adapter.internal) {
+          return adapter.address;
+        }
+      }
+    }
+  }
+
+  return ip.address();
+}
+
 // Main status
 const status = {
   driver: {
     version: require('../package').version,
-    ipaddress: require("ip").address(),
+    ipaddress: findLocalIpAddress(),
+    webport: config.webPort,
     platform: process.platform,
     operatingsystem: false,
     powersettings: {

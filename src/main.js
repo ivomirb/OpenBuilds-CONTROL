@@ -40,6 +40,8 @@ const {
 
 const {
   readGcodeFile,
+  allowedFilePaths,
+  addRecentFile,
   initFiles
 } = require('./files.js');
 
@@ -89,8 +91,9 @@ function onSecondInstance(event, commandLine, workingDirectory) {
   for (var i = 0; i < commandLine.length; i++) {
     const arg = commandLine[i];
     var ext = path.extname(arg).toLowerCase();
-    if ([".obc", ".gcode", ".gc", ".tap", ".nc", ".cnc"].contains(ext)) {
-      readGcodeFile(arg, false);
+    if ([".obc", ".gcode", ".gc", ".tap", ".nc", ".cnc"].indexOf(ext) >= 0) {
+      allowedFilePaths.add(arg);
+      readGcodeFile(arg, false, addRecentFile);
       if (ext == ".obc") {
         return;
       }
@@ -117,7 +120,8 @@ function createApp() {
       var openFilePath = process.argv[pathIndex];
       if (openFilePath !== "" && openFilePath[0] != '-') {
         debug_log("path" + openFilePath);
-        readGcodeFile(openFilePath, false);
+        allowedFilePaths.add(openFilePath);
+        readGcodeFile(openFilePath, false, addRecentFile);
       }
     }
   }
@@ -306,6 +310,30 @@ function destroyTrayIcon() {
   }
 }
 
+function setAutoStart(enabled) {
+  if (enabled != persistentConfig.autoStart) {
+    persistentConfig.autoStart = enabled;
+    status.misc.autoStart = enabled;
+    savePersistentConfig();
+
+    if (process.platform == 'win32') {
+      electronApp.setLoginItemSettings({
+        openAtLogin: enabled,
+        args: []
+      });
+    }
+
+    if (process.platform == 'win32' || process.platform == 'linux') {
+      if (enabled) {
+        createTrayIcon();
+      }
+      else {
+        destroyTrayIcon();
+      }
+    }
+  }
+}
+
 function createJogWindow() {
   // Create the browser window.
   jogWindow = new BrowserWindow({
@@ -430,30 +458,6 @@ function initElectron() {
       openAtLogin: true,
       args: []
     })
-  }
-}
-
-function setAutoStart(enabled) {
-  if (enabled != persistentConfig.autoStart) {
-    persistentConfig.autoStart = enabled;
-    status.misc.autoStart = enabled;
-    savePersistentConfig();
-
-    if (process.platform == 'win32') {
-      electronApp.setLoginItemSettings({
-        openAtLogin: enabled,
-        args: []
-      });
-    }
-
-    if (process.platform == 'win32' || process.platform == 'linux') {
-      if (enabled) {
-        createTrayIcon();
-      }
-      else {
-        destroyTrayIcon();
-      }
-    }
   }
 }
 

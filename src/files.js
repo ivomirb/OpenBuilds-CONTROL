@@ -381,5 +381,7 @@ function initFiles() {
 
 module.exports = {
   readGcodeFile,
+  allowedFilePaths,
+  addRecentFile,
   initFiles
 };

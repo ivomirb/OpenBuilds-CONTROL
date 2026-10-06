@@ -141,7 +141,7 @@ function editMacro(buttonIdx, fileName, script) {
         var title = fileName.slice(0, -3);
         var codetype = "javascript";
         var javascript = script;
-      } else if (["gcode", "gc", "tap", "nc", "cnc"].contains(ext)) {
+      } else if (["gcode", "gc", "tap", "nc", "cnc"].indexOf(ext) >= 0) {
         var title = fileName.slice(0, -ext.length - 1);
         var gcode = script;
       }

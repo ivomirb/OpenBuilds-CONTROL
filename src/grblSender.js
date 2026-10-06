@@ -71,547 +71,8 @@ var fluidncConfig = "";
 
 const memoryStorage = multer.memoryStorage();
 
-function onParserData(data) {
-  var command = sentBuffer[0];
-
-  if (command == "$CD" && data != "ok") {
-    fluidncConfig = fluidncConfig += data + "\n"
-  }
-
-  // Grbl $I parser
-  if (data.indexOf("[VER:") === 0) {
-    // Extracting the full version (1.1f)
-    const version = data.split(':')[1].split('.')[0] + '.' + data.split(':')[1].split('.')[1];
-    // Extracting the date (20240402)
-    const date = data.split(':')[1].split('.')[2];
-
-    status.machine.firmware.version = version;
-    status.machine.firmware.date = date;
-
-    serverEmit("status", status);
-
-    status.machine.name = data.split(':')[2].split(']')[0].toLowerCase()
-    serverEmit("machinename", data.split(':')[2].split(']')[0].toLowerCase());
-  }
-
-  if (data.indexOf("[OPT:") === 0) {
-
-    const grblOptLen = data.substr(5).search(/]/);
-    const grblOpts = data.substr(5, grblOptLen).split(/,/);
-
-    status.machine.firmware.blockBufferSize = grblOpts[1];
-    status.machine.firmware.rxBufferSize = grblOpts[2];
-
-    var features = []
-
-    var i = grblOpts[0].length;
-    while (i--) {
-      features.push(grblOpts[0].charAt(i))
-      switch (grblOpts[0].charAt(i)) {
-        case 'Q':
-          debug_log('SPINDLE_IS_SERVO Enabled')
-          //
-          break;
-        case 'V': // Variable spindle enabled
-          debug_log('Variable spindle enabled')
-          //
-          break;
-        case 'N': // Line numbers enabled
-          debug_log('Line numbers enabled')
-          //
-          break;
-        case 'M': // Mist coolant enabled
-          debug_log('Mist coolant enabled')
-          //
-          break;
-        case 'C': // CoreXY enabled
-          debug_log('CoreXY enabled')
-          //
-          break;
-        case 'P': // Parking motion enabled
-          debug_log('Parking motion enabled')
-          //
-          break;
-        case 'Z': // Homing force origin enabled
-          debug_log('Homing force origin enabled')
-          //
-          break;
-        case 'H': // Homing single axis enabled
-          debug_log('Homing single axis enabled')
-          //
-          break;
-        case 'T': // Two limit switches on axis enabled
-          debug_log('Two limit switches on axis enabled')
-          //
-          break;
-        case 'A': // Allow feed rate overrides in probe cycles
-          debug_log('Allow feed rate overrides in probe cycles')
-          //
-          break;
-        case '$': // Restore EEPROM $ settings disabled
-          debug_log('Restore EEPROM $ settings disabled')
-          //
-          break;
-        case '#': // Restore EEPROM parameter data disabled
-          debug_log('Restore EEPROM parameter data disabled')
-          //
-          break;
-        case 'I': // Build info write user string disabled
-          debug_log('Build info write user string disabled')
-          //
-          break;
-        case 'E': // Force sync upon EEPROM write disabled
-          debug_log('Force sync upon EEPROM write disabled')
-          //
-          break;
-        case 'W': // Force sync upon work coordinate offset change disabled
-          debug_log('Force sync upon work coordinate offset change disabled')
-          //
-          break;
-        case 'L': // Homing init lock sets Grbl into an alarm state upon power up
-          debug_log('Homing init lock sets Grbl into an alarm state upon power up')
-          //
-          break;
-      }
-    }
-    status.machine.firmware.features = features;
-    serverEmit("features", features);
-  }
-
-  // [PRB:0.000,0.000,0.000:0]
-  if (data.indexOf("[PRB:") === 0) {
-    debug_log(data)
-    var prbLen = data.substr(5).search(/\]/);
-    var prbData = data.substr(5, prbLen).split(/,/);
-    var success = data.split(':')[2].split(']')[0];
-    status.machine.probe.x = prbData[0];
-    status.machine.probe.y = prbData[1];
-    status.machine.probe.z = prbData[2].split(':')[0];
-    status.machine.probe.state = success;
-    if (command != "$#" && command != undefined) {
-      if (success > 0) {
-        serverEmitOutput({
-          command: '[ PROBE ]',
-          response: "Probe Completed.",
-          type: 'success'
-        });
-      } else {
-        serverEmitOutput({
-          command: '[ PROBE ]',
-          response: "Probe move ERROR - probe did not make contact within specified distance",
-          type: 'error'
-        });
-      }
-    }
-
-    serverEmit('prbResult', status.machine.probe);
-  };
-
-  if (data.indexOf("[GC:") === 0) {
-    gotModals(data);
-  }
-
-  if (data.indexOf("[INTF:") === 0) {
-    {
-      serverEmitOutput({
-        command: 'connect',
-        response: "Detected an OpenBuilds Interface on port " + port.path,
-        type: 'success'
-      });
-    }
-    status.interface.connected = true;
-    if (data.split(":")[1].indexOf("ver") == 0) {
-      var installedVersion = parseFloat(data.split(":")[1].split("]")[0].split("-")[1])
-      status.interface.firmware.installedVersion = installedVersion
-      serverEmitOutput({
-        command: 'connect',
-        response: "OpenBuilds Interface Firmware Version: v" + installedVersion,
-        type: 'info'
-      });
-      if (installedVersion < status.interface.firmware.availVersion) {
-        serverEmitOutput({
-          command: 'connect',
-          response: "OpenBuilds Interface Firmware OUTDATED: v" + installedVersion + " can be upgraded to v" + status.interface.firmware.availVersion,
-          type: 'error'
-        });
-        serverEmit('interfaceOutdated', status);
-      }
-    }
-    serverEmit("status", status);
-  }
-
-  // Reset greeting
-  if (data.startsWith("Grbl") || data.startsWith("[FIRMWARE:grblHAL]")) { // Check if it's Grbl
-    debug_log(data)
-    // Machine Identification
-    if (status.comms.connectionStatus == 1) {
-      if (data.startsWith("GrblHAL")) {
-        status.machine.firmware.type = "grbl";
-        status.machine.firmware.platform = "grblHAL";
-        status.machine.firmware.version = data.substr(8, 4); // get version
-      } else if (data.startsWith("[FIRMWARE:grblHAL]")) {
-        status.machine.firmware.type = "grbl";
-        status.machine.firmware.platform = "grblHAL";
-        // Parse version from seperate [VER:...] line not here for this response
-      } else if (data.indexOf("FluidNC") != -1) { // Grbl 3.6 [FluidNC v3.6.5 (wifi) '$' for help]
-        status.machine.firmware.type = "grbl";
-        status.machine.firmware.platform = "FluidNC";
-        status.machine.firmware.version = data.substr(19, 5); // get version
-      } else {
-        status.machine.firmware.type = "grbl";
-        status.machine.firmware.platform = "gnea";
-        status.machine.firmware.version = data.substr(5, 4); // get version
-      }
-      if (parseFloat(status.machine.firmware.version) < 1.1) { // If version is too old
-        if (status.machine.firmware.version.length < 3) {
-          debug_log('invalid version string, stay connected')
-        } else {
-          if (status.comms.connectionStatus > 0) {
-            debug_log('WARN: Closing Port ' + port.path + " /  v" + parseFloat(status.machine.firmware.version));
-            // closePort();
-          } else {
-            debug_log('ERROR: Machine connection not open!');
-          }
-          serverEmitOutput({
-            command: command,
-            response: "Detected an unsupported version: Grbl " + status.machine.firmware.version + ". This is sadly outdated. Please upgrade to Grbl 1.1 or newer to use this software.  Go to http://github.com/gnea/grbl",
-            type: 'error'
-          });
-        }
-      }
-
-      onGrblConnection();
-    }
-    // end of machine identification
-
-    sentBuffer.length = 0; // Dump the queue
-    status.comms.blocked = false;
-    status.comms.paused = false;
-    clearGcodeQueue(false);
-    if (persistentConfig.aggressiveHomeReset) {
-      // when aggressiveHomeReset is true (the default), reset the home state on every grbl reset
-      status.machine.modals.homedRecently = false;
-    }
-
-    // after reset, immediately ask for modals
-    gcodeQueue.splice(queuePointer, 0, "$G");
-    send1Q();
-  }
-
-  // Machine Feedback: Position
-  if (data.indexOf("<") === 0) {
-    // debug_log(' Got statusReport (Grbl)')
-    // statusfeedback func
-    parseFeedback(data)
-    if (command == "?") {
-      serverEmitOutput({
-        command: command,
-        response: data,
-        type: 'info'
-      });
-    }
-  } else if (data.indexOf("ok") === 0) { // Got an OK so we are clear to send
-    serverEmit('ok', command); // added per #325
-    sentBuffer.shift();
-    if (command == "$CD") {
-      serverEmit('fluidncConfig', fluidncConfig);
-    }
-    status.comms.blocked = false;
-    serverEmit("queueCount", [gcodeQueue.length + sentBuffer.length - queuePointer, gcodeQueue.length]);
-    if (queuePointer < gcodeQueue.length) {
-      send1Q();
-    } else if (sentBuffer.length == 0) {
-      clearGcodeQueue(true);
-      if (jobStatusInternal == 1 || jobStatusInternal == 2) {
-        jobStatusInternal += 2; // last command was accepted, just wait for idle
-      }
-    }
-  } else if (data.indexOf('ALARM') === 0 && status.comms.connectionStatus >= 2) {
-    debug_log("ALARM:  " + data)
-
-    var alarmCode = parseInt(data.split(':')[1]);
-
-    if (!persistentConfig.aggressiveHomeReset) {
-      // when aggressiveHomeReset is false, certain alarm codes will be safe and will not reset the home state
-      const safeAlarmCodes = [0, 2, 4, 5, 12];
-      if (!safeAlarmCodes.includes(alarmCode)) {
-        status.machine.modals.homedRecently = false;
-      }
-    }
-
-    debug_log('ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode));
-    status.comms.alarm = alarmCode + ' - ' + grblStrings.alarms(alarmCode)
-    if (alarmCode != 5) {
-      serverEmit("toastErrorAlarm", 'ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode) + " [ " + command + " ]")
-    }
-    serverEmitOutput({
-      command: '',
-      response: 'ALARM: ' + alarmCode + ' - ' + grblStrings.alarms(alarmCode) + " [ " + command + " ]",
-      type: 'error'
-    });
-
-    clearGcodeQueue(false);
-    status.comms.connectionStatus = 5;
-  } else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1 && status.comms.connectionStatus >= 2) {
-    clearGcodeQueue(false);
-    status.comms.connectionStatus = 2;
-  } else if (data.indexOf('Emergency Stop Requested') != -1 && status.comms.connectionStatus >= 2) {
-    debug_log("Emergency Stop Requested")
-    clearGcodeQueue(false);
-    status.comms.connectionStatus = 5;
-  } else if (data.indexOf('wait') === 0) { // Got wait from Repetier -> ignore
-    // do nothing
-  } else if (data.indexOf('error') === 0 && status.comms.connectionStatus >= 2) { // Error received -> stay blocked stops queue
-    var errorCode = parseInt(data.split(':')[1]);
-
-    var lastAlarm = "";
-    if (errorCode == 9 && status.comms.connectionStatus == 5 && status.comms.alarm.length > 0) {
-      lastAlarm = "<hr>This error may just be a symptom of an earlier event:<br> ALARM: " + status.comms.alarm
-    }
-    debug_log('error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]");
-    serverEmitOutput({
-      command: '',
-      response: 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm,
-      type: 'error'
-    });
-    serverEmit("toastError", 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm)
-
-    debug_log("error;")
-    clearGcodeQueue(false);
-    status.comms.connectionStatus = 5;
-  } else if (data.startsWith("$32=")) {
-    status.misc.laserMode = parseInt(data.substr(4)) == 1;
-  } else if (data === ' ') {
-    // nothing
-  } else {
-    // do nothing with +data
-  }
-
-  if (data.indexOf("[MSG:Reset to continue]") === 0) {
-    clearGcodeQueue(false);
-    debug_log("[MSG:Reset to continue] -> Sending Reset")
-    addQRealtime(String.fromCharCode(0x18)); // ctrl-x
-  }
-
-  if (command) {
-    command = command.replace(/(\r\n|\n|\r)/gm, "");
-
-    if (command != "?" && data.length > 0 && data.indexOf('<') == -1) {
-      serverEmitOutput({
-        command: command,
-        response: data,
-        type: 'info'
-      });
-    }
-  } else {
-    if (data.indexOf("<") != 0) {
-      serverEmitOutput({
-        command: "",
-        response: data,
-        type: 'info'
-      });
-    }
-  }
-}
-
-function onGrblConnection() {
-  clearTimeout(connectTimeout);
-  connectTimeout = undefined;
-  debug_log("GRBL detected");
-  setTimeout(function() {
-    serverEmit('grbl', status.machine.firmware);
-  }, 100)
-  // Start interval for status queries
-  clearInterval(grblStatusLoop);
-  grblStatusLoop = setInterval(function() {
-    if (status.comms.connectionStatus > 0) {
-      addQRealtime("?");
-    }
-  }, 200);
-
-  status.comms.connectionStatus = 2;
-  status.machine.modals.homedRecently = false;
-
-  serverEmitOutput({
-    command: 'connect',
-    response: "Firmware Detected:  " + status.machine.firmware.platform + " version " + status.machine.firmware.version + " dated " + status.machine.firmware.date + " on " + status.comms.interfaces.activePort,
-    type: 'success'
-  });
-}
-
-// Initiates handshake with the controller
-function connectController(data) {
-  // set status
-  status.comms.connectionStatus = 1;
-
-  // Log attempt 1
-  debug_log("PORT INFO: Connected to " + port.path + " at " + port.baudRate);
-  serverEmitOutput({
-    command: 'connect',
-    response: "PORT INFO: Port is now open: " + port.path + " - Attempting to detect Controller...",
-    type: 'info'
-  });
-  // do attempt 1
-//  addQRealtime("\n"); // this causes grblHAL to send the welcome string (No, it doesn't)
-
-  serverEmitOutput({
-    command: 'connect',
-    response: "Attempting to detect Controller (1): (Ctrl+X)",
-    type: 'info'
-  });
-
-  addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-  debug_log("Sent: Ctrl+x");
-
-  connectTimeout = setTimeout(function() {
-    debug_log("Didn't detect firmware after Ctrl+X. Lets try toggling DTR");
-    serverEmitOutput({
-      command: 'connect',
-      response: "Attempting to detect Controller (2): (DTR Enable)",
-      type: 'info'
-    });
-
-    // toggle DTR on
-    port.set({
-      "dtr": true
-    }, console.log("Set DTR"));
-
-    // then try Ctrl+X again (but why twice 100ms apart? not sure - it was in the original code)
-    addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-    debug_log("Sent: Ctrl+x after DTR toggle");
-
-    setTimeout(function() {
-      addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
-    }, 100);
-
-    connectTimeout = setTimeout(function() {
-      debug_log("No supported firmware detected. Closing port " + port.path);
-      if (status.interface.connected) {
-        serverEmitOutput({
-          command: 'connect',
-          response: `ERROR!:  Connection established to INTERFACE, but no response from Grbl on the upstream controller. See https://github.com/OpenBuilds/docs-migrated/wiki for more details. Closing port ` + port.path,
-          type: 'error'
-        });
-      } else {
-        serverEmitOutput({
-          command: 'connect',
-          response: `ERROR!:  No Response from Controller - See https://github.com/OpenBuilds/docs-migrated/wiki for troubleshooting information. Closing port ` + port.path,
-          type: 'error'
-        });
-      }
-      closePort();
-      connectTimeout = undefined;
-    }, persistentConfig.grblWaitTime2 * 1000);
-  }, persistentConfig.grblWaitTime1 * 1000);
-
-  if (data.type == "usb") {
-    status.comms.interfaces.activePort = port.path;
-    status.comms.interfaces.type = data.type
-    status.comms.interfaces.activeBaud = port.baudRate;
-  } else if (data.type == "telnet") {
-    status.comms.interfaces.activePort = data.ip;
-    status.comms.interfaces.type = data.type
-    status.comms.interfaces.activeBaud = "net";
-  }
-}
-
-function machineSendRealtime(gcode) {
-  debug_log("SENDING: " + gcode)
-  if (port.isOpen) {
-    // realtime commands doesnt count toward the queue, does not generate OK
-    port.write(gcode);
-  } else {
-    debug_log("PORT NOT OPEN")
-  }
-}
-
-function machineSend(gcode) {
-  debug_log("SENDING: " + gcode)
-  if (port.isOpen) {
-    if (gcode.match(/T([\d.]+)/i)) {
-      var tool = parseFloat(RegExp.$1);
-      status.machine.tool.nexttool.number = tool
-      status.machine.tool.nexttool.line = gcode
-    }
-    port.write(gcode);
-    debug_log("SENT: " + gcode)
-  } else {
-    debug_log("PORT NOT OPEN")
-  }
-}
-
-// Splits the data into lines and adds them to the queue
-// Removes comments
-function addLinesToQueue(data, isJob) {
-  var empty = true;
-  data = data.split('\n');
-  for (var i = 0; i < data.length; i++) {
-
-    var line = data[i].replace("%", "").split(';')[0]; // Remove everything after ; = comment
-
-    // remove () comments
-    var commentStart = line.indexOf('(');
-    while (commentStart >= 0) {
-      const commentEnd = line.indexOf(')', commentStart);
-      if (commentEnd < 0) {
-        line = line.slice(0, commentStart);
-        break;
-      }
-      line = line.slice(0, commentStart) + line.slice(commentEnd + 1);
-      commentStart = line.indexOf('(');
-    }
-
-    var tosend = line.trim();
-    if (tosend.length > 0) {
-      if (addQToEnd(tosend) && isJob && status.misc.spindleDelay > 0 && !status.misc.laserMode) {
-        if (tosend.indexOf("M3") >= 0 || tosend.indexOf("M4") >= 0 || tosend.indexOf("M03") >= 0 || tosend.indexOf("M04") >= 0) {
-          addQToEnd("G4 P" + parseInt(status.misc.spindleDelay) + ".");
-        }
-      }
-      empty = false;
-    }
-  }
-
-  return !empty;
-}
-
-function runJob(object) {
-  jobStartTime = false;
-  var data = object.data;
-
-  jobIsJob = object.isJob;
-  jobStartTime = new Date().getTime();
-  if (object.isJob) {
-    setCurrentGcode(data);
-  }
-
-  if (object.completedMsg) {
-    jobCompletedMsg = object.completedMsg
-  }
-
-  // debug_log('Run Job (' + data.length + ')');
-  if (status.comms.connectionStatus == 0) {
-    debug_log('ERROR: Machine connection not open!');
-    return;
-  }
-  if (jobStatusInternal > 0) {
-    debug_log('ERROR: Another job still in progress.');
-    return;
-  }
-  if (data && addLinesToQueue(data, true)) {
-    // Start interval for qCount messages to socket clients
-    queueCounterLoop = setInterval(function() {
-      status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
-      jogWindowProgress(queuePointer / gcodeQueue.length);
-    }, 500);
-    jobStatusInternal = 1;
-    status.misc.jobStatus = 1;
-    send1Q(); // send first line
-    status.comms.connectionStatus = 3;
-  }
-}
-
-function parseFeedback(data) {
+// Parses Grbl status report: <Idle|MPos:0.000,0.000,0.000,0.000|Bf:100,1022|FS:0,0|Pn:XYZP|WCO:10.000,10.000,0.000,-10.000>
+function parseStatusReport(data) {
   var state = data.substring(1, data.search(/(,|\|)/));
   status.comms.runStatus = state
   if (state == "Idle") {
@@ -770,7 +231,6 @@ function parseFeedback(data) {
   } else {
     status.machine.firmware.buffer = [];
   }
-  // end statusreport
 }
 
 const coordinateSysCommands = ["G54", "G55", "G56", "G57", "G58", "G59"];
@@ -782,14 +242,12 @@ const tloModeCommands = ["G49", "G43.1"];
 const spindleStateCommands = ["M3", "M4", "M5"];
 const coolantStateCommands = ["M7", "M8", "M9"];
 
-function gotModals(data) {
+// Parses the Grbl modal status: [GC:G0 G54 G17 G21 G90 G94 M5 M9 T0 F0 S0]
+function parseModals(data) {
   // as per https://github.com/gnea/grbl/wiki/Grbl-v1.1-Commands#g---view-gcode-parser-state
   // The shown g-code are the current modal states of Grbl's g-code parser.
   // This may not correlate to what is executing since there are usually
   // several motions queued in the planner buffer.
-  // [GC:G0 G54 G17 G21 G90 G94 M5 M9 T0 F0.0 S0]
-
-  // defaults
 
   data = data.split(/:|\[|\]/)[2].split(" ")
 
@@ -836,10 +294,588 @@ function gotModals(data) {
       status.machine.modals.coolantstate = data[i]; // handle M7, M8, M9
     }
   }
-} // end gotModals
+}
 
-// queue
-function BufferSpace() {
+// Parses the version string: [VER:1.1f.20260908:minimill]
+function parseVersion(data) {
+	const parts = data.split(/:|\]/);
+  // Extracting the full version (1.1f)
+	const versionParts = parts[1].split('.');
+  const version = versionParts[0] + '.' + versionParts[1];
+  // Extracting the date (.20260908)
+  const date = versionParts[2];
+
+  status.machine.firmware.version = version;
+  status.machine.firmware.date = date;
+  status.machine.name = parts[2].toLowerCase();
+}
+
+// Parses the options: [OPT:VNMGZH,35,255,58]
+function parseOptions(data) {
+  const grblOpts = data.substr(5).split(/,|\]/);
+  const featuresStr = grblOpts[0];
+  status.machine.firmware.blockBufferSize = grblOpts[1];
+  status.machine.firmware.rxBufferSize = grblOpts[2];
+
+  var features = [];
+
+	for (var i = 0; i < featuresStr.length; i++) {
+    features.push(featuresStr[i]);
+    switch (featuresStr[i]) {
+      case 'Q':
+        debug_log('SPINDLE_IS_SERVO Enabled')
+        //
+        break;
+      case 'V': // Variable spindle enabled
+        debug_log('Variable spindle enabled')
+        //
+        break;
+      case 'N': // Line numbers enabled
+        debug_log('Line numbers enabled')
+        //
+        break;
+      case 'M': // Mist coolant enabled
+        debug_log('Mist coolant enabled')
+        //
+        break;
+      case 'C': // CoreXY enabled
+        debug_log('CoreXY enabled')
+        //
+        break;
+      case 'P': // Parking motion enabled
+        debug_log('Parking motion enabled')
+        //
+        break;
+      case 'Z': // Homing force origin enabled
+        debug_log('Homing force origin enabled')
+        //
+        break;
+      case 'H': // Homing single axis enabled
+        debug_log('Homing single axis enabled')
+        //
+        break;
+      case 'T': // Two limit switches on axis enabled
+        debug_log('Two limit switches on axis enabled')
+        //
+        break;
+      case 'A': // Allow feed rate overrides in probe cycles
+        debug_log('Allow feed rate overrides in probe cycles')
+        //
+        break;
+      case '$': // Restore EEPROM $ settings disabled
+        debug_log('Restore EEPROM $ settings disabled')
+        //
+        break;
+      case '#': // Restore EEPROM parameter data disabled
+        debug_log('Restore EEPROM parameter data disabled')
+        //
+        break;
+      case 'I': // Build info write user string disabled
+        debug_log('Build info write user string disabled')
+        //
+        break;
+      case 'E': // Force sync upon EEPROM write disabled
+        debug_log('Force sync upon EEPROM write disabled')
+        //
+        break;
+      case 'W': // Force sync upon work coordinate offset change disabled
+        debug_log('Force sync upon work coordinate offset change disabled')
+        //
+        break;
+      case 'L': // Homing init lock sets Grbl into an alarm state upon power up
+        debug_log('Homing init lock sets Grbl into an alarm state upon power up')
+        //
+        break;
+    }
+  }
+  status.machine.firmware.features = features;
+}
+
+// Handle probe output and reporting: [PRB:0.000,0.000,0.000:0]
+function handleProbe(data, report) {
+  debug_log(data);
+  var prbData = data.substr(5).split(/,|\]/);
+  var success = data.split(':')[2].split(']')[0];
+  status.machine.probe.x = prbData[0];
+  status.machine.probe.y = prbData[1];
+  status.machine.probe.z = prbData[2].split(':')[0];
+  status.machine.probe.state = success;
+  if (report) {
+    if (success > 0) {
+      serverEmitOutput({
+        command: '[ PROBE ]',
+        response: "Probe Completed.",
+        type: 'success'
+      });
+    } else {
+      serverEmitOutput({
+        command: '[ PROBE ]',
+        response: "Probe move ERROR - probe did not make contact within specified distance",
+        type: 'error'
+      });
+    }
+  }
+
+  serverEmit('prbResult', status.machine.probe);
+}
+
+function handleGreeting(data, command) {
+  debug_log(data)
+  // Machine Identification
+  if (status.comms.connectionStatus == 1) {
+    if (data.startsWith("GrblHAL")) {
+      status.machine.firmware.type = "grbl";
+      status.machine.firmware.platform = "grblHAL";
+      status.machine.firmware.version = data.substr(8, 4); // get version
+    }
+		else if (data.startsWith("[FIRMWARE:grblHAL]")) {
+      status.machine.firmware.type = "grbl";
+      status.machine.firmware.platform = "grblHAL";
+      // Parse version from seperate [VER:...] line not here for this response
+    }
+		else if (data.indexOf("FluidNC") != -1) { // Grbl 3.6 [FluidNC v3.6.5 (wifi) '$' for help]
+      status.machine.firmware.type = "grbl";
+      status.machine.firmware.platform = "FluidNC";
+      status.machine.firmware.version = data.substr(19, 5); // get version
+    }
+		else {
+      status.machine.firmware.type = "grbl";
+      status.machine.firmware.platform = "gnea";
+      status.machine.firmware.version = data.substr(5, 4); // get version
+    }
+    if (parseFloat(status.machine.firmware.version) < 1.1) { // If version is too old
+      if (status.machine.firmware.version.length < 3) {
+        debug_log('invalid version string, stay connected')
+      } else {
+        if (status.comms.connectionStatus > 0) {
+          debug_log('WARN: Closing Port ' + port.path + " /  v" + parseFloat(status.machine.firmware.version));
+          // closePort();
+        } else {
+          debug_log('ERROR: Machine connection not open!');
+        }
+        serverEmitOutput({
+          command: command,
+          response: "Detected an unsupported version: Grbl " + status.machine.firmware.version + ". This is sadly outdated. Please upgrade to Grbl 1.1 or newer to use this software.  Go to http://github.com/gnea/grbl",
+          type: 'error'
+        });
+      }
+    }
+
+    onGrblDetected();
+  }
+  // end of machine identification
+
+	// handle Grbl reset
+  sentBuffer.length = 0; // Dump the queue
+  status.comms.blocked = false;
+  status.comms.paused = false;
+  clearGcodeQueue(false);
+  if (persistentConfig.aggressiveHomeReset) {
+    // when aggressiveHomeReset is true (the default), reset the home state on every grbl reset
+    status.machine.modals.homedRecently = false;
+  }
+
+  // after reset, immediately ask for modals
+  gcodeQueue.splice(queuePointer, 0, "$G");
+  send1Q();
+}
+
+function parseInterface(data) {
+  serverEmitOutput({
+    command: 'connect',
+    response: "Detected an OpenBuilds Interface on port " + port.path,
+    type: 'success'
+  });
+  status.interface.connected = true;
+  if (data.split(":")[1].indexOf("ver") == 0) {
+    var installedVersion = parseFloat(data.split(":")[1].split("]")[0].split("-")[1])
+    status.interface.firmware.installedVersion = installedVersion
+    serverEmitOutput({
+      command: 'connect',
+      response: "OpenBuilds Interface Firmware Version: v" + installedVersion,
+      type: 'info'
+    });
+    if (installedVersion < status.interface.firmware.availVersion) {
+      serverEmitOutput({
+        command: 'connect',
+        response: "OpenBuilds Interface Firmware OUTDATED: v" + installedVersion + " can be upgraded to v" + status.interface.firmware.availVersion,
+        type: 'error'
+      });
+      serverEmit('interfaceOutdated', status);
+    }
+  }
+  serverEmit("status", status);
+}
+
+function handleOK(data, command) {
+  serverEmit('ok', command);
+  sentBuffer.shift();
+  if (command == "$CD") {
+    serverEmit('fluidncConfig', fluidncConfig);
+  }
+  status.comms.blocked = false;
+  serverEmit("queueCount", [gcodeQueue.length + sentBuffer.length - queuePointer, gcodeQueue.length]);
+  if (queuePointer < gcodeQueue.length) {
+    send1Q();
+  }
+	else if (sentBuffer.length == 0) {
+    clearGcodeQueue(true);
+    if (jobStatusInternal == 1 || jobStatusInternal == 2) {
+      jobStatusInternal += 2; // last command was accepted, just wait for idle
+    }
+	}
+}
+
+function handleAlarm(data, command) {
+  debug_log("ALARM:  " + data)
+
+  const alarmCode = parseInt(data.split(':')[1]);
+	const alarmMessage = alarmCode + ' - ' + grblStrings.alarms(alarmCode);
+
+  if (!persistentConfig.aggressiveHomeReset) {
+    // when aggressiveHomeReset is false, certain alarm codes will be safe and will not reset the home state
+    const safeAlarmCodes = [0, 2, 4, 5, 12];
+    if (!safeAlarmCodes.includes(alarmCode)) {
+      status.machine.modals.homedRecently = false;
+    }
+  }
+
+  debug_log('ALARM: ' + alarmMessage);
+  status.comms.alarm = alarmMessage;
+  if (alarmCode != 5) {
+    serverEmit("toastErrorAlarm", 'ALARM: ' + alarmMessage + " [ " + command + " ]")
+  }
+  serverEmitOutput({
+    command: '',
+    response: 'ALARM: ' + alarmMessage + " [ " + command + " ]",
+    type: 'error'
+  });
+
+  clearGcodeQueue(false);
+  status.comms.connectionStatus = 5;
+}
+
+function handleError(data, command) {
+  var errorCode = parseInt(data.split(':')[1]);
+
+  var lastAlarm = "";
+  if (errorCode == 9 && status.comms.connectionStatus == 5 && status.comms.alarm.length > 0) {
+    lastAlarm = "<hr>This error may just be a symptom of an earlier event:<br> ALARM: " + status.comms.alarm
+  }
+  debug_log('error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]");
+  serverEmitOutput({
+    command: '',
+    response: 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm,
+    type: 'error'
+  });
+  serverEmit("toastError", 'error: ' + errorCode + ' - ' + grblStrings.errors(errorCode) + " [ " + command + " ]" + lastAlarm)
+
+  debug_log("error;")
+  clearGcodeQueue(false);
+  status.comms.connectionStatus = 5;
+}
+
+function onParserData(data) {
+  var command = sentBuffer[0];
+
+  if (command == "$CD" && data != "ok") {
+    fluidncConfig += data + "\n";
+  }
+  else if (data.startsWith("[VER:")) {
+		parseVersion(data);
+		serverEmit("status", status);
+		serverEmit("machinename", status.machine.name);
+  }
+  else if (data.startsWith("[OPT:")) {
+		parseOptions(data);
+	  serverEmit("features", status.machine.firmware.features);
+  }
+	else if (data.startsWith("[GC:")) {
+    parseModals(data);
+  }
+	else if (data.startsWith("[PRB:")) {
+		handleProbe(data, command != "$#" && command != undefined);
+  }
+	else if (data.startsWith("[INTF:")) {
+		parseInterface(data);
+  }
+	else if (data.startsWith("Grbl") || data.startsWith("[FIRMWARE:grblHAL]")) { // Check if it's Grbl
+		handleGreeting(data, command);
+  }
+	else if (data.startsWith("<")) {
+    parseStatusReport(data);
+    if (command == "?") {
+      serverEmitOutput({
+        command: command,
+        response: data,
+        type: 'info'
+      });
+    }
+	}
+  else if (data.startsWith("ok")) {
+		handleOK(data, command); // Got an OK so we are clear to send
+  }
+	else if (data.startsWith('ALARM') && status.comms.connectionStatus >= 2) {
+		handleAlarm(data, command);
+	}
+  else if (data.startsWith('error') && status.comms.connectionStatus >= 2) {
+		handleError(data, command); // Error received -> stay blocked stops queue
+	}
+	else if (data.startsWith("$32=")) {
+		// detect laser mode to know if the spindle delay should be used
+    status.misc.laserMode = (parseInt(data.substr(4)) == 1);
+  }
+  else if (data.startsWith("[MSG:Reset to continue]")) {
+    clearGcodeQueue(false);
+    debug_log("[MSG:Reset to continue] -> Sending Reset")
+    addQRealtime(String.fromCharCode(0x18)); // ctrl-x
+  }
+	else if (data.indexOf('WARNING: After HALT you should HOME as position is currently unknown') != -1 && status.comms.connectionStatus >= 2) {
+    clearGcodeQueue(false);
+    status.comms.connectionStatus = 2;
+  }
+	else if (data.indexOf('Emergency Stop Requested') != -1 && status.comms.connectionStatus >= 2) {
+    debug_log("Emergency Stop Requested")
+    clearGcodeQueue(false);
+    status.comms.connectionStatus = 5;
+  }
+
+
+  if (command) {
+    command = command.replace(/(\r\n|\n|\r)/gm, "");
+
+    if (command != "?" && data.length > 0 && data.indexOf('<') == -1) {
+      serverEmitOutput({
+        command: command,
+        response: data,
+        type: 'info'
+      });
+    }
+  } else {
+    if (data.indexOf("<") != 0) {
+      serverEmitOutput({
+        command: "",
+        response: data,
+        type: 'info'
+      });
+    }
+  }
+}
+
+function onGrblDetected() {
+  clearTimeout(connectTimeout);
+  connectTimeout = undefined;
+  debug_log("GRBL detected");
+  setTimeout(function() {
+    serverEmit('grbl', status.machine.firmware);
+  }, 100)
+  // Start interval for status queries
+  clearInterval(grblStatusLoop);
+  grblStatusLoop = setInterval(function() {
+    if (status.comms.connectionStatus > 0) {
+      addQRealtime("?");
+    }
+  }, 200);
+
+  status.comms.connectionStatus = 2;
+  status.machine.modals.homedRecently = false;
+
+  serverEmitOutput({
+    command: 'connect',
+    response: "Firmware Detected:  " + status.machine.firmware.platform + " version " + status.machine.firmware.version + " dated " + status.machine.firmware.date + " on " + status.comms.interfaces.activePort,
+    type: 'success'
+  });
+}
+
+// Initiates handshake with the controller
+function connectController(data) {
+  // set status
+  status.comms.connectionStatus = 1;
+
+  // Log attempt 1
+  debug_log("PORT INFO: Connected to " + port.path + " at " + port.baudRate);
+  serverEmitOutput({
+    command: 'connect',
+    response: "PORT INFO: Port is now open: " + port.path + " - Attempting to detect Controller...",
+    type: 'info'
+  });
+  // do attempt 1
+//  addQRealtime("\n"); // this causes grblHAL to send the welcome string (Ivo: No, it doesn't)
+
+  serverEmitOutput({
+    command: 'connect',
+    response: "Attempting to detect Controller (1): (Ctrl+X)",
+    type: 'info'
+  });
+
+  addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+  debug_log("Sent: Ctrl+x");
+
+  connectTimeout = setTimeout(function() {
+    if (data.type == "usb") {
+      debug_log("Didn't detect firmware after Ctrl+X. Lets try toggling DTR");
+      serverEmitOutput({
+        command: 'connect',
+        response: "Attempting to detect Controller (2): (DTR Enable)",
+        type: 'info'
+      });
+
+      // toggle DTR on
+      port.set({
+        "dtr": true
+      }, console.log("Set DTR"));
+
+      // then try Ctrl+X again (but why twice 100ms apart? not sure - it was in the original code)
+      addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+      debug_log("Sent: Ctrl+x after DTR toggle");
+
+      setTimeout(function() {
+        addQRealtime(String.fromCharCode(0x18)); // ctrl-x (needed for rx/tx connection)
+      }, 100);
+    }
+
+    connectTimeout = setTimeout(function() {
+      debug_log("No supported firmware detected. Closing port " + port.path);
+      if (status.interface.connected) {
+        serverEmitOutput({
+          command: 'connect',
+          response: `ERROR!:  Connection established to INTERFACE, but no response from Grbl on the upstream controller. See https://github.com/OpenBuilds/docs-migrated/wiki for more details. Closing port ` + port.path,
+          type: 'error'
+        });
+      } else {
+        serverEmitOutput({
+          command: 'connect',
+          response: `ERROR!:  No Response from Controller - See https://github.com/OpenBuilds/docs-migrated/wiki for troubleshooting information. Closing port ` + port.path,
+          type: 'error'
+        });
+      }
+      closePort();
+      connectTimeout = undefined;
+    }, data.type == "usb" ? persistentConfig.grblWaitTime2 * 1000 : 100);
+  }, persistentConfig.grblWaitTime1 * 1000);
+
+  if (data.type == "usb") {
+    status.comms.interfaces.activePort = port.path;
+    status.comms.interfaces.type = data.type
+    status.comms.interfaces.activeBaud = port.baudRate;
+  } else if (data.type == "telnet") {
+    status.comms.interfaces.activePort = data.ip;
+    status.comms.interfaces.type = data.type
+    status.comms.interfaces.activeBaud = "net";
+  }
+}
+
+function machineSendRealtime(gcode) {
+  debug_log("SENDING: " + gcode)
+  if (port.isOpen) {
+    // realtime commands doesn't count toward the queue, does not generate OK
+    port.write(gcode);
+  } else {
+    debug_log("PORT NOT OPEN")
+  }
+}
+
+function machineSend(gcode) {
+  debug_log("SENDING: " + gcode)
+  if (port.isOpen) {
+    if (gcode.match(/T([\d.]+)/i)) {
+      var tool = parseFloat(RegExp.$1);
+      status.machine.tool.nexttool.number = tool
+      status.machine.tool.nexttool.line = gcode
+    }
+    port.write(gcode);
+    debug_log("SENT: " + gcode)
+  } else {
+    debug_log("PORT NOT OPEN")
+  }
+}
+
+// Splits the data into lines and adds them to the queue
+// Removes comments
+function addLinesToQueue(data, isJob) {
+  var empty = true;
+  data = data.split('\n');
+  for (var i = 0; i < data.length; i++) {
+
+    var line = data[i].replace("%", "").split(';')[0]; // Remove everything after ; = comment
+
+    // remove () comments
+    var commentStart = line.indexOf('(');
+    while (commentStart >= 0) {
+      const commentEnd = line.indexOf(')', commentStart);
+      if (commentEnd < 0) {
+        line = line.slice(0, commentStart);
+        break;
+      }
+      line = line.slice(0, commentStart) + line.slice(commentEnd + 1);
+      commentStart = line.indexOf('(');
+    }
+
+    var tosend = line.trim();
+    if (tosend.length > 0) {
+      if (addQToEnd(tosend) && isJob && status.misc.spindleDelay > 0 && !status.misc.laserMode) {
+        if (tosend.indexOf("M3") >= 0 || tosend.indexOf("M4") >= 0 || tosend.indexOf("M03") >= 0 || tosend.indexOf("M04") >= 0) {
+          addQToEnd("G4 P" + parseInt(status.misc.spindleDelay) + ".");
+        }
+      }
+      empty = false;
+    }
+  }
+
+  return !empty;
+}
+
+function runJob(object) {
+  jobStartTime = false;
+  var data = object.data;
+
+  jobIsJob = object.isJob;
+  jobStartTime = new Date().getTime();
+  if (object.isJob) {
+    setCurrentGcode(data);
+  }
+
+  if (object.completedMsg) {
+    jobCompletedMsg = object.completedMsg
+  }
+
+  // debug_log('Run Job (' + data.length + ')');
+  if (status.comms.connectionStatus == 0) {
+    debug_log('ERROR: Machine connection not open!');
+    return;
+  }
+  if (jobStatusInternal > 0) {
+    debug_log('ERROR: Another job still in progress.');
+    return;
+  }
+  if (data && addLinesToQueue(data, true)) {
+    // Start interval for qCount messages to socket clients
+    queueCounterLoop = setInterval(function() {
+      status.comms.queue = gcodeQueue.length - queuePointer + sentBuffer.length;
+      jogWindowProgress(queuePointer / gcodeQueue.length);
+    }, 500);
+    jobStatusInternal = 1;
+    status.misc.jobStatus = 1;
+    send1Q(); // send first line
+    status.comms.connectionStatus = 3;
+  }
+}
+
+function runCommand(data) {
+  debug_log('Run Command (' + data.replace('\n', '|') + ')');
+  if (status.comms.connectionStatus > 0) {
+    if (data) {
+      addLinesToQueue(data, false);
+      status.comms.runStatus = 'Running'
+      // debug_log('sending ' + JSON.stringify(gcodeQueue))
+      send1Q();
+    }
+  } else {
+    debug_log('ERROR: Machine connection not open!');
+  }
+}
+
+function calcBufferSpace() {
   const len = sentBuffer.length;
   var total = len; // account for the \n at the end
   for (var i = 0; i < len; i++) {
@@ -857,13 +893,12 @@ function BufferSpace() {
 }
 
 function send1Q() {
-  // console.time('send1Q');
   if (status.comms.connectionStatus > 0) {
     if (queuePointer == 0) {
       serverEmit("queueCount", [gcodeQueue.length, gcodeQueue.length]);
     }
     while ((gcodeQueue.length - queuePointer) > 0 && !status.comms.blocked && !status.comms.paused) {
-      const spaceLeft = BufferSpace();
+      const spaceLeft = calcBufferSpace();
 
       // Do we have enough space in the buffer?
       if (gcodeQueue[queuePointer].length < spaceLeft) {
@@ -875,17 +910,15 @@ function send1Q() {
         queuePointer++;
         sentBuffer.push(gcode);
         machineSend(gcode + '\n');
-        // debug_log('Sent: ' + gcode + ' Q: ' + (gcodeQueue.length - queuePointer) + ' Bspace: ' + (spaceLeft - gcode.length - 1));
       } else {
         status.comms.blocked = true;
       }
 
-      if (config.singleCommandMode) break;
+      if (config.singleCommandMode) break; // set singleCommandMode to false to push as many commands as fit in the buffer
     }
   } else {
     debug_log('Not Connected')
   }
-  // console.timeEnd('send1Q');
 }
 
 // Clears the queue and generates a queueComplete event
@@ -933,25 +966,25 @@ function finalizeJob(success) {
   }
 }
 
-var modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M03', 'M4', 'M04', 'M5', 'M7', 'M8', 'M9']
-var modalCommandsRegExp = new RegExp(modalCommands.join("|"));
+const modalCommands = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G17', 'G18', 'G19', 'G90', 'G91', 'G91.1', 'G93', 'G94', 'G20', 'G21', 'G40', 'G43.1', 'G49', 'M0', 'M1', 'M2', 'M30', 'M3', 'M03', 'M4', 'M04', 'M5', 'M7', 'M8', 'M9'];
+const modalCommandsRegExp = new RegExp(modalCommands.join("|"));
 
 // Returns true if a modal command was found
 function addQToEnd(gcode) {
-  // debug_log('added ' + gcode)
   gcodeQueue.push(gcode);
 
-  var testGcode = gcode.toUpperCase()
+  var testGcode = gcode.toUpperCase();
   if (testGcode.indexOf("$H") != -1) {
     status.machine.modals.homedRecently = true;
   }
-  if (testGcode == "$CD") {
+  else if (testGcode == "$CD") {
     fluidncConfig = ""; // empty string
   }
-  if (!gcode.startsWith("$J=") && modalCommandsRegExp.test(testGcode)) {
+  else if (!testGcode.startsWith("$J=") && modalCommandsRegExp.test(testGcode)) {
     gcodeQueue.push("$G");
     return true;
-  } else if (gcode.match(/T([\d.]+)/i)) {
+  }
+	else if (testGcode.match(/T([\d.]+)/i)) {
     gcodeQueue.push("$G");
     return true;
   }
@@ -961,8 +994,9 @@ function addQToEnd(gcode) {
 // Adds a line to the queue and kicks the sender if currently idle
 function addQToEndAndKick(gcode) {
   addQToEnd(gcode);
-  if (sentBuffer.length == 0)
+  if (sentBuffer.length == 0) {
     send1Q(); // nothing in the pending buffer, start the queue
+	}
 }
 
 function addQRealtime(gcode) {
@@ -1045,91 +1079,71 @@ function unpause() {
   }
 }
 
-function onConnection(socket) {
-  socket.on("spindleDelay", function(data) {
-    status.misc.spindleDelay = data;
-    if (persistentConfig.spindleDelay != data) {
-      persistentConfig.spindleDelay = data;
-      savePersistentConfig();
-    }
-  });
+function clearAlarm(data) {
+  if (status.comms.connectionStatus > 0) {
+    data = parseInt(data);
+    debug_log('Clearing Queue: Method ' + data);
+    switch (data) {
+      case 1:
+        debug_log('Clearing Lockout');
+        addQRealtime('$X\n');
+        debug_log('Resuming Queue Lockout');
+        serverEmitOutput({
+          command: '[clear alarm]',
+          response: "Operator clicked Clear Alarm: Cleared Lockout",
+          type: 'info'
+        });
+        break;
+      case 2:
+        debug_log('Emptying Queue');
+        status.comms.queue = 0
+        queuePointer = 0;
+        gcodeQueue.length = 0; // Dump the queue
+        sentBuffer.length = 0; // Dump bufferSizes
+        debug_log('Clearing Lockout');
 
+        clearInterval(queueCounterLoop);
+        jogWindowProgress(0);
+        addQRealtime(String.fromCharCode(0x18)); // ctrl-x
+        setTimeout(function() {
+          debug_log('Sent: $X');
+          addQToEndAndKick("$X");
+        }, 500);
+        status.comms.blocked = false;
+        status.comms.paused = false;
+
+        serverEmitOutput({
+          command: '[clear alarm]',
+          response: "Operator clicked Clear Alarm: Cleared Lockout and Emptied Queue",
+          type: 'info'
+        });
+        break;
+    }
+    status.comms.runStatus = 'Stopped'
+    if (status.comms.connectionStatus >= 2) {
+      status.comms.connectionStatus = 2;
+    }
+    status.comms.alarm = "";
+    serverEmit('errorsCleared', true);
+  } else {
+    debug_log('ERROR: Machine connection not open!');
+  }
+}
+
+function onConnection(socket) {
   socket.on('runJob', runJob);
+  socket.on('runCommand', runCommand);
 
   socket.on('forceQueue', send1Q);
 
    // Inject a live command into Serial stream in real-time (dev tool) even while a job is running, etc (straight Port.write from machineSendRealtime)
   socket.on('serialInject', machineSendRealtime);
 
-  socket.on('runCommand', function(data) {
-    debug_log('Run Command (' + data.replace('\n', '|') + ')');
-    if (status.comms.connectionStatus > 0) {
-      if (data) {
-        addLinesToQueue(data, false);
-        status.comms.runStatus = 'Running'
-        // debug_log('sending ' + JSON.stringify(gcodeQueue))
-        send1Q();
-      }
-    } else {
-      debug_log('ERROR: Machine connection not open!');
-    }
-  });
-
-
   socket.on('pause', pause);
   socket.on('resume', unpause);
   socket.on('stop', stop);
 
-  socket.on('clearAlarm', function(data) { // Clear Alarm
-    if (status.comms.connectionStatus > 0) {
-      data = parseInt(data);
-      debug_log('Clearing Queue: Method ' + data);
-      switch (data) {
-        case 1:
-          debug_log('Clearing Lockout');
-          addQRealtime('$X\n');
-          debug_log('Resuming Queue Lockout');
-          serverEmitOutput({
-            command: '[clear alarm]',
-            response: "Operator clicked Clear Alarm: Cleared Lockout",
-            type: 'info'
-          });
-          break;
-        case 2:
-          debug_log('Emptying Queue');
-          status.comms.queue = 0
-          queuePointer = 0;
-          gcodeQueue.length = 0; // Dump the queue
-          sentBuffer.length = 0; // Dump bufferSizes
-          debug_log('Clearing Lockout');
-
-          clearInterval(queueCounterLoop);
-          jogWindowProgress(0);
-          addQRealtime(String.fromCharCode(0x18)); // ctrl-x
-          setTimeout(function() {
-            debug_log('Sent: $X');
-            addQToEndAndKick("$X");
-          }, 500);
-          status.comms.blocked = false;
-          status.comms.paused = false;
-
-          serverEmitOutput({
-            command: '[clear alarm]',
-            response: "Operator clicked Clear Alarm: Cleared Lockout and Emptied Queue",
-            type: 'info'
-          });
-          break;
-      }
-      status.comms.runStatus = 'Stopped'
-      if (status.comms.connectionStatus >= 2) {
-        status.comms.connectionStatus = 2;
-      }
-      status.comms.alarm = "";
-      serverEmit('errorsCleared', true);
-    } else {
-      debug_log('ERROR: Machine connection not open!');
-    }
-  });
+  socket.on('clearAlarm', clearAlarm);
 
   socket.on('resetMachine', function() {
     if (status.comms.connectionStatus > 0) {
@@ -1141,9 +1155,17 @@ function onConnection(socket) {
     }
   });
 
+  socket.on("spindleDelay", function(data) {
+    status.misc.spindleDelay = data;
+    if (persistentConfig.spindleDelay != data) {
+      persistentConfig.spindleDelay = data;
+      savePersistentConfig();
+    }
+  });
+
   socket.on('aggressiveHomeReset', function(state) {
-    persistentConfig.aggressiveHomeReset = state;
     status.misc.aggressiveHomeReset = state;
+    persistentConfig.aggressiveHomeReset = state;
     savePersistentConfig();
   });
 
