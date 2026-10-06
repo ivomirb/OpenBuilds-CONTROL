@@ -12,7 +12,7 @@ if (localStorage.getItem("servo-calibration")) {
   pendownval = 128
 }
 
-$(document).ready(function() {
+function servoDocReady() {
   $('#pP').on('click', function(ev) {
     console.log('pen up')
     if (servo) {
@@ -30,4 +30,4 @@ $(document).ready(function() {
       servocalibrate()
     }
   })
-});
+}

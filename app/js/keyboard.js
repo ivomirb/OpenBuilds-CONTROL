@@ -1,6 +1,6 @@
 var keyboardShortcuts = false;
 
-$(document).ready(function() {
+function keyboardDocReady() {
 
   if (localStorage.getItem('keyboardShortcuts')) {
     keyboardShortcuts = JSON.parse(localStorage.getItem('keyboardShortcuts'));
@@ -76,7 +76,7 @@ $(document).ready(function() {
   }
   bindKeys()
 
-});
+}
 
 
 function bindKeys() {

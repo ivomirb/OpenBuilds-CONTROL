@@ -265,7 +265,7 @@ function onDroBlur(axis) {
   input.hide();
 }
 
-$(document).ready(function() {
+function jogDocReady() {
 
   if (localStorage.getItem('continuousJog')) {
     allowContinuousJog = JSON.parse(localStorage.getItem('continuousJog')) == true;
@@ -541,7 +541,7 @@ $(document).ready(function() {
         toastJogNotIdle();
       }
     } else {
-      sendGcode("$J=G53 G90 G21 Y" + jogdistXYZ.toFixed(2) + " F" + jogRate.y);
+      sendGcode("$J=G91 G21 Y" + jogdistXYZ.toFixed(2) + " F" + jogRate.y);
     }
     $('#runNewProbeBtn').addClass("disabled")
     $('#confirmNewProbeBtn').removeClass("disabled")
@@ -740,7 +740,7 @@ $(document).ready(function() {
     });
   });
 
-});
+}
 
 function changeStepSize(dir) {
   $('.distbtn').blur();

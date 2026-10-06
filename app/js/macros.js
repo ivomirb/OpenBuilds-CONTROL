@@ -136,12 +136,12 @@ function editMacro(buttonIdx, fileName, script) {
     var jsrunonstartup = "";
 
     if (script) {
-      var ext = fileName.split('.').at(-1);
+      var ext = fileName.split('.').at(-1).toLowerCase();
       if (ext == "js") {
         var title = fileName.slice(0, -3);
         var codetype = "javascript";
         var javascript = script;
-      } else if (["gcode", "gc", "tap", "nc", "cnc"].contains(ext)) {
+      } else if (["gcode", "gc", "tap", "nc", "cnc"].indexOf(ext) >= 0) {
         var title = fileName.slice(0, -ext.length - 1);
         var gcode = script;
       }
@@ -386,13 +386,13 @@ if (localStorage.getItem('macroButtons')) {
   buttonsarray = JSON.parse(localStorage.getItem('macroButtons'));
 }
 
-$(document).ready(function() {
+function macrosDocReady() {
   const urlParams = new URLSearchParams(window.location.search);
   const safeMode = urlParams.get("safeMode") == "true";
   populateMacroButtons(!safeMode);
   setMacroGroupView(macroGroupView);
   bindKeys();
-});
+}
 
 function searchMacro(prop, nameKey, myArray) {
   console.log(nameKey, prop, myArray)
