@@ -75,7 +75,8 @@ const iconPath = path.join(rootDir, 'app/icon.png');
 
 var devMode = false;
 var safeMode = false;
-var foceShowGui = false;
+var appCreated = false;
+var forceShowGui = false;
 
 var appIcon = null,
   jogWindow = null,
@@ -93,7 +94,7 @@ function onSecondInstance(event, commandLine, workingDirectory) {
     var ext = path.extname(arg).toLowerCase();
     if ([".obc", ".gcode", ".gc", ".tap", ".nc", ".cnc"].indexOf(ext) >= 0) {
       allowedFilePaths.add(arg);
-      readGcodeFile(arg, false, addRecentFile);
+      readGcodeFile(arg, true, addRecentFile);
       if (ext == ".obc") {
         return;
       }
@@ -105,38 +106,49 @@ function onSecondInstance(event, commandLine, workingDirectory) {
 
 // Module to create native browser window.
 function createApp() {
+  appCreated = true;
+
+  var showGui = forceShowGui || process.argv.indexOf("-showGui") > 0;
   status.misc.autoStart = persistentConfig.autoStart;
-  if (persistentConfig.autoStart || (process.platform != 'win32' && process.platform != 'linux'))
-    createTrayIcon();
+
   if (process.platform == 'darwin') {
     debug_log("Creating MacOS Menu");
     status.driver.operatingsystem = 'macos';
+    createTrayIcon();
     createMacMenu();
+    showGui = true;
   }
-  if (process.platform == 'win32') {
+  else if (process.platform == 'win32') {
     status.driver.operatingsystem = 'windows';
-    const pathIndex = electronApp.isPackaged ? 1 : 2;
-    if (pathIndex < process.argv.length) {
-      var openFilePath = process.argv[pathIndex];
-      if (openFilePath !== "" && openFilePath[0] != '-') {
-        debug_log("path" + openFilePath);
-        allowedFilePaths.add(openFilePath);
-        readGcodeFile(openFilePath, false, addRecentFile);
-      }
+    if (persistentConfig.autoStart) {
+      createTrayIcon();
+    } else {
+      showGui = true;
+    }
+  }
+  else if (process.platform == 'linux') {
+    status.driver.operatingsystem = 'linux';
+    if (persistentConfig.autoStart) {
+      createTrayIcon();
+    }
+    showGui = true;
+  }
+
+  const pathIndex = electronApp.isPackaged ? 1 : 2;
+  if (pathIndex < process.argv.length) {
+    var openFilePath = process.argv[pathIndex];
+    if (openFilePath !== "" && openFilePath[0] != '-') {
+      debug_log("path" + openFilePath);
+      allowedFilePaths.add(openFilePath);
+      showGui = true;
+      readGcodeFile(openFilePath, true, addRecentFile);
     }
   }
 
-  foceShowGui = process.argv.indexOf("-showGui") > 0;
   devMode = process.argv.indexOf("-devMode") > 0 || persistentConfig.forceDevMode;
   safeMode = process.argv.indexOf("-safeMode") > 0;
-  if (process.argv.indexOf("-resetSize") > 0) {
-    BrowserWindow.clearPersistedState('main-window');
-  }
-  if (foceShowGui || process.platform == 'darwin' || (process.platform == 'win32' && !persistentConfig.autoStart)) {
+  if (showGui) {
     showJogWindow();
-    if (process.argv.indexOf("-debug") > 0) {
-      jogWindow.webContents.openDevTools();
-    }
   }
 }
 
@@ -334,8 +346,13 @@ function setAutoStart(enabled) {
   }
 }
 
+// Create the browser window.
 function createJogWindow() {
-  // Create the browser window.
+  const PERSISTED_STATE_TAG = 'main-window';
+  if (process.argv.indexOf("-resetSize") > 0) {
+    BrowserWindow.clearPersistedState(PERSISTED_STATE_TAG);
+  }
+
   jogWindow = new BrowserWindow({
     width: 1000,
     minWidth: 1000,
@@ -346,7 +363,7 @@ function createJogWindow() {
     resizable: true,
     maximizable: true,
     title: "OpenBuilds CONTROL ",
-    name: "main-window", // name for the persisted state
+    name: PERSISTED_STATE_TAG,
     frame: false,
     autoHideMenuBar: true,
     icon: nativeImage.createFromPath(
@@ -375,6 +392,10 @@ function createJogWindow() {
   }
   jogWindow.loadURL(url);
 
+  if (process.argv.indexOf("-debug") > 0) {
+    jogWindow.webContents.openDevTools();
+  }
+
   jogWindow.on('close', function() {
     if (!forceQuit) {
       jogWindow.hide();
@@ -389,12 +410,15 @@ function createJogWindow() {
     // when you should delete the corresponding element.
     jogWindow = null;
   });
-  jogWindow.once('ready-to-show', () => {
-    showJogWindow()
-  })
+
+  jogWindow.once('ready-to-show', showJogWindow);
 }
 
 function showJogWindow() {
+  if (!appCreated) {
+    forceShowGui = true;
+    return;
+  }
   if (jogWindow === null) {
     createJogWindow();
   }
@@ -416,18 +440,10 @@ function initElectron() {
     debug_log("Already running! Check the System Tray")
     electronApp.exit(0);
     electronApp.quit();
-  } else {
-    electronApp.on('second-instance', onSecondInstance);
-    // Create myWindow, load the rest of the app, etc...
-
-    electronApp.on('ready', () => {
-      if (process.platform == 'win32') {
-        // Don't show window - sit in Tray
-      } else {
-        showJogWindow() // Macos and Linux - launch GUI
-      }
-    })
+    return;
   }
+
+  electronApp.on('second-instance', onSecondInstance);
 
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.

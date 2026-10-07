@@ -230,7 +230,9 @@ However it may be rude to show the full text every time. Maybe only print "for h
 function onDocReady(data) {
   onGrbl(data.firmware);
   if (!isJogWidget) {
-    onGcodeUpload(data.gcode, data.filename);
+    if (data.gcode) {
+     onGcodeUpload(data.gcode, data.filename);
+    }
     onRecentFiles(data.recentFiles);
     onSysInfo(data.sysInfo);
 

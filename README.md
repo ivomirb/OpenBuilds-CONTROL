@@ -5,20 +5,22 @@ This is a fork by Ivo Beltchev with multiple improvements.
 
 ### Workflow
 
-* New button to reload the last G-code file with a list of recent files
-* More reliable and safe jogging features, more compatible with a variety of homing settings
 * Ability to view and set machine coordinates
 * Stores a history of work origins and allows for rolling back to a previous one
 * Corrected the math and improved the safety of the "goto zero" buttons
+* More reliable and safe jogging features, more compatible with a variety of homing settings
 * The Pause and Stop buttons remain available until the very end of the job
 * While the job is paused, the Tool Off button can stop the spindle. It will resume automatically
 * A new setting to insert a delay for a few seconds after the spindle starts up
 * Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
 * A new setting to hide the 4th axis controls if the controller supports it but it is not used
 * The "Recover from line" feature is more reliable
+* The homing button prevents accidental homing, and has a menu for homing a single axis if the hardware supports it
 
 ### User Interface
 
+* Removed the dropdown menu from the file open button to save a click
+* New button to reload the current G-code file or load from a list of recent files
 * A new setting to disable the autostart and the tray icon, making it behave like a regular desktop app
 * Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
 * The dialogs for opening and saving files have independent default directories for G-code, macros and grbl settings
@@ -33,7 +35,7 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Added playback controls to the simulation and fixed many bugs
 * Fixed the wrong bounding box for the machine area
 * Fixed the grid alignment and sizing
-* Optimized memory usage to allow for loading larger files
+* Optimized memory usage to allow for previewing larger files
 * Fixed GPU memory leaks
 
 ### Grbl Settings Editor
@@ -66,15 +68,17 @@ The Javascript macros and the open UI architecture of OpenBuilds make it easy to
 Over the years I have created multiple useful macros.
 You can find them in the [Useful Macros folder](UsefulMacros/UsefulMacros.md).
 
-Most of them are compatible with the original software.
-The most notable examples are:
+Some are standalone versions of the new features, which can be added to the original software if you don't want to upgrade
 
-* Macro manager - a standalone version of the macro improvements that can be used with the original software
-* Heightmap support, similar to the one in Candle (work in progress, not yet fully tested)
-* Disable the Z jog buttons for large step sizes
-* Remove the dropdown from the file open button
+* Macro manager - allows organizing macros into groups, export and import all macros into a single file
 * Smart Home macro that prevents accidental homing and allows homing single axis if supported
-* Measure Z macro that can measure the height without changing the work zero
+* Remove the dropdown from the file open button
+
+Others are new features that can be added to either this version or the original software
+
+* Heightmap support, similar to the one in Candle (work in progress, not yet fully tested)
+* Disable the Z jog buttons for large step sizes (a safety feature)
+* Measure Z macro that can measure the height of a surface without changing the work zero
 
 ## Download
 
