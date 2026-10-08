@@ -21,6 +21,7 @@ var heightmapGeo = undefined;
 
 // Heightmap settings (persistent)
 var heightmapSettings = {
+  enabled: false, // if the heightmap tools are enabled
   minSegmentLength: 1, // minimum length for linear and arc segments
   zThreshold: 0.01, // maximum Z deviation between the toolpath and the heightmap
   arcThreshold: 0.005, // maximum deviation when converting arcs to lines
@@ -321,31 +322,42 @@ function generateHeightmapMesh() {
     grid[iy] = new Array(subCellsX + 1);
     for (var ix = 0; ix <= subCellsX; ix++) {
       var x = heightmapStart.x + ix*dX;
-      grid[iy][ix] = new THREE.Vector3(x, y, computeHeightmapZ(x, y));
+      grid[iy][ix] = {x: x, y: y, z: computeHeightmapZ(x, y)};
     }
   }
 
   // create the wireframe geometry
-  var lineMtl1 = new THREE.LineBasicMaterial({color: Theme.HEIGHTMAP_GRID_COLOR1});
-  var lineMtl2 = new THREE.LineBasicMaterial({color: Theme.HEIGHTMAP_GRID_COLOR2});
+  var vertices1 = [];
+  var vertices2 = [];
   for (var iy = 0; iy <= subCellsY; iy++) {
-    var geo = new THREE.Geometry();
-    geo.vertices = grid[iy];
-    heightmapGeo.add(new THREE.Line(geo, (iy%subDivisionsY == 0) ? lineMtl1 : lineMtl2));
+    var verts = (iy%subDivisionsY == 0) ? vertices1 : vertices2;
+    for (var ix = 0; ix < subCellsX; ix++) {
+      const g1 = grid[iy][ix];
+      const g2 = grid[iy][ix+1];
+      verts.push(g1.x, g1.y, g1.z, g2.x, g2.y, g2.z);
+    }
   }
 
   for (var ix = 0; ix <= subCellsX; ix++) {
-    var geo = new THREE.Geometry();
-    for (var iy = 0; iy <= subCellsY; iy++) {
-      geo.vertices.push(grid[iy][ix]);
+    var verts = (ix%subDivisionsX == 0) ? vertices1 : vertices2;
+    for (var iy = 0; iy < subCellsY; iy++) {
+      const g1 = grid[iy][ix];
+      const g2 = grid[iy+1][ix];
+      verts.push(g1.x, g1.y, g1.z, g2.x, g2.y, g2.z);
     }
-
-    heightmapGeo.add(new THREE.Line(geo, (ix%subDivisionsX == 0) ? lineMtl1 : lineMtl2));
   }
 
-  // create the mesh geometry for the faces
-  var meshGeo = new THREE.BufferGeometry();
+  var lineMtl1 = new THREE.LineBasicMaterial({color: Theme.HEIGHTMAP_GRID_COLOR1});
+  var lineGeo1 = new THREE.BufferGeometry();
+  lineGeo1.setAttribute('position', new THREE.Float32BufferAttribute( vertices1, 3));
+  heightmapGeo.add(new THREE.LineSegments(lineGeo1, lineMtl1));
 
+  var lineMtl2 = new THREE.LineBasicMaterial({color: Theme.HEIGHTMAP_GRID_COLOR2});
+  var lineGeo2 = new THREE.BufferGeometry();
+  lineGeo2.setAttribute('position', new THREE.Float32BufferAttribute( vertices2, 3));
+  heightmapGeo.add(new THREE.LineSegments(lineGeo2, lineMtl2));
+
+  // create the mesh geometry for the faces
   var vertices = new Float32Array((subCellsX+1) * (subCellsY+1) * 3);
   var idx = 0;
   for (var iy = 0; iy <= subCellsY; iy++) {
@@ -372,6 +384,7 @@ function generateHeightmapMesh() {
     }
   }
 
+  var meshGeo = new THREE.BufferGeometry();
   meshGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
   meshGeo.setIndex(indices);
   meshGeo.computeVertexNormals();
@@ -1190,29 +1203,24 @@ function updateHeightmapMenu() {
   EnableViaClass('#revertHeightmap', editor.session.getLine(0) == HEIGHTMAP_GCODE_HEADER1a && laststatus.comms.connectionStatus != 3);
 }
 
-function toggleHeightmapTools()
-{
-  if ($('#heightmapBtn').css('display') == 'none') {
-    $('#viewToolpathSetting:checkbox').prop('checked', true);
-    $('#toggleHeightmapTools').addClass('checked');
-    $('.heightmap').show();
-    $('#gcodeviewertab').click();
+function toggleHeightmapTools() {
+  heightmapSettings.enabled = !heightmapSettings.enabled;
+  localStorage.setItem("heightmapSettings", JSON.stringify(heightmapSettings));
+
+  AddRemoveClass('#toggleHeightmapTools', 'checked', heightmapSettings.enabled);
+  $('.heightmap').toggle(heightmapSettings.enabled);
+  if (heightmapGeo) {
+    heightmapGeo.visible = heightmapSettings.enabled;
+  }
+
+  if (heightmapSettings.enabled) {
     viewSettings.heightmap = true;
     $('#viewHeighmtapSetting:checkbox').prop('checked', true);
-    if (heightmapGeo) {
-      heightmapGeo.visible = true;
-    }
-  }
-  else {
-    $('.heightmap').hide();
-    $('#toggleHeightmapTools').removeClass('checked');
-    if (heightmapGeo) {
-      heightmapGeo.visible = false;
-    }
+    $('#gcodeviewertab').click();
   }
 }
 
-{
+function heightmapDocReady() {
   // read settings
   const settings = JSON.parse(localStorage.getItem("heightmapSettings"));
   if (settings) {
@@ -1222,4 +1230,7 @@ function toggleHeightmapTools()
       }
     }
   }
+
+  AddRemoveClass('#toggleHeightmapTools', 'checked', heightmapSettings.enabled);
+  $('.heightmap').toggle(heightmapSettings.enabled);
 }

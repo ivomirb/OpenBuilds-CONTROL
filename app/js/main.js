@@ -113,6 +113,7 @@ $(document).ready(function() {
     servoDocReady();
     themeDocReady();
     updatesDocReady();
+    heightmapDocReady();
 
     $("#command").inputHistory({
       enter: function() {

@@ -383,30 +383,44 @@ function GenerateHeightmapMesh()
 		for (var ix = 0; ix <= subCellsX; ix++)
 		{
 			var x = g_HeightmapStart.x + ix*dX;
-			grid[iy][ix] = new THREE.Vector3(x, y, ComputeHeightmapZ(x, y));
+			grid[iy][ix] = {x: x, y: y, z: ComputeHeightmapZ(x, y)};
 		}
 	}
 
 	// create the wireframe geometry
-	var lineMtl1 = new THREE.LineBasicMaterial({color: PRIMARY_GRID_COLOR});
-	var lineMtl2 = new THREE.LineBasicMaterial({color: SECONDARY_GRID_COLOR});
+	var vertices1 = [];
+	var vertices2 = [];
 	for (var iy = 0; iy <= subCellsY; iy++)
 	{
-		var geo = new THREE.Geometry();
-		geo.vertices = grid[iy];
-		g_HeightmapGeo.add(new THREE.Line(geo, (iy%subDivisionsY == 0) ? lineMtl1 : lineMtl2));
+		var verts = (iy%subDivisionsY == 0) ? vertices1 : vertices2;
+		for (var ix = 0; ix < subCellsX; ix++)
+		{
+			const g1 = grid[iy][ix];
+			const g2 = grid[iy][ix+1];
+			verts.push(g1.x, g1.y, g1.z, g2.x, g2.y, g2.z);
+		}
 	}
 
 	for (var ix = 0; ix <= subCellsX; ix++)
 	{
-		var geo = new THREE.Geometry();
-		for (var iy = 0; iy <= subCellsY; iy++)
+		var verts = (ix%subDivisionsX == 0) ? vertices1 : vertices2;
+		for (var iy = 0; iy < subCellsY; iy++)
 		{
-			geo.vertices.push(grid[iy][ix]);
+			const g1 = grid[iy][ix];
+			const g2 = grid[iy+1][ix];
+			verts.push(g1.x, g1.y, g1.z, g2.x, g2.y, g2.z);
 		}
-
-		g_HeightmapGeo.add(new THREE.Line(geo, (ix%subDivisionsX == 0) ? lineMtl1 : lineMtl2));
 	}
+
+	var lineMtl1 = new THREE.LineBasicMaterial({color: PRIMARY_GRID_COLOR});
+	var lineGeo1 = new THREE.BufferGeometry();
+	lineGeo1.setAttribute('position', new THREE.Float32BufferAttribute( vertices1, 3));
+	g_HeightmapGeo.add(new THREE.LineSegments(lineGeo1, lineMtl1));
+
+	var lineMtl2 = new THREE.LineBasicMaterial({color: SECONDARY_GRID_COLOR});
+	var lineGeo2 = new THREE.BufferGeometry();
+	lineGeo2.setAttribute('position', new THREE.Float32BufferAttribute( vertices2, 3));
+	g_HeightmapGeo.add(new THREE.LineSegments(lineGeo2, lineMtl2));
 
 	// create the mesh geometry for the faces
 	var meshGeo = new THREE.BufferGeometry();
@@ -653,9 +667,9 @@ function LoadHeightmap(file)
 	{
 		var lines = file.split('\n');
 		var config = lines[0].split(',').map(Number);
-		if (config.length != 11)
+		if (config.length != 12)
 		{
-			throw new Error("Line 1 doesn't have the correct number of values. Expecting 11 numbers.");
+			throw new Error("Line 1 doesn't have the correct number of values. Expecting 12 numbers.");
 		}
 
 		var start = {x: config[0], y: config[1]};
@@ -665,6 +679,7 @@ function LoadHeightmap(file)
 		var seek = Math.max(config[8], 0.1);
 		var feed = Math.max(config[9], 1);
 		var retract = Math.max(config[10], 0.1);
+		var feedXY = Math.max(config[11], 1);
 
 		if (lines.length < pointCount.y + 1)
 		{

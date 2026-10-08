@@ -298,8 +298,6 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   axesgrp.add(line1);
   axesgrp.add(line2);
 
-  gridsystem.add(axesgrp);
-
   var vertices10 = [];
   var vertices100 = [];
 
@@ -359,9 +357,10 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   grid.visible = viewSettings.grid;
   grid.add(grid10);
   grid.add(grid100);
+  grid.add(axesgrp);
   gridsystem.add(grid);
 
-  var ruler = drawRuler(xmin, xmax, ymin, ymax, inches)
+  var ruler = drawRuler(xmin, xmax, ymin, ymax, inches);
   ruler.name = "Ruler";
   ruler.visible = viewSettings.ruler;
   gridsystem.add(ruler);
