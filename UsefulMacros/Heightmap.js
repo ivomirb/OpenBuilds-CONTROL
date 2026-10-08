@@ -273,10 +273,10 @@ window.HeightmapAutoSize = function()
 window.EditHeightmapSettings = function()
 {
 	Metro.dialog.create({
-		title: "<i class='fas fa-layer-group'></i> Heightmap Settings",
+		clsDialog: 'dark',
+		title: "<i class='mif-chart-bars'></i> Heightmap Settings",
 		content: g_HeightmapSettingsDlg,
 		width: 850,
-		clsDialog: 'dark',
 		actions: [
 			{
 				caption: "OK",
@@ -456,13 +456,13 @@ function OnHeightmapSuccess()
 	ShowHeightmap(true);
 
 	Metro.dialog.create({
-		title: "<i class='fas fa-layer-group'></i> Heightmap",
-		content: "The heightmap probing is completed.<br>You can now apply it to the current G-code or save it to a file.",
 		clsDialog: 'dark',
+		title: "<i class='mif-chart-bars'></i> Heightmap",
+		content: "The heightmap probing is completed.<br>You can now apply it to the current G-code or save it to a file.",
 		actions: [
 			{
 				caption: "OK",
-				cls: "js-dialog-close",
+				cls: "js-dialog-close success",
 				onclick: function() {}
 			}
 		],
@@ -507,6 +507,11 @@ function OnProbeResult(probe)
 			}
 		}
 	}
+	else
+	{
+		socket.off('prbResult');
+		ShowHeightmapError("The probe failed to touch the surface.", true);
+	}
 }
 
 function RunProbe()
@@ -548,16 +553,22 @@ function RunProbe()
 	socket.emit('runJob', {data: gcode, isJob: false, fileName: ""});
 }
 
-function ShowHeightmapError(error)
+function ShowHeightmapError(error, unlock)
 {
 	Metro.dialog.create({
 		clsDialog: 'dark',
-		title: "<i class='fas fa-layer-group fg-red'></i> Heightmap Error",
+		title: "<i class='mif-chart-bars fg-red'></i> Heightmap Error",
 		content: error,
 		actions: [{
 				caption: "Close",
 				cls: "js-dialog-close alert",
-				onclick: function() {}
+				onclick: function()
+				{
+					if (unlock)
+					{
+						socket.emit('clearAlarm', 1);
+					}
+				}
 			},
 		]
 	});
@@ -582,7 +593,7 @@ window.GenerateHeightmap = function()
 
 	Metro.dialog.create({
 		clsDialog: 'dark',
-		title: "<i class='fas fa-layer-group'></i> Generate Heightmap",
+		title: "<i class='mif-chart-bars'></i> Generate Heightmap",
 		content: "The measuring of the heightmap is about to begin.<br>Make sure the probe is connected and free to move above the surface.",
 		actions: [
 			{
@@ -606,8 +617,8 @@ function FileReadError(message)
 		message = "Unspecified Error";
 	}
 	Metro.dialog.create({
-		title: "File read error",
 		clsDialog: "dark",
+		title: "File read error",
 		width: 600,
 		content: escapeHTML(message),
 		dataToTop: true,
@@ -1381,11 +1392,11 @@ window.UpdateHeightmapMenu =function()
 }
 
 const heightmapBtnHtml1a = `<div class="pos-relative" style="display:inline-block; margin: 5px 5px 6px 9px;">
-	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark dropdown-toggle"><i class="fas fa-layer-group"></i> Heightmap</button>
+	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" class="button dark dropdown-toggle"><i class="mif-chart-bars"></i> Heightmap</button>
 	<ul class="ribbon-dropdown drop-up" id="heightmapMenu" data-role="dropdown" role="menu" style="margin-bottom:5px;">`;
 
 const heightmapBtnHtml1b = `<div>
-	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" style="margin-left:3px;" class="button dark dropdown-toggle"><i class="fas fa-layer-group"></i> Heightmap</button>
+	<button id="heightmapBtn" onclick="UpdateHeightmapMenu()" style="margin-left:3px;" class="button dark dropdown-toggle"><i class="mif-chart-bars"></i> Heightmap</button>
 	<ul class="ribbon-dropdown drop-down" id="heightmapMenu" data-role="dropdown" role="menu">`;
 
 const heightmapBtnHtml2 = `

@@ -839,15 +839,11 @@ function runJob(object) {
     jobCompletedMsg = object.completedMsg
   }
 
-  // debug_log('Run Job (' + data.length + ')');
   if (status.comms.connectionStatus == 0) {
     debug_log('ERROR: Machine connection not open!');
     return;
   }
-  if (jobStatusInternal > 0) {
-    debug_log('ERROR: Another job still in progress.');
-    return;
-  }
+
   if (data && addLinesToQueue(data, true)) {
     // Start interval for qCount messages to socket clients
     queueCounterLoop = setInterval(function() {
@@ -867,7 +863,6 @@ function runCommand(data) {
     if (data) {
       addLinesToQueue(data, false);
       status.comms.runStatus = 'Running'
-      // debug_log('sending ' + JSON.stringify(gcodeQueue))
       send1Q();
     }
   } else {

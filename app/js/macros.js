@@ -64,12 +64,21 @@ function populateMacroButtons(runStartups) {
 
 
     if (button.jsrunonstartup && runStartups) {
-      var icon = "";
-      var source = "macros";
-      var string = "Macro: <b>" + button.title + "</b> executed on startup!";
-      var printLogCls = "fg-blue";
-      printLogModern(icon, source, string, printLogCls);
-      executeJS(button.javascript);
+      try {
+        executeJS(button.javascript);
+        const icon = "";
+        const source = "macros";
+        const string = "Macro: <b>" + button.title + "</b> executed on startup!";
+        const printLogCls = "fg-blue";
+        printLogModern(icon, source, string, printLogCls);
+      } catch(ex) {
+        const icon = "";
+        const source = "macros";
+        const string = "Macro: <b>" + button.title + "</b> failed on startup!";
+        const printLogCls = "fg-red";
+        printLogModern(icon, source, string, printLogCls);
+        printLogModern(icon, source, escapeHTML(ex.toString()), printLogCls);
+      }
     }
   }
   $("#macros").append(`<small style="flex-basis:100%"><i class="fas fa-info-circle"></i>  Right click your Macro buttons to edit/sort/delete/export</small>`);

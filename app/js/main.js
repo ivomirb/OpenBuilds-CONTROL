@@ -1,7 +1,7 @@
 var currentGcode = ""; // this should always match what is in the 3d view, but the editor contents may be different
 var loadedFileName = ""; // name for the contents of the editor, usually the last loaded file
 var editor;
-var useEditor = false; // if false, currentGcode is used instead of the contents of the editor
+var useEditor = true; // if false, currentGcode is used instead of the contents of the editor
 var isJogWidget = false;
 var lastJobStartTime = false;
 
