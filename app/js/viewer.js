@@ -14,7 +14,7 @@ var sizeymin;
 var sizexmax;
 var sizeymax;
 var clearSceneFlag = false;
-var viewSettings = {grid: true, ruler: true, toolpath: true, tool: true, machine: true};
+var viewSettings = {grid: true, ruler: true, toolpath: true, tool: true, machine: true, heightmap: true};
 
 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
@@ -520,7 +520,6 @@ function makeSprite(rendererType, vals) {
   context.font = "normal " + textHeight + "px Impact";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  //context.fillStyle = "#ff0000";
   context.fillStyle = vals.color;
 
   context.fillText(txt, textWidth / 2, textHeight / 2);
@@ -628,6 +627,7 @@ function readViewSettings() {
   $('#viewToolpathSetting:checkbox').prop('checked', viewSettings.toolpath);
   $('#viewToolSetting:checkbox').prop('checked', viewSettings.tool);
   $('#viewMachineSetting:checkbox').prop('checked', viewSettings.machine);
+  $('#viewHeighmtapSetting:checkbox').prop('checked', viewSettings.heightmap);
 
   updateViewSettings();
 }
@@ -644,6 +644,7 @@ function changeViewSettings() {
   viewSettings.toolpath = $('#viewToolpathSetting').is(':checked');
   viewSettings.tool = $('#viewToolSetting').is(':checked');
   viewSettings.machine = $('#viewMachineSetting').is(':checked');
+  viewSettings.heightmap = $('#viewHeighmtapSetting').is(':checked');
   saveViewSettings();
   updateViewSettings();
 }
@@ -665,5 +666,9 @@ function updateViewSettings() {
 
     if (machineCoordinateSpace)
       machineCoordinateSpace.visible = viewSettings.machine;
+
+    var heightmap = scene.getObjectByName("Heightmap");
+    if (heightmap)
+      heightmap.visible = viewSettings.heightmap;
   }
 }

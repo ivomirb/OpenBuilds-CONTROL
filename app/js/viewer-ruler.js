@@ -20,7 +20,6 @@ function drawRuler(xmin, xmax, ymin, ymax, inches) {
   // x axis
   for (var i = xmin; i <= xmax; i++) {
     var length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
-    var geometry = new THREE.Geometry();
     vertices.push(i * ticSpacing, -1, 0, i * ticSpacing, -length, 0);
 
     if (i % 10 == 0) {
@@ -39,7 +38,6 @@ function drawRuler(xmin, xmax, ymin, ymax, inches) {
   // y axis
   for (var i = ymin; i <= ymax; i++) {
     var length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
-    var geometry = new THREE.Geometry();
     vertices.push(-1, i * ticSpacing, 0, -length, i * ticSpacing, 0);
 
     if (i % 10 == 0) {

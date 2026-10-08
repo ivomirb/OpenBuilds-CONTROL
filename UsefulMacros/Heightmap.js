@@ -16,9 +16,11 @@ var g_HeightmapAnchor = {x: 0, y: 0};
 var g_HeightmapSeek = 15;
 var g_HeigtmapFeed = 50;
 var g_HeightmapRetract = 5;
+var g_HeigtmapFeedXY = 1000;
 var g_HeightmapDataZ0 = undefined;
 var g_HeightmapData = undefined;
 var g_HeightmapPending = undefined;
+var g_HeightmapProbeExpected = undefined;
 var g_bHeightmapDataValid = false;
 var g_bShowHeightmap = false;
 var g_HeightmapGeo = undefined;
@@ -105,18 +107,13 @@ window.OnSettingChange = function()
 }
 
 const g_HeightmapSettingsDlg = `
-<div class="row mb-2 pt-1 border-top bd-gray">
+<div class="row mb-2 border-top bd-gray">
   <label class="cell-sm-3">Grid Dimensions</label>
-  <label class="cell-sm-9" id="hightmapChangeWarning" style="display:none;"><small class="dark"><i>Changing these settings will clear the current heightmap data</i></small></label>
-</div>
-
-<div class="row mb-2 pt-1">
-  <div class="cell-sm-2">
-  </div>
+  <label class="cell-sm-9" id="hightmapChangeWarning" style="display:none; margin-left:-30px;"><small class="dark"><i>Changing these settings will clear the current heightmap data</i></small></label>
 </div>
 
 <div class="row mb-2">
-  <label class="cell-sm-3 pt-1" title="Starting corner of the heightmap grid">Start</label>
+  <label class="cell-sm-3 pt-1" style="padding-left:30px;" title="Starting corner of the heightmap grid">Start</label>
   <div class="cell-sm-4">
     <input id="heightmapX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="mm" data-clear-button="false" data-editable="true" onchange="OnSettingChange()"/>
   </div>
@@ -126,8 +123,8 @@ const g_HeightmapSettingsDlg = `
 </div>
 
 <div class="row mb-2">
-  <label class="cell-sm-3 pt-1" title="Total size of the heightmap grid">Size<button
-    id="HeightmapAutoSize" class="button" onclick="HeightmapAutoSize();" title="Updates the grid dimensions from the bounding box of the G-code" style="margin-left:50px; margin-bottom:-5px;">Auto Size</button>
+  <label class="cell-sm-3 pt-1" style="padding-left:30px;" title="Total size of the heightmap grid">Size<button
+    id="heightmapAutoSize" class="button" onclick="HeightmapAutoSize();" title="Updates the grid dimensions from the bounding box of the G-code" style="margin-left:50px; margin-top:-5px; margin-bottom:-5px;">Auto Size</button>
   </label>
   <div class="cell-sm-4">
     <input id="heightmapW" type="number" style="text-align:right;" data-role="input" data-prepend="X (Width)" data-append="mm" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
@@ -138,7 +135,7 @@ const g_HeightmapSettingsDlg = `
 </div>
 
 <div class="row mb-2">
-  <label class="cell-sm-3 pt-1" title="Number of probe points along X and Y">Probe Point Count</label>
+  <label class="cell-sm-3 pt-1" style="padding-left:30px;" title="Number of probe points along X and Y">Probe Point Count</label>
   <div class="cell-sm-4">
     <input id="heightmapNX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="points" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
   </div>
@@ -147,8 +144,8 @@ const g_HeightmapSettingsDlg = `
   </div>
 </div>
 
-<div class="row mb-2">
-  <label class="cell-sm-3 pt-1" title="The anchor point is the location where the initial Z0 measurement will be taken.
+<div class="row mb-3">
+  <label class="cell-sm-3 pt-1" style="padding-left:30px;" title="The anchor point is the location where the initial Z0 measurement will be taken.
 It has to match the Z0 of the G-code.">Anchor point</label>
   <div class="cell-sm-4">
     <input id="heightmapAX" type="number" style="text-align:right;" data-role="input" data-prepend="X" data-append="mm" data-clear-button="false" data-editable="true"  onchange="OnSettingChange()"/>
@@ -158,12 +155,12 @@ It has to match the Z0 of the G-code.">Anchor point</label>
   </div>
 </div>
 
-<div class="row mb-2 pt-1 border-top bd-gray">
+<div class="row mb-2 border-top bd-gray">
   <label class="cell-sm-6">Z Probe Settings</label>
 </div>
 
 <div class="row mb-2">
-  <label class="cell-sm-3 pt-1" title="Downward distance and feed rate to use during probing.">Seek</label>
+  <label class="cell-sm-3 pt-1" style="padding-left:30px;" title="Downward distance and feed rate to use during probing.">Seek</label>
   <div class="cell-sm-4">
     <input id="heightmapSeek" type="number" style="text-align:right;" data-role="input" data-prepend="Travel" data-append="mm" data-clear-button="false" data-editable="true" />
   </div>
@@ -173,7 +170,7 @@ It has to match the Z0 of the G-code.">Anchor point</label>
 </div>
 
 <div class="row mb-2">
-  <label class="cell-sm-3 pt-1" title="Retraction height after probing.
+  <label class="cell-sm-3 pt-1" style="padding-left:30px;" title="Retraction height after probing.
 The height needs to be large enough to safely move above the material surface.
 For flatter surfaces use smaller numbers to speed up the process.
 This number should be smaller than the Seek distance.">Retract</label>
@@ -182,47 +179,50 @@ This number should be smaller than the Seek distance.">Retract</label>
   </div>
 </div>
 
-<div class="row mb-2 pt-1 border-top bd-gray">
+<div class="row mb-3">
+  <label class="cell-sm-3 pt-1" style="padding-left:30px;" title="Horizontal speed for getting from point to point.
+Higher speed will make the probing faster, but will make potential collisions with the material more serious.">Horizontal Move</label>
+  <div class="cell-sm-4">
+    <input id="heightmapFeedXY" type="number" style="text-align:right;" data-role="input" data-prepend="Feed" data-append="mm/min" data-clear-button="false" data-editable="true" />
+  </div>
+</div>
+
+<div class="row mb-2 border-top bd-gray">
   <label class="cell-sm-3" title="The heightmap tool needs to subdivide the toolpaths into small linear segments to follow the surface.
 Smaller numbers will produce more accurate results, but will generate larger and slower G-code.">Toolpath Settings</label>
-  <label class="cell-sm-9" ><small class="dark"><i>These settings are global, independent of the current heightmap</i></small></label>
+  <label class="cell-sm-9" style="margin-left:-30px;"><small class="dark"><i>These settings are global, independent of the current heightmap</i></small></label>
 </div>
 
-<div class="row mb-2 pt-1">
-  <label class="cell-sm-3" title="Minimum segment length for linear and arc segments">Min segment length</label>
+<div class="row mb-2">
+  <label class="cell-sm-3" style="padding-top:6px; padding-left:30px;" title="Minimum segment length for linear and arc segments">Min segment length</label>
   <div class="cell-sm-3">
-    <input id="HeightmapMinLength" type="number" style="text-align:right;" data-role="input" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapMinLength" type="number" style="text-align:right;" data-role="input" data-append="mm" data-clear-button="false" data-editable="true" />
   </div>
 </div>
 
-<div class="row mb-2 pt-1">
-  <label class="cell-sm-3" title="How closely the path will follow the surface">Z Threshold</label>
+<div class="row mb-2">
+  <label class="cell-sm-3" style="margin-bottom:0; padding-top:6px; padding-left:30px;" title="How closely the path will follow the surface">Z Threshold</label>
   <div class="cell-sm-3">
-    <input id="HeightmapZThreshold" type="number" style="text-align:right;" data-role="input" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapZThreshold" type="number" style="text-align:right;" data-role="input" data-append="mm" data-clear-button="false" data-editable="true" />
   </div>
-  <label style="-webkit-box-flex:0; -ms-flex:0 0 18%; flex:0 0 18%; max-width:18%; text-align:right;" title="How closely the path will follow the arcs">Arc Threshold</label>
+  <label style="-webkit-box-flex:0; -ms-flex:0 0 18%; flex:0 0 18%; max-width:18%; text-align:right; margin-bottom:0; padding-top:6px;" title="How closely the path will follow the arcs">Arc Threshold</label>
   <div class="cell-sm-3">
-    <input id="HeightmapArcThreshold" type="number" style="text-align:right;" data-role="input" data-append="mm" data-clear-button="false" data-editable="true" />
+    <input id="heightmapArcThreshold" type="number" style="text-align:right; max-width:170px;" data-role="input" data-append="mm" data-clear-button="false" data-editable="true" />
   </div>
 </div>
 
-<div class="row mb-2 pt-1">
-  <div class="cell-sm-3">
-    <label title="When this is checked, the rapid moves will also be modified to follow the surface.
+<div class="row mb-2">
+  <label class="cell-sm-3" style="margin-bottom:0; padding-top:6px; padding-left:30px;" title="When this is checked, the rapid moves will also be modified to follow the surface.
 This could be useful for very uneven heightmaps.">Apply To Rapids</label>
+  <div class="cell-sm-4" style="margin-left:-3px; margin-right:3px;">
+    <input id="heightmapRapids" type="checkbox" data-role="checkbox" data-style="2"/>
   </div>
-  <div class="cell-sm-4">
-    <input id="HeightmapRapids" type="checkbox" data-role="checkbox" data-style="2"/>
-  </div>
-  <div class="cell-sm-3">
-    <label title="When this is checked, the original G-code lines will be preserved as comments and the changes can be undone.
+  <label class="cell-sm-3" style="margin-bottom:0; padding-top:6px;" title="When this is checked, the original G-code lines will be preserved as comments and the changes can be undone.
 You can uncheck it for large files to reduce the final size.">Preserve original lines</label>
+  <div class="cell-sm-1" style="padding-left:30px;">
+    <input id="heightmapAllowRevert" type="checkbox" data-role="checkbox" data-style="2"/>
   </div>
-  <div class="cell-sm-1">
-    <input id="HeightmapAllowRevert" type="checkbox" data-role="checkbox" data-style="2"/>
-  </div>
-</div>
-`;
+</div>`;
 
 function ReadHeightmapSettings()
 {
@@ -247,12 +247,13 @@ function ReadHeightmapSettings()
 	g_HeightmapSeek = Math.max(Number($('#heightmapSeek').val()), 0.1);
 	g_HeigtmapFeed = Math.max(Number($('#heightmapFeed').val()), 1);
 	g_HeightmapRetract = Math.max(Number($('#heightmapRetract').val()), 0.1);
+	g_HeigtmapFeedXY = Math.max(Number($('#heightmapFeedXY').val()), 1);
 
-	g_HeightmapSettings.minSegmentLength = Math.max(Number($('#HeightmapMinLength').val()), 1);
-	g_HeightmapSettings.zThreshold = Math.max(Number($('#HeightmapZThreshold').val()), 0.01);
-	g_HeightmapSettings.arcThreshold = Math.max(Number($('#HeightmapArcThreshold').val()), 0.001);
-	g_HeightmapSettings.modifyRapids = $('#HeightmapRapids').prop('checked');
-	g_HeightmapSettings.allowRevert = $('#HeightmapAllowRevert').prop('checked');
+	g_HeightmapSettings.minSegmentLength = Math.max(Number($('#heightmapMinLength').val()), 1);
+	g_HeightmapSettings.zThreshold = Math.max(Number($('#heightmapZThreshold').val()), 0.01);
+	g_HeightmapSettings.arcThreshold = Math.max(Number($('#heightmapArcThreshold').val()), 0.001);
+	g_HeightmapSettings.modifyRapids = $('#heightmapRapids').prop('checked');
+	g_HeightmapSettings.allowRevert = $('#heightmapAllowRevert').prop('checked');
 
 	localStorage.setItem("HeightmapSettings", JSON.stringify(g_HeightmapSettings));
 }
@@ -307,14 +308,15 @@ window.EditHeightmapSettings = function()
 	$('#heightmapSeek').val(g_HeightmapSeek);
 	$('#heightmapFeed').val(g_HeigtmapFeed);
 	$('#heightmapRetract').val(g_HeightmapRetract);
+	$('#heightmapFeedXY').val(g_HeigtmapFeedXY);
 
-	$('#HeightmapMinLength').val(g_HeightmapSettings.minSegmentLength);
-	$('#HeightmapZThreshold').val(g_HeightmapSettings.zThreshold);
-	$('#HeightmapArcThreshold').val(g_HeightmapSettings.arcThreshold);
-	$('#HeightmapRapids').prop('checked', g_HeightmapSettings.modifyRapids);
-	$('#HeightmapAllowRevert').prop('checked', g_HeightmapSettings.allowRevert);
+	$('#heightmapMinLength').val(g_HeightmapSettings.minSegmentLength);
+	$('#heightmapZThreshold').val(g_HeightmapSettings.zThreshold);
+	$('#heightmapArcThreshold').val(g_HeightmapSettings.arcThreshold);
+	$('#heightmapRapids').prop('checked', g_HeightmapSettings.modifyRapids);
+	$('#heightmapAllowRevert').prop('checked', g_HeightmapSettings.allowRevert);
 
-	$('#HeightmapAutoSize').prop('disabled', !object);
+	$('#heightmapAutoSize').prop('disabled', !object);
 	if (g_bHeightmapDataValid)
 		$('#hightmapChangeWarning').show();
 }
@@ -482,6 +484,14 @@ function OnProbeResult(probe)
 {
 	if (probe.state > 0)
 	{
+		if (g_HeightmapProbeExpected == 0)
+		{
+			socket.off('prbResult');
+			socket.emit('stop', {stop:true, jog: false, abort: false});
+			ShowHeightmapError("The probe collided during horizontal travel.", true);
+			return;
+		}
+		g_HeightmapProbeExpected = 0;
 		var wx = Number(probe.x) - laststatus.machine.position.offset.x;
 		var wy = Number(probe.y) - laststatus.machine.position.offset.y;
 		if (g_HeightmapDataZ0 == undefined && Math.abs(wx - g_HeightmapAnchor.x) < 0.1 && Math.abs(wy - g_HeightmapAnchor.y) < 0.1)
@@ -509,8 +519,13 @@ function OnProbeResult(probe)
 	}
 	else
 	{
-		socket.off('prbResult');
-		ShowHeightmapError("The probe failed to touch the surface.", true);
+		if (g_HeightmapProbeExpected == 1)
+		{
+			socket.off('prbResult');
+			ShowHeightmapError("The probe failed to touch the surface.", true);
+			return;
+		}
+		g_HeightmapProbeExpected = 1;
 	}
 }
 
@@ -539,7 +554,7 @@ function RunProbe()
 		{
 			var x = startX + ix*dX*direction;
 
-			gcode += "G0 G90 X" + x.toFixed(3) + " Y" + y.toFixed(3) + "\n";
+			gcode += "G38.3 G90 X" + x.toFixed(3) + " Y" + y.toFixed(3) + " F" + g_HeigtmapFeedXY.toFixed(0) + "\n";
 			gcode += "G38.2 G91 Z" + (-g_HeightmapSeek).toFixed(3) + " F" + g_HeigtmapFeed.toFixed(0) + "\n";
 			gcode += "G0 Z" + g_HeightmapRetract.toFixed(3) + "\n";
 			g_HeightmapData[iy].push(undefined);
@@ -548,6 +563,7 @@ function RunProbe()
 		startX = 2*g_HeightmapStart.x + g_HeightmapSize.x - startX;
 	}
 
+	g_HeightmapProbeExpected = 1;
 	socket.off('prbResult');
 	socket.on('prbResult', OnProbeResult);
 	socket.emit('runJob', {data: gcode, isJob: false, fileName: ""});
@@ -674,6 +690,7 @@ function LoadHeightmap(file)
 		g_HeightmapSeek = seek;
 		g_HeigtmapFeed = feed;
 		g_HeightmapRetract = retract;
+		g_HeigtmapFeedXY = feedXY;
 		g_bHeightmapDataValid = true;
 	}
 	catch (error)
@@ -731,7 +748,8 @@ window.SaveHeightmap = function()
 	heightmapTxt += "," + g_HeightmapSize.x.toFixed(2) + "," + g_HeightmapSize.y.toFixed(2);
 	heightmapTxt += "," + g_HeightmapPointCount.x.toFixed(0) + "," + g_HeightmapPointCount.y.toFixed(0);
 	heightmapTxt += "," + g_HeightmapAnchor.x.toFixed(2) + "," + g_HeightmapAnchor.y.toFixed(2);
-	heightmapTxt += "," + g_HeightmapSeek.toFixed(2) + "," + g_HeigtmapFeed.toFixed(0) + "," + g_HeightmapRetract.toFixed(0) + "\n";
+	heightmapTxt += "," + g_HeightmapSeek.toFixed(2) + "," + g_HeigtmapFeed.toFixed(0) + "," +
+		g_HeightmapRetract.toFixed(0) + "," + g_HeigtmapFeedXY.toFixed(0) + "\n";
 
 	for (var y = 0; y < g_HeightmapPointCount.y; y++)
 	{

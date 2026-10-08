@@ -478,6 +478,7 @@ The spindle will automatically start when the job is resumed.">
                   </button>
                   <ul class="ribbon-dropdown grblmode" data-role="dropdown" data-duration="100">
                     <li onclick="populateSurfaceToolForm();"><a href="#"><i class="fas fa-exchange-alt"></i> Surfacing / Flattening Wizard</a></li>
+                    <li onclick="toggleHeightmapTools()" id="toggleHeightmapTools"><a href="#"><i class="mif-chart-bars"></i> Heightmap Tools</a></li>
                     <li onclick="jogWidget();"><a href="#"><i class="fas fa-mobile-alt"></i> Mobile Jog Widget</a></li>
                     <li class="divider fg-gray"></li>
                     <li class="disabled grblCalibrationMenu" onclick="xstepscalibrate();"><a href="#"><i class="fas fa-arrows-alt-h fa-fw"></i> Calibrate X-Axes Steps/mm</a></li>
@@ -1169,11 +1170,34 @@ Restore previous origins from history.">
                               <span class="text-small" style="padding: 6px; display:inline-block;">Machine Extents</span>
                             </td>
                           </tr>
+                          <tr onclick="event.stopPropagation()" class="heightmap" style="display:none;">
+                            <td style="vertical-align:middle;">
+                              <label class="toggle"><input type="checkbox" id="viewHeighmtapSetting" onchange="changeViewSettings()"/><div>app-notification</div></label>
+                            </td>
+                            <td style="vertical-align:middle;">
+                              <span class="text-small" style="padding: 6px; display:inline-block;">Heightmap</span>
+                            </td>
+                          </tr>
                         </table>
                       </div>
                       <button id="resetViewBtn" style="margin-left:3px;" title="Resets camera angle and zoom" class="button dark" onclick="resetView(object)">
                         <i class="fas fa-undo"></i> Reset
                       </button>
+                      <div>
+                        <button id="heightmapBtn" onclick="updateHeightmapMenu()" style="margin-left:3px; display:none;" class="button dark dropdown-toggle heightmap"><i class="mif-chart-bars"></i> Heightmap</button>
+                        <ul class="ribbon-dropdown drop-down" id="heightmapMenu" data-role="dropdown" role="menu">
+                          <style>#heightmapMenu > li {text-align: left;}</style>
+                          <li onclick="editHeightmapSettings()" id="editHeightmapSettings"><a href="#">Heightmap Settings</a></li>
+                          <li class="divider"></li>
+                          <li onclick="generateHeightmap()" id="generateHeightmap"><a href="#">Generate Heightmap</a></li>
+                          <li onclick="loadHeightmap();"><a href="#">Load Heightmap</a></li>
+                          <li onclick="saveHeightmap()" id="saveHeightmap"><a href="#">Save Heightmap</a></li>
+                          <li onclick="clearHeightmapData()" id="clearHeightmap"><a href="#">Clear Heightmap</a></li>
+                          <li class="divider"></li>
+                          <li onclick="applyHeightmap()" id="applyHeightmap"><a href="#">Apply Heightmap</a></li>
+                          <li onclick="revertHeightmap()" id="revertHeightmap" onclick="RevertGCode()"><a href="#">Revert G-code changes</a></li>
+                        </ul>
+                      </div>
                     </div>
 
 
@@ -1937,6 +1961,7 @@ Restore previous origins from history.">
   <script type="text/javascript" src="wizards/probe/holefinder.js"></script>
 
   <script type="text/javascript" src="wizards/surfacing/surfacing.js"></script>
+  <script type="text/javascript" src="wizards/heightmap/heightmap.js"></script>
 
   <!-- <script type="text/javascript" src="wizards/flashingtool/grbl-flashing.js"></script> -->
   <script type="text/javascript" src="wizards/flashingtool2/flashingtool.js"></script>

@@ -61,6 +61,12 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Added ability to automatically reload JavaScript macros from external files in development mode
 * Enabled security isolation measures to prevent scripts from accessing the operating system
 
+### Heightmap Tool
+
+The heightmap tool works similarly to the one in Candle.
+It probes the height at points on a grid and modifes the G-code to follow the surface.
+The heightmap can be saved to a CSV file to be edited by hand.
+
 ### Useful Macros
 
 The Javascript macros and the open UI architecture of OpenBuilds make it easy to extend it with custom functionality.
@@ -70,15 +76,16 @@ You can find them in the [Useful Macros folder](UsefulMacros/UsefulMacros.md).
 
 Some are standalone versions of the new features, which can be added to the original software if you don't want to upgrade
 
-* Macro manager - allows organizing macros into groups, export and import all macros into a single file
-* Smart Home macro that prevents accidental homing and allows homing single axis if supported
-* Remove the dropdown from the file open button
+* Macro manager: Allows organizing macros into groups, export and import all macros into a single file
+* Heightmap: Probes the height at points on a grid and modifes the G-code to follow the surface
+* Smart Home: Prevents accidental homing and allows homing single axis if supported
+* Open File: Removes the dropdown from the file open button
 
 Others are new features that can be added to either this version or the original software
 
-* Heightmap support, similar to the one in Candle (work in progress, not yet fully tested)
-* Disable the Z jog buttons for large step sizes (a safety feature)
-* Measure Z macro that can measure the height of a surface without changing the work zero
+* Disable Z: Disables the Z jog buttons for large step sizes (a safety feature)
+* Measure Z: Measures the height of a surface without changing the work zero
+* Find Hole Center: Fast and precise method for finding the center of a circular or rectangular hole
 
 ## Download
 

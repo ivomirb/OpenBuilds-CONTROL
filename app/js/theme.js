@@ -43,7 +43,11 @@ let ThemeData = {
           'G': 0,
           'B': 1
         }
-      ]
+      ],
+      HEIGHTMAP_GRID_COLOR1: 0xF6A91C,
+      HEIGHTMAP_GRID_COLOR2: 0x1CB9F6,
+      HEIGHTMAP_FACE_COLOR: 0x1CB9F6,
+      HEIGHTMAP_FACE_OPACITY: 0.3,
     },
     "dark": {
       DESCRIPTION: 'Dark Mode',
@@ -88,8 +92,12 @@ let ThemeData = {
           'G': 0,
           'B': 1
         }
-      ]
-    }
+       ],
+      HEIGHTMAP_GRID_COLOR1: 0xF6A91C,
+      HEIGHTMAP_GRID_COLOR2: 0x1CB9F6,
+      HEIGHTMAP_FACE_COLOR: 0x1CB9F6,
+      HEIGHTMAP_FACE_OPACITY: 0.3,
+   }
     // ,
     // "hicontrast": {
     //   DESCRIPTION: 'High Contrast Theme',
