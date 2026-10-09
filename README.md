@@ -8,7 +8,7 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Ability to view and set machine coordinates
 * Stores a history of work origins and allows for rolling back to a previous one
 * Corrected the math and improved the safety of the "goto zero" buttons
-* More reliable and safe jogging features, more compatible with a variety of homing settings
+* More reliable and safe jogging features, compatible with a variety of homing settings of GrblHAL and FluidNC
 * The Pause and Stop buttons remain available until the very end of the job
 * While the job is paused, the Tool Off button can stop the spindle. It will resume automatically
 * A new setting to insert a delay for a few seconds after the spindle starts up
@@ -47,6 +47,7 @@ This is a fork by Ivo Beltchev with multiple improvements.
 * Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
 * Added more known GrblHAL settings and updated wrong descriptions
 * Added support for a 4th axis in settings $3 and $23
+* Basic support for FluidNC that shows a read-only configuration
 
 ### Surfacing Wizard
 

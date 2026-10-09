@@ -370,7 +370,7 @@ function jogDocReady() {
   });
 
   $('#gotozeroZmPosXYwPos').on('click', function(ev) {
-    const maxZ = computeMachineLimits()().maxZ;
+    const maxZ = computeMachineLimits().maxZ;
     sendGcode('G0 G53 G90 G21 Z' + maxZ.toFixed(2));
     sendGcode('G0 X0 Y0');
     sendGcode('G0 Z0');
@@ -765,27 +765,27 @@ function home() {
 }
 
 function smartHome() {
-	if (laststatus.machine.modals.homedRecently) {
-		Metro.dialog.create({
-			title: "Home All",
-			content: "The machine was recently homed. Do you want to home again?",
-			clsDialog: 'dark',
-			actions: [{
-					caption: "Proceed",
-					cls: "js-dialog-close success",
-					onclick: home
-				},
-				{
-					caption: "Cancel",
-					cls: "js-dialog-close",
-					onclick: function() {
-						// do nothing
-					}
-				}],
-		});
-	} else {
-		home();
-	}
+  if (laststatus.machine.modals.homedRecently) {
+    Metro.dialog.create({
+      title: "Home All",
+      content: "The machine was recently homed. Do you want to home again?",
+      clsDialog: 'dark',
+      actions: [{
+          caption: "Proceed",
+          cls: "js-dialog-close success",
+          onclick: home
+        },
+        {
+          caption: "Cancel",
+          cls: "js-dialog-close",
+          onclick: function() {
+            // do nothing
+          }
+        }],
+    });
+  } else {
+    home();
+  }
 }
 
 function toastJogWillHit(axis) {

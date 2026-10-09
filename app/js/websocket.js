@@ -102,16 +102,11 @@ The editor is currently disabled. You can click the Clear button to clear the cu
 function onGrbl(firmware) {
   if (firmware.type != "grbl") return;
   grblParams = {};
-  if (firmware.platform == "grblHAL" || firmware.platform == "gnea") { // Doesn't use $$ settings, uses config.yaml
-    setTimeout(function() {
-      sendGcode('$$\n$I');
-    }, 500);
-  } else if (firmware.platform == "FluidNC") {
-    // Show FluidNC specific tabs and buttons
-    setTimeout(function() {
-      sendGcode('$CD\n$I');
-    }, 500);
-  }
+  fluidncConfig = undefined;
+  fluidncConfigYaml = undefined;
+  setTimeout(function() {
+    sendGcode(firmware.platform == "FluidNC" ? '$$\n$I\n$CD' : '$$\n$I');
+  }, 500);
 
   $("#grblButtons").show();
   $("#firmwarename").html(firmware.platform);
@@ -238,18 +233,7 @@ function initSocket() {
     $('#downloadprogress').html(data + "%");
   });
 
-  socket.on('fluidncConfig', function(data) {
-    console.log(data);
-    var fluidnceditor = ace.edit("fluidnceditor");
-    fluidnceditor.setTheme('ace/theme/sqlserver')
-    fluidnceditor.session.setMode("ace/mode/yaml");
-    fluidnceditor.session.setValue(data); // from samplefile.js
-    $('#fluidncSettings').show()
-    var fluidncJSON = YAML.parse(data);
-    console.log(fluidncJSON)
-  });
-
-
+  socket.on('fluidncConfig', setFluidNcConfig);
 
   socket.on('data', function(data) {
     // console.log(data)
@@ -302,26 +286,7 @@ function initSocket() {
 
   });
 
-  socket.on("grbl", function(firmware) {
-    if (firmware.type != "grbl") return;
-    grblParams = {};
-    if (firmware.platform == "grblHAL" || firmware.platform == "gnea") { // Doesn't use $$ settings, uses config.yaml
-      setTimeout(function() {
-        sendGcode('$$\n$I');
-      }, 500);
-    } else if (firmware.platform == "FluidNC") {
-      // Show FluidNC specific tabs and buttons
-      setTimeout(function() {
-        sendGcode('$CD\n$I');
-      }, 500);
-    }
-
-    $("#grblButtons").show();
-    $("#firmwarename").html(firmware.platform);
-    if (localStorage.getItem('jogOverride')) {
-      jogOverride(localStorage.getItem('jogOverride'));
-    }
-  });
+  socket.on("grbl", onGrbl);
 
   socket.on("queueComplete", function(data) {
   });
@@ -802,7 +767,8 @@ function initSocket() {
       }
     }
 
-    AddRemoveClass('#resetGrblBtn, #section-grbl .group:not(.estop), #grblMetroTable', "disabled", status.comms.connectionStatus == 3 || status.comms.connectionStatus == 4);
+    EnableViaClass('#resetGrblBtn, #section-grbl .group:not(.estop)', status.comms.connectionStatus != 3 && status.comms.connectionStatus != 4);
+    EnableViaClass('#grblMetroTable', status.comms.connectionStatus != 3 && status.comms.connectionStatus != 4 && status.machine.firmware.platform != "FluidNC");
 
     if (laststatus == undefined || status.machine.modals.coordinatesys != laststatus.machine.modals.coordinatesys) {
       $('.wcsText').html(status.machine.modals.coordinatesys)

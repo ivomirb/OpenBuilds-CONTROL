@@ -366,6 +366,10 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   color: #0FF !important;
 }
 
+.theme_dark .ace-sqlserver .ace_tag {
+  color: #6F6 !important;
+}
+
 .theme_dark hr {
   background-color: #444;
 }

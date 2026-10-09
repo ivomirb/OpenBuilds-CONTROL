@@ -477,6 +477,10 @@ function handleGreeting(data, command) {
 
   // after reset, immediately ask for modals
   gcodeQueue.splice(queuePointer, 0, "$G");
+  if (status.machine.firmware.platform == "FluidNC") {
+    // for FluidNC, set the report interval to 200ms
+    gcodeQueue.splice(queuePointer, 0, "$RI=200");
+  }
   send1Q();
 }
 
@@ -577,9 +581,15 @@ function handleError(data, command) {
 
 function onParserData(data) {
   var command = sentBuffer[0];
-
-  if (command == "$CD" && data != "ok") {
-    fluidncConfig += data + "\n";
+  if (data.startsWith("<")) {
+    parseStatusReport(data);
+    if (command == "?") {
+      serverEmitOutput({
+        command: command,
+        response: data,
+        type: 'info'
+      });
+    }
   }
   else if (data.startsWith("[VER:")) {
     parseVersion(data);
@@ -601,16 +611,6 @@ function onParserData(data) {
   }
   else if (data.startsWith("Grbl") || data.startsWith("[FIRMWARE:grblHAL]")) { // Check if it's Grbl
     handleGreeting(data, command);
-  }
-  else if (data.startsWith("<")) {
-    parseStatusReport(data);
-    if (command == "?") {
-      serverEmitOutput({
-        command: command,
-        response: data,
-        type: 'info'
-      });
-    }
   }
   else if (data.startsWith("ok")) {
     handleOK(data, command); // Got an OK so we are clear to send
@@ -639,7 +639,9 @@ function onParserData(data) {
     clearGcodeQueue(false);
     status.comms.connectionStatus = 5;
   }
-
+  else if (command == "$CD" && data != "ok") {
+    fluidncConfig += data + "\n";
+  }
 
   if (command) {
     command = command.replace(/(\r\n|\n|\r)/gm, "");
@@ -671,12 +673,13 @@ function onGrblDetected() {
   }, 100)
   // Start interval for status queries
   clearInterval(grblStatusLoop);
-  grblStatusLoop = setInterval(function() {
-    if (status.comms.connectionStatus > 0) {
-      addQRealtime("?");
-    }
-  }, 200);
-
+  if (status.machine.firmware.platform != "FluidNC") { // FluidNC uses a different method to get status
+    grblStatusLoop = setInterval(function() {
+      if (status.comms.connectionStatus > 0) {
+        addQRealtime("?");
+      }
+    }, 200);
+  }
   status.comms.connectionStatus = 2;
   status.machine.modals.homedRecently = false;
 

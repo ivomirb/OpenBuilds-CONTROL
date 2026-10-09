@@ -58,12 +58,9 @@ body {
 }
 
 #fluidnceditor {
-  /* Note only uses height attribs from here, before we connect to websocket. After that, it gets set by websocket.js */
-  height: calc(100vh - 235px);
-  width: 100%;
-  border-top: 1px solid #ccc;
-  /* margin-top: 5px; */
-  box-shadow: 0 0 2px 2px #ddd;
+  width:calc(100% - 10px);
+  height:300px;
+  border:black solid 1px;
 }
 
 #console>p {
@@ -299,7 +296,7 @@ select {
 
 #grblSettingsTableView .table-container {
   overflow-y: scroll;
-  max-height: calc(100vh - 330px);
+  max-height: calc(100vh - 313px);
 }
 
 #grblSettingsTableView thead {

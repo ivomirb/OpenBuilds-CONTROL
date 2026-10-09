@@ -3,6 +3,9 @@ var editedGrblParams = {};
 var settingsFilterIndex;
 const prioritySettings = ["$22"]; // change homing setting first because it can prevent soft limits from being set (grblHAL)
 
+var fluidncConfig = "";
+var fluidncConfigYaml = undefined;
+
 const backupFileFilters = [
   {name: "TXT files", extensions: ["txt"]},
   {name: "All files", extensions: ["*"]},
@@ -258,10 +261,16 @@ function grblSettings(data) {
 
   $('#grblSettings').show();
 
-  if (laststatus.machine.firmware.platform == "grblHAL") {
-    $("#grbl-settings-tab-title").html('grblHAL');
+  if (laststatus.machine.firmware.platform == "FluidNC") {
+    $('#backupSettingsGroup').hide();
+    $("#grbl-settings-tab-title").html('FluidNC Settings (read-only)');
   } else {
-    $("#grbl-settings-tab-title").html('Grbl');
+    $('#backupSettingsGroup').show();
+    if (laststatus.machine.firmware.platform == "grblHAL") {
+      $("#grbl-settings-tab-title").html('grblHAL Settings');
+    } else {
+      $("#grbl-settings-tab-title").html('Grbl Settings');
+    }
   }
 
   var homingEnabled = grblParams['$22'] > 0;
@@ -483,7 +492,10 @@ function grblPopulate() {
 
   editedGrblParams = {};
 
-  for (var key in grblParams) {
+  var sortedKeys = Object.keys(grblParams).sort((a, b) => {
+    return parseInt(a.substr(1)) - parseInt(b.substr(1));
+  });
+  sortedKeys.forEach((key) => {
     var key2 = key.substr(1);
     const revertButton = `<button class="button small revert-button" type="button" title="Revert change"` + 
       `onclick="revertGrblSetting('` + key + `')"><i class="fas fa-undo"></i></button>`;
@@ -507,9 +519,10 @@ function grblPopulate() {
             </tr>
             `
     }
-  }
+  });
 
-  template += `</tbody>
+  template += `
+          </tbody>
         </table>
       </div> <!-- End of grblSettingsTableView -->
       </div>
@@ -700,13 +713,11 @@ function refreshGrblSettings() {
   $('#grblconfig').empty();
   $('#grblconfig').append("<center>Please Wait... </center><br><center>Requesting updated parameters from the controller firmware...</center>");
   setTimeout(function() {
-    sendGcode('$$');
-    sendGcode('$I');
+    sendGcode(laststatus.machine.firmware.platform == "FluidNC" ? '$$\n$I\n$CD' : '$$\n$I');
     setTimeout(function() {
       grblPopulate();
     }, 500);
   }, 200);
-
 }
 
 // Calc Grbl 1.1 Invert Masks
@@ -848,8 +859,18 @@ function getEditorParamValue(key) {
   return editedGrblParams.hasOwnProperty(key) ? editedGrblParams[key] : grblParams[key];
 }
 
-function setup_settings_table() {
+function setFluidNcConfig(data) {
+  fluidncConfig = data;
+  fluidncConfigYaml = YAML.parse(data);
+  updateMachineCoordinates();
+  updateGotoLimits();
+  if ($('#fluidnceditor').length > 0) {
+    var fluidnceditor = ace.edit("fluidnceditor");
+    fluidnceditor.session.setValue(fluidncConfig);
+  }
+}
 
+function setup_settings_table() {
   for (var key in grblParams) {
     var key2 = key.substr(1);
     var input = $("#val-" + key2 + "-input");
@@ -911,10 +932,24 @@ function onTableDraw() {
 }
 
 function onTableCreate() {
-  // add filter checkbox directly before the search bar
-  $('#grblSettingsTableView .table-top').prepend(`
-      <input type="checkbox" data-role="switch" data-caption="Show Modified" id="settingsModifiedFilter"
-      style="padding-right:10px;" onchange="toggleModifiedFilter(this.checked)"/>`);
+  if (laststatus && laststatus.machine.firmware.platform == "FluidNC") {
+    $("#grblSettingsTableView .table-container").append(`
+      <h6 class="disabled" style="margin:5px; font-size:1rem;">FluidNC configuration</h6>
+      <div id="fluidnceditor" class="bd-openbuilds"></div>`);
+
+    var fluidnceditor = ace.edit("fluidnceditor");
+    fluidnceditor.$blockScrolling = Infinity;
+    fluidnceditor.setTheme('ace/theme/sqlserver')
+    fluidnceditor.session.setMode("ace/mode/yaml");
+    fluidnceditor.session.setValue(fluidncConfig);
+    fluidnceditor.setReadOnly(true);
+  } else {
+    // add filter checkbox directly before the search bar
+    $('#grblSettingsTableView .table-top').prepend(`
+        <input type="checkbox" data-role="switch" data-caption="Show Modified" id="settingsModifiedFilter"
+        style="padding-right:10px;" onchange="toggleModifiedFilter(this.checked)"/>`);
+  }
+
   setup_settings_table();
 }
 
@@ -1082,6 +1117,7 @@ function setSelectedToolhead(value) {
 //      * the pulloff distance can be overriden for special use cases
 //   * the "home origin" feature 'Z' - if set, the pulloff is ignored
 //   * the manual homing flag (ignores pulloff for the manually homed axes)
+//   * the FluidNC homing settings
 // Expects that grblParams and laststatus.machine.firmware.features.contains are up to date
 //
 // This should be the definitive source of the machine limits info
@@ -1100,57 +1136,81 @@ function computeMachineLimits(pulloffOverride) {
     maxA: parseFloat(grblParams.$133),
   };
 
-  if (grblParams.$22 > 0) {
-    const homingMask = calcMaskFromDec(grblParams.$23);
-    const sizeX = limits.maxX;
-    const sizeY = limits.maxY;
-    const sizeZ = limits.maxZ;
-    const sizeA = limits.maxA;
-    if (laststatus && laststatus.machine.firmware.features.contains('Z')) {
-      limits.minX = homingMask.x ? 0 : -sizeX;
-      limits.maxX = homingMask.x ? sizeX : 0;
-      limits.minY = homingMask.y ? 0 : -sizeY;
-      limits.maxY = homingMask.y ? sizeY : 0;
-      limits.minZ = homingMask.z ? 0 : -sizeZ;
-      limits.maxZ = homingMask.z ? sizeZ : 0;
-      limits.minA = homingMask.a ? 0 : -sizeA;
-      limits.maxA = homingMask.a ? sizeA : 0;
-    } else {
-      const pulloff = pulloffOverride != undefined ? pulloffOverride : parseFloat(grblParams.$27);
-      var pulloffMask = 15;
-      if (grblParams.$22 & 32) {
-        pulloffMask = 0; // find which axes can be manually homed using settings $44 through $49
-        for (var i = 44; i <= 49; i++) {
-          var mask = grblParams['$' + i];
-          if (mask == undefined)
-            break;
-          pulloffMask |= parseInt(mask);
-        }
+  const homingMask = calcMaskFromDec(grblParams.$23);
+  const sizeX = limits.maxX;
+  const sizeY = limits.maxY;
+  const sizeZ = limits.maxZ;
+  const sizeA = limits.maxA;
+  if (fluidncConfigYaml) {
+    limits.minX = homingMask.x ? 0 : -sizeX;
+    limits.minY = homingMask.y ? 0 : -sizeY;
+    limits.minZ = homingMask.z ? 0 : -sizeZ;
+    limits.minA = homingMask.a ? 0 : -sizeA;
+    if (fluidncConfigYaml.axes) {
+      if (fluidncConfigYaml.axes.X?.homing?.mpos_mm !== undefined) {
+        limits.minX += fluidncConfigYaml.axes.X.homing.mpos_mm;
       }
-      pulloffMask = calcMaskFromDec(pulloffMask);
+      if (fluidncConfigYaml.axes.Y?.homing?.mpos_mm !== undefined) {
+        limits.minY += fluidncConfigYaml.axes.Y.homing.mpos_mm;
+      }
+      if (fluidncConfigYaml.axes.Z?.homing?.mpos_mm !== undefined) {
+        limits.minZ += fluidncConfigYaml.axes.Z.homing.mpos_mm;
+      }
+      if (fluidncConfigYaml.axes.A?.homing?.mpos_mm !== undefined) {
+        limits.minA += fluidncConfigYaml.axes.A.homing.mpos_mm;
+      }
 
-      if (!homingMask.x && pulloffMask.x) limits.X0 = -pulloff;
-      if (!homingMask.y && pulloffMask.y) limits.Y0 = -pulloff;
-      if (!homingMask.z && pulloffMask.z) limits.Z0 = -pulloff;
-      limits.minX = (homingMask.x &&  pulloffMask.x) ? pulloff-sizeX : -sizeX;
-      limits.maxX = (homingMask.x || !pulloffMask.x) ? 0 : -pulloff;
-      limits.minY = (homingMask.y &&  pulloffMask.y) ? pulloff-sizeY : -sizeY;
-      limits.maxY = (homingMask.y || !pulloffMask.y) ? 0 : -pulloff;
-      limits.minZ = (homingMask.z &&  pulloffMask.z) ? pulloff-sizeZ : -sizeZ;
-      limits.maxZ = (homingMask.z || !pulloffMask.z) ? 0 : -pulloff;
-      limits.minA = -sizeA;
-      limits.maxA = 0;
+      limits.maxX = limits.minX + sizeX;
+      limits.maxY = limits.minY + sizeY;
+      limits.maxZ = limits.minZ + sizeZ;
+      limits.maxA = limits.minA + sizeA;
     }
-    if (isNaN(limits.minX)) limits.minX = 0;
-    if (isNaN(limits.maxX)) limits.maxX = 0;
-    if (isNaN(limits.minY)) limits.minY = 0;
-    if (isNaN(limits.maxY)) limits.maxY = 0;
-    if (isNaN(limits.minZ)) limits.minZ = 0;
-    if (isNaN(limits.maxZ)) limits.maxZ = 0;
-    if (isNaN(limits.minA)) limits.minA = 0;
-    if (isNaN(limits.maxA)) limits.maxA = 0;
-    limits.homingMask = homingMask;
+  } else if (laststatus && laststatus.machine.firmware.features.contains('Z')) {
+    limits.minX = homingMask.x ? 0 : -sizeX;
+    limits.minY = homingMask.y ? 0 : -sizeY;
+    limits.minZ = homingMask.z ? 0 : -sizeZ;
+    limits.minA = homingMask.a ? 0 : -sizeA;
+
+    limits.maxX = limits.minX + sizeX;
+    limits.maxY = limits.minY + sizeY;
+    limits.maxZ = limits.minZ + sizeZ;
+    limits.maxA = limits.minA + sizeA;
+  } else {
+    const pulloff = pulloffOverride != undefined ? pulloffOverride : parseFloat(grblParams.$27);
+    var pulloffMask = 15;
+    if (grblParams.$22 & 32) {
+      pulloffMask = 0; // find which axes can be manually homed using settings $44 through $49
+      for (var i = 44; i <= 49; i++) {
+        var mask = grblParams['$' + i];
+        if (mask == undefined)
+          break;
+        pulloffMask |= parseInt(mask);
+      }
+    }
+    pulloffMask = calcMaskFromDec(pulloffMask);
+
+    if (!homingMask.x && pulloffMask.x) limits.X0 = -pulloff;
+    if (!homingMask.y && pulloffMask.y) limits.Y0 = -pulloff;
+    if (!homingMask.z && pulloffMask.z) limits.Z0 = -pulloff;
+    limits.minX = (homingMask.x &&  pulloffMask.x) ? pulloff-sizeX : -sizeX;
+    limits.maxX = (homingMask.x || !pulloffMask.x) ? 0 : -pulloff;
+    limits.minY = (homingMask.y &&  pulloffMask.y) ? pulloff-sizeY : -sizeY;
+    limits.maxY = (homingMask.y || !pulloffMask.y) ? 0 : -pulloff;
+    limits.minZ = (homingMask.z &&  pulloffMask.z) ? pulloff-sizeZ : -sizeZ;
+    limits.maxZ = (homingMask.z || !pulloffMask.z) ? 0 : -pulloff;
+    limits.minA = -sizeA;
+    limits.maxA = 0;
   }
+  if (isNaN(limits.minX)) limits.minX = 0;
+  if (isNaN(limits.maxX)) limits.maxX = 0;
+  if (isNaN(limits.minY)) limits.minY = 0;
+  if (isNaN(limits.maxY)) limits.maxY = 0;
+  if (isNaN(limits.minZ)) limits.minZ = 0;
+  if (isNaN(limits.maxZ)) limits.maxZ = 0;
+  if (isNaN(limits.minA)) limits.minA = 0;
+  if (isNaN(limits.maxA)) limits.maxA = 0;
+  limits.homingMask = homingMask;
+
   return limits;
 }
 
