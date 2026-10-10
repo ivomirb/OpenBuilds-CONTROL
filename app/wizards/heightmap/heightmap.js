@@ -317,11 +317,11 @@ function generateHeightmapMesh() {
   var dX = heightmapSize.x / subCellsX;
   var dY = heightmapSize.y / subCellsY;
   var grid = new Array(subCellsY + 1);
-  for (var iy = 0; iy <= subCellsY; iy++) {
-    var y = heightmapStart.y + iy*dY;
+  for (let iy = 0; iy <= subCellsY; iy++) {
+    const y = heightmapStart.y + iy*dY;
     grid[iy] = new Array(subCellsX + 1);
-    for (var ix = 0; ix <= subCellsX; ix++) {
-      var x = heightmapStart.x + ix*dX;
+    for (let ix = 0; ix <= subCellsX; ix++) {
+      const x = heightmapStart.x + ix*dX;
       grid[iy][ix] = {x: x, y: y, z: computeHeightmapZ(x, y)};
     }
   }
@@ -329,18 +329,18 @@ function generateHeightmapMesh() {
   // create the wireframe geometry
   var vertices1 = [];
   var vertices2 = [];
-  for (var iy = 0; iy <= subCellsY; iy++) {
-    var verts = (iy%subDivisionsY == 0) ? vertices1 : vertices2;
-    for (var ix = 0; ix < subCellsX; ix++) {
+  for (let iy = 0; iy <= subCellsY; iy++) {
+    const verts = (iy%subDivisionsY == 0) ? vertices1 : vertices2;
+    for (let ix = 0; ix < subCellsX; ix++) {
       const g1 = grid[iy][ix];
       const g2 = grid[iy][ix+1];
       verts.push(g1.x, g1.y, g1.z, g2.x, g2.y, g2.z);
     }
   }
 
-  for (var ix = 0; ix <= subCellsX; ix++) {
-    var verts = (ix%subDivisionsX == 0) ? vertices1 : vertices2;
-    for (var iy = 0; iy < subCellsY; iy++) {
+  for (let ix = 0; ix <= subCellsX; ix++) {
+    const verts = (ix%subDivisionsX == 0) ? vertices1 : vertices2;
+    for (let iy = 0; iy < subCellsY; iy++) {
       const g1 = grid[iy][ix];
       const g2 = grid[iy+1][ix];
       verts.push(g1.x, g1.y, g1.z, g2.x, g2.y, g2.z);
@@ -360,8 +360,8 @@ function generateHeightmapMesh() {
   // create the mesh geometry for the faces
   var vertices = new Float32Array((subCellsX+1) * (subCellsY+1) * 3);
   var idx = 0;
-  for (var iy = 0; iy <= subCellsY; iy++) {
-    for (var ix = 0; ix <= subCellsX; ix++) {
+  for (let iy = 0; iy <= subCellsY; iy++) {
+    for (let ix = 0; ix <= subCellsX; ix++) {
       var point = grid[iy][ix];
       vertices[idx] = point.x;
       vertices[idx+1] = point.y;
@@ -581,6 +581,7 @@ function loadHeightmap() {
     showErrorDlg: false,
   };
 
+  // eslint-disable-next-line no-unused-vars
   invokeOpenDialogReadFile(loadFileParams).then(({err, filePath, data}) => {
     if (err)
       heightmapReadError(err);
@@ -755,7 +756,6 @@ function heightmapParseGCode() {
       }
     }
 
-    var Zlen = 0;
     if (isMove) {
       if (units == undefined) {
         showHeightmapError("The heightmapper can't determine the units for line " + (lineIdx+1) + ". No G20 or G21 were found in the preceeding lines.");
@@ -846,7 +846,7 @@ function heightmapParseGCode() {
 
       if (Findex >= 0) {
         var Flen = 0;
-        for (var i = Findex + 1; i < line.length; i++, Flen++) {
+        for (let i = Findex + 1; i < line.length; i++, Flen++) {
           const c = line[i];
           if (c != '.' && (c < '0' || c > '9'))
             break;
@@ -870,7 +870,7 @@ function subdivideLineSamples(samples, first, last, zThreshold) {
   //   * samples[first] and samples[last] have z0=0
   var maxdz = zThreshold;
   var maxi = undefined;
-  for (var i = first + 1; i < last; i++) {
+  for (let i = first + 1; i < last; i++) {
     const dz = Math.abs(samples[i].zt - samples[i].z);
     if (dz > maxdz) {
       maxdz = dz;
@@ -882,11 +882,11 @@ function subdivideLineSamples(samples, first, last, zThreshold) {
     return; // all less than zThreshold
 
   var stepz = (samples[maxi].zt - samples[maxi].z) / (maxi - first);
-  for (var i = first + 1; i < maxi; i++)
+  for (let i = first + 1; i < maxi; i++)
     samples[i].z += stepz * (i - first);
 
   stepz = (samples[maxi].zt - samples[maxi].z) / (last - maxi);
-  for (var i = last - 1; i > maxi; i--)
+  for (let i = last - 1; i > maxi; i--)
     samples[i].z += stepz * (last - i);
 
   samples[maxi].z = samples[maxi].zt;
@@ -908,7 +908,7 @@ function generateLineSegments(x1, y1, z1, x2, y2, z2, minSegmentLength, zThresho
 
   if (count == 1) {
     // special case if splitting is not required
-    var space = "";
+    let space = "";
     if (x2 != x1) {
       gcode += "X" + parseFloat(x2.toFixed(3));
       space = " ";
@@ -928,7 +928,7 @@ function generateLineSegments(x1, y1, z1, x2, y2, z2, minSegmentLength, zThresho
   const dz = z2 - z1;
   const dzh = z2h - z1h;
   var samples = new Array(count + 1);
-  for (var i = 0; i <= count; i++) {
+  for (let i = 0; i <= count; i++) {
     const t = i / count;
     const x = x1 + dx * t;
     const y = y1 + dy * t;
@@ -943,11 +943,11 @@ function generateLineSegments(x1, y1, z1, x2, y2, z2, minSegmentLength, zThresho
     subdivideLineSamples(samples, 0, count, zThreshold);
 
   var lastx = x1, lasty = y1, lastz = samples[0].z;
-  for (var i = 1; i <= count; i++) {
+  for (let i = 1; i <= count; i++) {
     var sample = samples[i];
     if (!sample.used) continue;
 
-    var space = "";
+    let space = "";
     if (sample.x != lastx) {
       gcode += "X" + parseFloat(sample.x.toFixed(3));
       space = " ";
@@ -1157,7 +1157,7 @@ function applyHeightmap() {
       var x = lineInfo.start.x;
       var y = lineInfo.start.y;
       var z = lineInfo.start.z;
-      for (var i = 1; i <= angleSteps; i++) {
+      for (let i = 1; i <= angleSteps; i++) {
         const angle = (arc.angle1 * (angleSteps-i) + arc.angle2 * i) / angleSteps;
         const ax = arc.center.x + Math.cos(angle) * arc.radius;
         const ay = arc.center.y + Math.sin(angle) * arc.radius;

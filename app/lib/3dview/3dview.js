@@ -1,8 +1,8 @@
+"use strict";
+
 var simIdx, timefactor = 1,
   object, simRunning = false, simPaused = false,
   suppressProgress = false, simDragPaused = false;
-
-var loader = new THREE.ObjectLoader();
 
 var simTween = false;
 var frameTime = undefined;
@@ -18,41 +18,33 @@ function convertParsedDataToObject(parsedData) {
   if (!parsedData.error) {
     try {
       const gArray = parsedData.gArray;
-      const srcArray = parsedData.srcArray;
-      const offsetArray = parsedData.offsetArray;
-      const startArray = parsedData.startArray;
-      const durationArray = parsedData.durationArray;
       const xArray = parsedData.xArray;
       const yArray = parsedData.yArray;
       const zArray = parsedData.zArray;
 
-      var geometry = new THREE.BufferGeometry();
+      const geometry = new THREE.BufferGeometry();
 
-      var material = new THREE.LineBasicMaterial({
+      const material = new THREE.LineBasicMaterial({
         vertexColors: THREE.VertexColors,
         transparent: true,
         opacity: 0.8,
       });
-      var positions = [];
-      var colors = [];
+      const positions = [];
+      const colors = [];
 
       const themeColors = Theme.lines;
 
-      var gLast = undefined;
-      var xLast = undefined;
-      var yLast = undefined;
-      var zLast = undefined;
-      for (var i = 0; i < parsedData.pointCount; i++) {
+      let gLast = undefined;
+      let xLast = undefined;
+      let yLast = undefined;
+      let zLast = undefined;
+      for (let i = 0; i < parsedData.pointCount; i++) {
         const g = gArray[i];
         const x = xArray[i];
         const y = yArray[i];
         const z = zArray[i];
 
-        if (g == 0 || g == 1 || g == 2) {
-          var color = themeColors[g];
-        } else {
-          var color = themeColors[3];
-        }
+        const color = (g == 0 || g == 1 || g == 2) ? themeColors[g] :themeColors[3];
 
         if (gLast != undefined && gLast != g) {
           // if switching colors, repeat the last point with the new color
@@ -72,9 +64,9 @@ function convertParsedDataToObject(parsedData) {
 
       geometry.computeBoundingSphere();
 
-      var line = new THREE.Line(geometry, material);
+      const line = new THREE.Line(geometry, material);
       line.geometry.computeBoundingBox();
-      var box = line.geometry.boundingBox.clone();
+      const box = line.geometry.boundingBox.clone();
       if (box.isEmpty()) {
         box.expandByPoint({x:0, y:0, z:0});
       }
@@ -103,7 +95,7 @@ function convertParsedDataToObject(parsedData) {
 
 function getGcodeLine(pointIndex) {
   const offset = object.userData.offsetArray[pointIndex];
-  var end = currentGcode.indexOf('\n', offset);
+  let end = currentGcode.indexOf('\n', offset);
   if (end > offset && currentGcode[end - 1]) {
     end--;
   }
@@ -118,9 +110,8 @@ function parseGcodeInWebWorker(gcode) {
   }
   object = false;
   if (webgl && !disable3Dgcodepreview) {
-    var worker = new Worker('lib/3dview/workers/verylitegcodeviewer.js');
+    const worker = new Worker('lib/3dview/workers/verylitegcodeviewer.js');
     worker.addEventListener('message', function(e) {
-      // console.log('webworker message', e)
       if (e.data.progress != undefined) {
         $('#3dviewlabel').html(' 3D View (rendering, please wait... ' + e.data.progress + '% )')
       } else {
@@ -148,10 +139,9 @@ function parseGcodeInWebWorker(gcode) {
             }
             clearSceneFlag = true;
             resetView(object);
-            var timeremain = object.userData.totalTime;
+            const timeremain = object.userData.totalTime;
 
             if (!isNaN(timeremain)) {
-              //console.log(timeConvert(timeremain));
               // output formattedTime to UI here
               $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
               printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
@@ -199,7 +189,7 @@ function simSpeed(speed) {
 function runSimFrom(startindex) {
   $('#gcodeviewertab').click()
   if (startindex > 1) {
-    for (var i = 0; i < object.userData.pointCount; i++) {
+    for (let i = 0; i < object.userData.pointCount; i++) {
       if (object.userData.srcArray[i] >= startindex-1) {
         sim(i, true);
         return;
@@ -211,9 +201,9 @@ function runSimFrom(startindex) {
 
 function resetConePosition() {
   const idx = Math.max(Math.min(simIdx - 1, object.userData.pointCount - 1), 0);
-  var posx = object.userData.xArray[idx];
-  var posy = object.userData.yArray[idx];
-  var posz = object.userData.zArray[idx];
+  const posx = object.userData.xArray[idx];
+  const posy = object.userData.yArray[idx];
+  const posz = object.userData.zArray[idx];
 
   cone.position.x = posx;
   cone.position.y = posy;
@@ -222,7 +212,7 @@ function resetConePosition() {
 
 function sim(fromLine, paused) {
   if (typeof(object) == 'undefined' || object.userData.pointCount == 0) {
-    var message = `No Gcode in Preview yet: Please load G-code from the Open G-code button first before running simulation`
+    const message = `No Gcode in Preview yet: Please load G-code from the Open G-code button first before running simulation`
     Metro.toast.create(message, null, 3000, 'bg-red');
     simstop()
   } else {
@@ -274,11 +264,11 @@ function sim(fromLine, paused) {
 
 function runSim() {
   // find next line
-  var simTimeInSec = 0;
-  var resetCone = false;
+  let simTimeInSec = 0;
+  let resetCone = false;
 
   for (;simIdx < object.userData.pointCount; simIdx++) {
-    var simTimeMins = object.userData.durationArray[simIdx];
+    let simTimeMins = object.userData.durationArray[simIdx];
     if (object.userData.gArray[simIdx] == 0 && grblParams.$110 != undefined)
       simTimeMins *= 1000 / parseFloat(grblParams.$110); // adjust rapid speed if it is known
     simTimeInSec += simTimeMins * 60;
@@ -316,9 +306,9 @@ function runSim() {
     $("#conetext").html(`<span class="tally success drop-shadow">Line ` + (srcLine+1) + ": " + getGcodeLine(simIdx) + `</span>`);
   }
 
-  var posx = object.userData.xArray[simIdx];
-  var posy = object.userData.yArray[simIdx];
-  var posz = object.userData.zArray[simIdx];
+  const posx = object.userData.xArray[simIdx];
+  const posy = object.userData.yArray[simIdx];
+  const posz = object.userData.zArray[simIdx];
 
   if (simTween)
     simTween.kill();
@@ -357,13 +347,13 @@ function simpause() {
 }
 
 function simStepBack() {
-  var newIdx = undefined;
-  var atEnd = simIdx >= object.userData.pointCount;
-  var line = atEnd ? object.userData.srcArray[object.userData.pointCount-1] + 1 : object.userData.srcArray[simIdx];
+  let newIdx = undefined;
+  const atEnd = simIdx >= object.userData.pointCount;
+  let line = atEnd ? object.userData.srcArray[object.userData.pointCount-1] + 1 : object.userData.srcArray[simIdx];
   if (!atEnd && ((simTween && simTween.time() > 0) || (simIdx > 0 && object.userData.srcArray[simIdx-1] == line))) {
     // in the middle if a line, go back to the start
-    for (var i = atEnd ? object.userData.pointCount - 1 : simIdx; i >= 0; i--) {
-      var li = object.userData.srcArray[i];
+    for (let i = atEnd ? object.userData.pointCount - 1 : simIdx; i >= 0; i--) {
+      const li = object.userData.srcArray[i];
       if (li == line)
         newIdx = i;
       else if (li < line)
@@ -371,8 +361,8 @@ function simStepBack() {
     }
   } else {
     // already at the start of a line, find a previous line
-    for (var i = simIdx - 1; i >= 0; i--) {
-      var li = object.userData.srcArray[i];
+    for (let i = simIdx - 1; i >= 0; i--) {
+      const li = object.userData.srcArray[i];
       if (newIdx == undefined) {
         if (li < line) {
           line = li;
@@ -399,13 +389,13 @@ function simStepBack() {
 
 function simSetProgress(progress) {
   if (object && simRunning && !suppressProgress) {
-    var newIdx = undefined;
-    var partial = 0;
+    let newIdx = undefined;
+    let partial = 0;
     if (progress == 100) {
       newIdx = object.userData.pointCount;
     } else {
-      var time = object.userData.totalTime * progress / 100;
-      for (var i = 0; i < object.userData.pointCount; i++) {
+      const time = object.userData.totalTime * progress / 100;
+      for (let i = 0; i < object.userData.pointCount; i++) {
         if (time == 0) {
           newIdx = i;
           break;
@@ -438,7 +428,7 @@ function simSetProgress(progress) {
 
 function simUpdateProgress() {
   if (!suppressProgress) {
-    var progress = 0;
+    let progress = 0;
     if (object) {
       if (simIdx >= object.userData.pointCount || object.userData.totalTime == 0) {
         progress = 100;
@@ -472,10 +462,10 @@ function simStepForward() {
   if (simIdx >= object.userData.pointCount)
     return;
 
-  var newIdx = object.userData.pointCount;
+  let newIdx = object.userData.pointCount;
   const line = object.userData.srcArray[simIdx];
   // find the next line
-  for (var i = simIdx + 1; i < object.userData.pointCount; i++)
+  for (let i = simIdx + 1; i < object.userData.pointCount; i++)
     if (object.userData.srcArray[i] > line) {
       newIdx = i;
       break;
@@ -531,11 +521,11 @@ function simAnimate() {
   const time = new Date().getTime();
   const dt = Math.min(frameTime ? time - frameTime : 0, 0.1);
   frameTime = time;
-  var spin = 0;
+  let spin = 0;
   if (simRunning && cone && cone.position) {
-    var posx = cone.position.x;
-    var posy = cone.position.y;
-    var posz = cone.position.z;
+    let posx = cone.position.x;
+    let posy = cone.position.y;
+    let posz = cone.position.z;
     if (unit == "in") {
       posx /= 25.4;
       posy /= 25.4;
@@ -543,10 +533,9 @@ function simAnimate() {
     }
 
     if (SIM_DISPLAY_TYPE == 0) {
-      var conepos = toScreenPosition(cone, camera)
-      var offset = $("#renderArea").offset()
-      var farside = $("#renderArea").offset().left + $("#renderArea").outerWidth()
-      var bottomside = $("#renderArea").outerHeight()
+      const conepos = toScreenPosition(cone, camera)
+      const farside = $("#renderArea").offset().left + $("#renderArea").outerWidth()
+      const bottomside = $("#renderArea").outerHeight()
 
       if (conepos.y < 25) {
         conepos.y = 25;
@@ -565,11 +554,12 @@ function simAnimate() {
       $("#conetext").css('left', conepos.x + "px").css('top', conepos.y - 20 + "px");
       $('#gcodesent').html("X:" + posx.toFixed(2) + "&nbsp;&nbsp;&nbsp;Y:" + posy.toFixed(2) + "&nbsp;&nbsp;&nbsp;Z:" + posz.toFixed(2));
     } else {
+      let html;
       if (simIdx >= 0 && simIdx < object.userData.pointCount) {
-        var srcLine = object.userData.srcArray[simIdx];
-        var html = "Line " + (srcLine+1) + ": " + getGcodeLine(simIdx);
+        const srcLine = object.userData.srcArray[simIdx];
+        html = "Line " + (srcLine+1) + ": " + getGcodeLine(simIdx);
       } else {
-        var html = "&lt;END&gt;";
+        html = "&lt;END&gt;";
       }
       $("#simText > span").html(html + "<br>X:" + posx.toFixed(2) + "&nbsp;&nbsp;&nbsp;Y:" + posy.toFixed(2) + "&nbsp;&nbsp;&nbsp;Z:" + posz.toFixed(2));
     }
@@ -579,7 +569,7 @@ function simAnimate() {
     if (lastToolRange && simIdx >= lastToolRange.startPoint && simIdx < lastToolRange.endPoint) {
       spin = lastToolRange.direction;
     } else {
-      for (var i = 0; i < object.userData.toolRanges.length; i++) {
+      for (let i = 0; i < object.userData.toolRanges.length; i++) {
         const range = object.userData.toolRanges[i];
         if (simIdx >= range.startPoint && simIdx < range.endPoint) {
           lastToolRange = range;
@@ -608,9 +598,9 @@ function simAnimate() {
 }
 
 function toScreenPosition(obj, camera) {
-  var vector = new THREE.Vector3(obj.position.x, obj.position.y + 10, obj.position.z + 30);
-  var widthHalf = 0.5 * renderer.getContext().canvas.width;
-  var heightHalf = 0.5 * renderer.getContext().canvas.height;
+  const vector = new THREE.Vector3(obj.position.x, obj.position.y + 10, obj.position.z + 30);
+  const widthHalf = 0.5 * renderer.getContext().canvas.width;
+  const heightHalf = 0.5 * renderer.getContext().canvas.height;
   vector.project(camera);
   vector.x = (vector.x * widthHalf) + widthHalf;
   vector.y = -(vector.y * heightHalf) + heightHalf;

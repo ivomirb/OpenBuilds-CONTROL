@@ -203,17 +203,17 @@ function processpreset() {
 
   if (actuatorselect.val() == "belt") {
     //step/mm = stepsperrev / beltpitch / pulleyteeth
-    var stepsperrev = motorselect.val() * microstepselect.val();
-    var beltpitch = beltselect.val();
-    var pulleyteeth = pulleyselect.val();
-    var calculatedstepspermm = stepsperrev / beltpitch / pulleyteeth
+    const stepsperrev = motorselect.val() * microstepselect.val();
+    const beltpitch = beltselect.val();
+    const pulleyteeth = pulleyselect.val();
+    const calculatedstepspermm = stepsperrev / beltpitch / pulleyteeth
     // console.log(stepsperrev, beltpitch, pulleyteeth)
     $('#calculatedstepspermm').val(calculatedstepspermm.toFixed(3))
   } else if (actuatorselect.val() == "lead") {
     //steps/mm = stepsperrev / screwpitch
-    var stepsperrev = motorselect.val() * microstepselect.val();
-    var screwpitch = leadscrewselect.val()
-    var calculatedstepspermm = stepsperrev / screwpitch
+    const stepsperrev = motorselect.val() * microstepselect.val();
+    const screwpitch = leadscrewselect.val()
+    const calculatedstepspermm = stepsperrev / screwpitch
     // console.log(stepsperrev, screwpitch)
     $('#calculatedstepspermm').val(calculatedstepspermm.toFixed(3))
   }

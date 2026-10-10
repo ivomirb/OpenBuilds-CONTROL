@@ -10,7 +10,7 @@ var express = require("express");
 var path = require("path");
 var ip = require("ip");
 var http = require("http");
-var https = require('https');
+// var https = require('https');
 
 
 // App dependencies
@@ -95,7 +95,7 @@ that expire in 3 months. Besides, the private keys are included in the open sour
   };
 
   const httpsSrever = https.createServer(httpsOptions, app).listen(3001, function() {
-  console.log("SUCCESS HTTPS");
+    console.log("SUCCESS HTTPS");
     debug_log('https: listening on:' + ip.address() + ":3001");
   });
   io.attach(httpsSrever);

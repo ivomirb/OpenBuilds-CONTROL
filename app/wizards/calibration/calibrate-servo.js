@@ -1,4 +1,5 @@
 let servoCalibrationDialogOpen = false;
+let servoMaxScale;
 
 // Calibration Wizard
 function penUpSend(data) {
@@ -15,7 +16,7 @@ function penDownSend(data) {
 
 function servocalibrate() {
 
-  var servoMaxScale = parseInt(grblParams.$30);
+  servoMaxScale = parseInt(grblParams.$30);
 
   var servocaltemplate = `
 

@@ -1,4 +1,5 @@
 "use strict";
+
 // This is a simplified and updated version of http://gcode.joewalnes.com/
 // Updated with code from http://chilipeppr.com/tinyg's 3D viewer to support more CNC type Gcode
 // Simplified by Andrew Hodel in 2015
@@ -25,7 +26,7 @@ self.onmessage = function(e) {
     const yArray = new Float32Array(new ArrayBuffer(object.linePoints.length * 4));
     const zArray = new Float32Array(new ArrayBuffer(object.linePoints.length * 4));
 
-    for (var i = 0; i < object.linePoints.length; i++) {
+    for (let i = 0; i < object.linePoints.length; i++) {
       const point = object.linePoints[i];
       gArray[i] = point.g;
       srcArray[i] = point.src;
@@ -37,7 +38,7 @@ self.onmessage = function(e) {
       zArray[i] = point.z;
     }
 
-    var result = {
+    const result = {
       pointCount: object.linePoints.length,
       totalTime: object.totalTime,
       toolRanges: object.toolRanges,
@@ -234,8 +235,8 @@ constructor(handlers, modalHandlers) {
 }
 
 createArcPoints(centerX, centerY, startZ, endZ, radius, startAngle, endAngle, plane) {
-  var points = new Array(ARC_SEGMENT_COUNT + 1);
-  for (var i = 0; i <= ARC_SEGMENT_COUNT; i++) {
+  const points = new Array(ARC_SEGMENT_COUNT + 1);
+  for (let i = 0; i <= ARC_SEGMENT_COUNT; i++) {
     const angle = (startAngle * (ARC_SEGMENT_COUNT-i) + endAngle * i) / ARC_SEGMENT_COUNT;
     const x = centerX + Math.cos(angle) * radius;
     const y = centerY + Math.sin(angle) * radius;
@@ -252,13 +253,13 @@ createArcPoints(centerX, centerY, startZ, endZ, radius, startAngle, endAngle, pl
 }
 
 createArcFrom2PtsAndCenter(vp1, vp2, center, clockwise) {
-  var p1deltaX = vp1.x - center.x;
-  var p1deltaY = vp1.y - center.y;
-  var p1deltaZ = vp1.z - center.z;
+  const p1deltaX = vp1.x - center.x;
+  const p1deltaY = vp1.y - center.y;
+  const p1deltaZ = vp1.z - center.z;
 
-  var p2deltaX = vp2.x - center.x;
-  var p2deltaY = vp2.y - center.y;
-  var p2deltaZ = vp2.z - center.z;
+  const p2deltaX = vp2.x - center.x;
+  const p2deltaY = vp2.y - center.y;
+  const p2deltaZ = vp2.z - center.z;
 
   switch (this.arcPlane) {
     case "G17": { // XY
@@ -270,8 +271,8 @@ createArcFrom2PtsAndCenter(vp1, vp2, center, clockwise) {
       }
 
       // Find start and end angles
-      var startAngle = Math.atan2(p1deltaY, p1deltaX);
-      var endAngle = Math.atan2(p2deltaY, p2deltaX);
+      let startAngle = Math.atan2(p1deltaY, p1deltaX);
+      let endAngle = Math.atan2(p2deltaY, p2deltaX);
       if ((vp2.x-vp1.x)*(vp2.x-vp1.x) + (vp2.y-vp1.y)*(vp2.y-vp1.y) < 0.0001) {
         // start and end points are close together, draw a full circle
         endAngle = clockwise ? (startAngle - 2 * Math.PI) : (startAngle + 2 * Math.PI);
@@ -293,8 +294,8 @@ createArcFrom2PtsAndCenter(vp1, vp2, center, clockwise) {
         console.log("Line: ", this.src, "Radiuses not equal. r1:", radius, ", r2:", radius2, "difference:", Math.abs(radius - radius2));
       }
 
-      var startAngle = Math.atan2(p1deltaX, p1deltaZ);
-      var endAngle = Math.atan2(p2deltaX, p2deltaZ);
+      let startAngle = Math.atan2(p1deltaX, p1deltaZ);
+      let endAngle = Math.atan2(p2deltaX, p2deltaZ);
       if ((vp2.z-vp1.z)*(vp2.z-vp1.z) + (vp2.x-vp1.x)*(vp2.x-vp1.x) < 0.0001) {
         endAngle = clockwise ? (startAngle - 2 * Math.PI) : (startAngle + 2 * Math.PI);
       } else {
@@ -315,8 +316,8 @@ createArcFrom2PtsAndCenter(vp1, vp2, center, clockwise) {
         console.log("Line: ", this.src, "Radiuses not equal. r1:", radius, ", r2:", radius2, "difference:", Math.abs(radius - radius2));
       }
 
-      var startAngle = Math.atan2(p1deltaZ, p1deltaY);
-      var endAngle = Math.atan2(p2deltaZ, p2deltaY);
+      let startAngle = Math.atan2(p1deltaZ, p1deltaY);
+      let endAngle = Math.atan2(p2deltaZ, p2deltaY);
       if ((vp2.y-vp1.y)*(vp2.y-vp1.y) + (vp2.z-vp1.z)*(vp2.z-vp1.z) < 0.0001) {
         endAngle = clockwise ? (startAngle - 2 * Math.PI) : (startAngle + 2 * Math.PI);
       } else {
@@ -333,11 +334,11 @@ createArcFrom2PtsAndCenter(vp1, vp2, center, clockwise) {
 
 addArcSegment(args, p1, p2, arcInfo) {
   // technically arcs are not well defined until the start position is known, but for viewer purposes replace NaN with sensible defaults
-  var vp2 = {
+  const vp2 = {
     x: isNaN(p2.x) ? 0 : p2.x,
     y: isNaN(p2.y) ? 0 : p2.y,
     z: isNaN(p2.z) ? 0 : p2.z};
-  var vp1 = {
+  const vp1 = {
     x: isNaN(p1.x) ? vp2.x : p1.x,
     y: isNaN(p1.y) ? vp2.y : p1.y,
     z: isNaN(p1.z) ? vp2.z : p1.z};
@@ -345,7 +346,7 @@ addArcSegment(args, p1, p2, arcInfo) {
   // if this is an R arc gcode command, we're given the radius, so we
   // don't have to calculate it. however we need to determine center
   // of arc
-  var center;
+  let center;
   if (args.r != null) {
     const radius = parseFloat(arcInfo.r);
 
@@ -369,7 +370,7 @@ addArcSegment(args, p1, p2, arcInfo) {
           center = {x: x3, y: y3, z: z3};
         }
         else {
-          var scale = Math.sqrt(distSq / halfSq); // ratio between the half vector length and the distance from p3 to the center
+          let scale = Math.sqrt(distSq / halfSq); // ratio between the half vector length and the distance from p3 to the center
           if ((arcInfo.clockwise ? -radius : radius) < 0) scale = -scale; // flip the sign if necessary
           center = {x: x3 - deltaY*scale, y: y3 + deltaX*scale, z: z3}; // the Z is irrelevant, so just pick the middle z3
         }
@@ -384,7 +385,7 @@ addArcSegment(args, p1, p2, arcInfo) {
           center = {x: x3, y: y3, z: z3};
         }
         else {
-          var scale = Math.sqrt(distSq / halfSq);
+          let scale = Math.sqrt(distSq / halfSq);
           if ((arcInfo.clockwise ? -radius : radius) < 0) scale = -scale;
           center = {x: x3 + deltaZ*scale, y: y3, z: z3 - deltaX*scale};
         }
@@ -399,7 +400,7 @@ addArcSegment(args, p1, p2, arcInfo) {
           center = {x: x3, y: y3, z: z3};
         }
         else {
-          var scale = Math.sqrt(distSq / halfSq);
+          let scale = Math.sqrt(distSq / halfSq);
           if ((arcInfo.clockwise ? -radius : radius) < 0) scale = -scale;
           center = {x: x3, y: y3 - deltaZ*scale, z: z3 + deltaY*scale};
         }
@@ -412,9 +413,9 @@ addArcSegment(args, p1, p2, arcInfo) {
     center = {x: arcInfo.i, y: arcInfo.j, z: arcInfo.k};
   }
 
-  var arcPoints = this.createArcFrom2PtsAndCenter(vp1, vp2, center, arcInfo.clockwise);
+  const arcPoints = this.createArcFrom2PtsAndCenter(vp1, vp2, center, arcInfo.clockwise);
 
-  var duration = 0;
+  let duration = 0;
   // calc length of one segment of the arc, they should all be the same
   const segLength = calcPointDistance(arcPoints[0], arcPoints[1]);
   if (segLength > 0) {
@@ -437,7 +438,7 @@ addArcSegment(args, p1, p2, arcInfo) {
       duration: 0,
     });
   }
-  for (var i = 1; i < arcPoints.length; i++) {
+  for (let i = 1; i < arcPoints.length; i++) {
     this.linePoints.push({
       src: this.src,
       offset: this.offset,
@@ -454,18 +455,18 @@ addArcSegment(args, p1, p2, arcInfo) {
 
 addLineSegment(args, p1, p2) {
   // replace NaNs with sensible defaults
-  var vp2 = {
+  const vp2 = {
     x: isNaN(p2.x) ? 0 : p2.x,
     y: isNaN(p2.y) ? 0 : p2.y,
     z: isNaN(p2.z) ? 0 : p2.z};
-  var vp1 = {
+  const vp1 = {
     x: isNaN(p1.x) ? vp2.x : p1.x,
     y: isNaN(p1.y) ? vp2.y : p1.y,
     z: isNaN(p1.z) ? vp2.z : p1.z};
 
-  var dist = calcPointDistance(vp1, vp2);
+  const dist = calcPointDistance(vp1, vp2);
 
-  var duration = 0;
+  let duration = 0;
   if (dist > 0) {
     // the "1000" for G0 will be replaced during simulation with the real rapid rate
     const fr = args.g == 0 ? 1000 : (this.feedrate ? this.feedrate : 100);
@@ -509,8 +510,8 @@ handleLineCommand(args) {
     return; // needs a motion on at least one axis
   }
 
-  var origin = this.relative ? this.lastPoint : this.offsetG92;
-  var newPoint = {
+  const origin = this.relative ? this.lastPoint : this.offsetG92;
+  const newPoint = {
     x: args.x !== undefined ? args.x + origin.x: this.lastPoint.x,
     y: args.y !== undefined ? args.y + origin.y: this.lastPoint.y,
     z: args.z !== undefined ? args.z + origin.z: this.lastPoint.z,
@@ -527,21 +528,20 @@ handleArcCommand(args) {
     return; // needs a motion on at least one axis
   }
 
-  var origin = this.relative ? this.lastPoint : this.offsetG92;
-  var newPoint = {
+  let origin = this.relative ? this.lastPoint : this.offsetG92;
+  const arcInfo = {};
+  const newPoint = {
     x: args.x !== undefined ? args.x + origin.x: this.lastPoint.x,
     y: args.y !== undefined ? args.y + origin.y: this.lastPoint.y,
     z: args.z !== undefined ? args.z + origin.z: this.lastPoint.z,
   };
   if (args.r !== undefined) {
-    var arcInfo = {r: args.r};
+    arcInfo.r = args.r;
   } else {
     origin = this.ijkrelative ? this.lastPoint : this.offsetG92;
-    var arcInfo = {
-      i: args.i !== undefined ? origin.x + args.i : this.lastPoint.x,
-      j: args.j !== undefined ? origin.y + args.j : this.lastPoint.y,
-      k: args.k !== undefined ? origin.z + args.k : this.lastPoint.z,
-    };
+    arcInfo.i = args.i !== undefined ? origin.x + args.i : this.lastPoint.x;
+    arcInfo.j = args.j !== undefined ? origin.y + args.j : this.lastPoint.y;
+    arcInfo.k = args.k !== undefined ? origin.z + args.k : this.lastPoint.z;
     if (isNaN(arcInfo.i)) arcInfo.i = 0;
     if (isNaN(arcInfo.j)) arcInfo.j = 0;
     if (isNaN(arcInfo.k)) arcInfo.k = 0;
@@ -577,12 +577,12 @@ parseLine(text, src, offset) {
 
   if (text.length == 0) return;
 
-  var tokens = [];
+  const tokens = [];
   // Execute any non-motion commands and T/F/S params on the line immediately
   // Add other commands to the tokens list for later handling
   text.split(/\s+/).forEach((token) => {
     if (token.length == 0) return;
-    var modalHandler = this.modalHandlers[token.toUpperCase()];
+    const modalHandler = this.modalHandlers[token.toUpperCase()];
     if (modalHandler) {
       modalHandler(this);
     } else if (token[0] == "T") {
@@ -601,10 +601,10 @@ parseLine(text, src, offset) {
   this.src = src;
   this.offset = offset;
 
-  var args = {};
+  const args = {};
   tokens.forEach((token) => {
-    var key = token[0].toLowerCase();
-    var value = parseFloat(token.substring(1));
+    const key = token[0].toLowerCase();
+    const value = parseFloat(token.substring(1));
     if (!this.isUnitsMm && "xyz".indexOf(key) >= 0) {
       args[key] = value * 25.4;
     }else {
@@ -612,7 +612,7 @@ parseLine(text, src, offset) {
     }
   });
 
-  var command;
+  let command;
   if (args.g != undefined) {
     command = "G" + args.g;
   } else if (args.m != undefined) {
@@ -621,7 +621,7 @@ parseLine(text, src, offset) {
     command = this.lastMove;
   }
 
-  var handler = this.handlers[command];
+  const handler = this.handlers[command];
   if (handler && handler(this, args)) {
     // if the handler returns true, then this is a move command that can be used as a default for future moves
     this.lastMove = command;
@@ -629,14 +629,14 @@ parseLine(text, src, offset) {
 }
 
 parseGcode(gcode) {
-  var offset = 0;
-  var regex = /\r?\n/g;
-  var progress = 0;
-  var src = 0;
+  const regex = /\r?\n/g;
+  let offset = 0;
+  let progress = 0;
+  let src = 0;
   while (true) {
     regex.lastIndex = offset;
-    var end = regex.exec(gcode);
-    var line = gcode.slice(offset, end ? end.index : undefined);
+    const end = regex.exec(gcode);
+    const line = gcode.slice(offset, end ? end.index : undefined);
 
     if (src % 100 === 0) {
       const p = Math.floor((offset / gcode.length) * 100);
@@ -661,10 +661,10 @@ parseGcode(gcode) {
   // replace XY=NaN with the first known coordinates
   // replace Z=NaN with the highest Z in the object
   const linePoints = this.linePoints;
-  var firstX = undefined;
-  var firstY = undefined;
-  var maxZ = undefined;
-  for (var i = 0; i < linePoints.length; i++) {
+  let firstX = undefined;
+  let firstY = undefined;
+  let maxZ = undefined;
+  for (let i = 0; i < linePoints.length; i++) {
     const x = linePoints[i].x;
     const y = linePoints[i].y;
     const z = linePoints[i].z;
@@ -680,7 +680,7 @@ parseGcode(gcode) {
     }
   }
 
-  for (var i = 0; i < linePoints.length; i++) {
+  for (let i = 0; i < linePoints.length; i++) {
     if (isNaN(linePoints[i].x)) {
       linePoints[i].x = firstX || 0;
     }
@@ -700,10 +700,10 @@ parseGcode(gcode) {
 } // end of class GCodeParser
 
 function createObjectFromGCode(gcode) {
-  var parser = new GCodeParser(gcodeHandlers, gcodeModalHandlers);
+  const parser = new GCodeParser(gcodeHandlers, gcodeModalHandlers);
   parser.parseGcode(gcode);
 
-  var data = {
+  const data = {
     linePoints: parser.linePoints,
     toolRanges: parser.toolRanges,
     totalTime: parser.totalTime,

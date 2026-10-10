@@ -1,8 +1,10 @@
+"use strict";
+
 var isJogWidget = true;
 
 $(document).ready(function() {
 
-  var iOS = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
+  const iOS = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
 
   if (!iOS) {
     Metro.dialog.create({
@@ -29,10 +31,10 @@ $(document).ready(function() {
   $('#jro').data('slider').val(100);
 });
 
-var elem = document.documentElement;
 
 /* View in fullscreen */
 function openFullscreen() {
+  const elem = document.documentElement;
   if (elem.requestFullscreen) {
     elem.requestFullscreen();
   } else if (elem.mozRequestFullScreen) {

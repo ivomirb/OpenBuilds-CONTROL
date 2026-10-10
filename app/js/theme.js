@@ -1,4 +1,6 @@
-let ThemeData = {
+"use strict";
+
+const ThemeData = {
   THEMES: {
     "light": {
       DESCRIPTION: 'Light Mode',
@@ -272,7 +274,7 @@ function themeDocReady() {
   // </div>
   //
   for (let themeId in ThemeData.THEMES) {
-    let theme = ThemeData.THEMES[themeId];
+    // let theme = ThemeData.THEMES[themeId];
     // let menuItem = $('<li><a href="#"><i class="fas fa-fw fa-' + theme.ICON + '"></i> ' + theme.DESCRIPTION + '</a></li>');
     // $("#ddTheme").append($(menuItem).addClass(['theme_btn', 'theme_btn_' + themeId]).click(() => Theme.set(themeId)));
     if (themeId != "light") {

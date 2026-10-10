@@ -9,12 +9,10 @@ const {
 } = require('./core.js');
 
 const {
-  serverEmit,
   addConnectionHandler,
 } = require('./server.js');
 
 const {
-  addQToEnd,
   addQToEndAndKick,
   addQRealtime,
 } = require('./grblSender.js');

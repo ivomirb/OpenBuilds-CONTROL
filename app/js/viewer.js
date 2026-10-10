@@ -1,3 +1,5 @@
+"use strict";
+
 // Global Vars
 var scene = true;
 var camera, renderer;
@@ -6,7 +8,6 @@ var cone;
 
 var CONE_FACE_COUNT = 8;
 
-var container, stats;
 var controls;
 
 var sizexmin;
@@ -16,7 +17,7 @@ var sizeymax;
 var clearSceneFlag = false;
 var viewSettings = {grid: true, ruler: true, toolpath: true, tool: true, machine: true, heightmap: true};
 
-var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
 // pause Animation when we lose webgl context focus
 var pauseAnimation = false;
@@ -52,7 +53,7 @@ function disposeGeometryAndRemove(obj) {
 function cleanupWorkspace() {
   simstop();
 
-  var obj = workspace.getObjectByName("Scene Lights");
+  let obj = workspace.getObjectByName("Scene Lights");
   if (obj) disposeGeometryAndRemove(obj);
 
   obj = workspace.getObjectByName("Skydome");
@@ -75,26 +76,26 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   if (!xmax) xmax = defaultXmax;
   if (!ymax) ymax = defaultYmax;
 
-  var sceneLights = new THREE.Group();
+  const sceneLights = new THREE.Group();
 
-  var light = new THREE.DirectionalLight(0xffffff, 0.8);
+  const light = new THREE.DirectionalLight(0xffffff, 0.8);
   light.position.set(0, 2, 25).normalize();
   light.name = "Light1;"
   sceneLights.add(light);
 
-  var light2 = new THREE.DirectionalLight(0xffffff);
+  const light2 = new THREE.DirectionalLight(0xffffff);
   light2.name = "Light2"
   light2.position.set(-500, -500, 1).normalize();
   sceneLights.add(light2);
 
-  var dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
   dirLight.color.setHSL(0.1, 1, 0.95);
   dirLight.position.set(-1, 1.75, 1);
   dirLight.position.multiplyScalar(30);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
   dirLight.shadow.mapSize.height = 2048;
-  var d = 50;
+  const d = 50;
   dirLight.shadow.camera.left = -d;
   dirLight.shadow.camera.right = d;
   dirLight.shadow.camera.top = d;
@@ -104,7 +105,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
   dirLight.name = "dirLight;"
   sceneLights.add(dirLight);
 
-  var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
   hemiLight.color.setHSL(Theme.HEMI_LIGHT_COLOR.H, Theme.HEMI_LIGHT_COLOR.S, Theme.HEMI_LIGHT_COLOR.L);
   hemiLight.groundColor.setHSL(0.095, 1, 0.75);
   hemiLight.position.set(0, 50, 0);
@@ -119,7 +120,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
 
   // SKYDOME
   if (!disable3Dskybox) {
-    var uniforms = {
+    const uniforms = {
       topColor: {
         value: new THREE.Color(Theme.SKY_TOP_COLOR)
       },
@@ -137,24 +138,24 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
 
     scene.fog.color.copy(uniforms.bottomColor.value);
 
-    var vertexShader = document.getElementById('vertexShader').textContent;
-    var fragmentShader = document.getElementById('fragmentShader').textContent;
+    const vertexShader = document.getElementById('vertexShader').textContent;
+    const fragmentShader = document.getElementById('fragmentShader').textContent;
 
-    var skyGeo = new THREE.SphereGeometry(9900, 64, 15);
-    var skyMat = new THREE.ShaderMaterial({
+    const skyGeo = new THREE.SphereGeometry(9900, 64, 15);
+    const skyMat = new THREE.ShaderMaterial({
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
       uniforms: uniforms,
       side: THREE.DoubleSide
     });
 
-    var sky = new THREE.Mesh(skyGeo, skyMat);
+    const sky = new THREE.Mesh(skyGeo, skyMat);
     sky.name = "Skydome"
     workspace.add(sky);
   }
 
   if (!disable3Drealtimepos) {
-    var coneGeo = new THREE.CylinderGeometry(0, 5, 40, CONE_FACE_COUNT, 1, false)
+    const coneGeo = new THREE.CylinderGeometry(0, 5, 40, CONE_FACE_COUNT, 1, false)
     coneGeo.applyMatrix(new THREE.Matrix4().makeTranslation(0, -20, 0));
 
     cone = new THREE.Mesh(coneGeo, new THREE.MeshLambertMaterial({
@@ -184,7 +185,7 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
     }
   }
 
-  var machineBoxVerts = [ // unit cube
+  const machineBoxVerts = [ // unit cube
     0, 0, 0, 0, 0, 1,
     0, 0, 1, 0, 1, 1,
     0, 1, 1, 0, 1, 0,
@@ -199,12 +200,12 @@ function drawWorkspace(xmin, xmax, ymin, ymax) {
     1, 1, 0, 1, 0, 0,
   ];
 
-  var machineBoxMaterial = new THREE.LineBasicMaterial({
+  const machineBoxMaterial = new THREE.LineBasicMaterial({
     color: 0x888888,
     transparent: true,
     opacity: 0.3
   });
-  var machineBoxGeo = new THREE.BufferGeometry();
+  const machineBoxGeo = new THREE.BufferGeometry();
   machineBoxGeo.setAttribute('position', new THREE.Float32BufferAttribute( machineBoxVerts, 3));
   machineCoordinateSpace = new THREE.LineSegments(machineBoxGeo, machineBoxMaterial);
   machineCoordinateSpace.name = "Machine Extents";
@@ -245,14 +246,14 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     disposeGeometryAndRemove(gridsystem.children[0]);
   }
 
-  var axesgrp = new THREE.Object3D();
+  const axesgrp = new THREE.Object3D();
   axesgrp.name = "Axes Markers"
 
-  var offset = 5
-  var size = 5
+  const offset = 5
+  const size = 5
 
   // add axes labels
-  var xlbl = makeSprite("webgl", {
+  const xlbl = makeSprite("webgl", {
     x: xmax + offset,
     y: 0,
     z: 0,
@@ -260,7 +261,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     color: Theme.X_RULER_LABEL_COLOR,
     size: size
   });
-  var ylbl = makeSprite("webgl", {
+  const ylbl = makeSprite("webgl", {
     x: 0,
     y: ymax + offset,
     z: 0,
@@ -273,42 +274,42 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   axesgrp.add(xlbl);
   axesgrp.add(ylbl);
 
-  var materialX = new THREE.LineBasicMaterial({
+  const materialX = new THREE.LineBasicMaterial({
     color: Theme.X_AXIS_LINE_COLOR
   });
 
-  var materialY = new THREE.LineBasicMaterial({
+  const materialY = new THREE.LineBasicMaterial({
     color: Theme.Y_AXIS_LINE_COLOR
   });
 
-  var geometryX = new THREE.Geometry();
+  const geometryX = new THREE.Geometry();
   geometryX.vertices.push(
     new THREE.Vector3(-0.1, 0, 0),
     new THREE.Vector3(-0.1, ymax, 0)
   );
 
-  var geometryY = new THREE.Geometry();
+  const geometryY = new THREE.Geometry();
   geometryY.vertices.push(
     new THREE.Vector3(0, -0.1, 0),
     new THREE.Vector3(xmax, -0.1, 0)
   );
 
-  var line1 = new THREE.Line(geometryX, materialY);
-  var line2 = new THREE.Line(geometryY, materialX);
+  const line1 = new THREE.Line(geometryX, materialY);
+  const line2 = new THREE.Line(geometryY, materialX);
   axesgrp.add(line1);
   axesgrp.add(line2);
 
-  var vertices10 = [];
-  var vertices100 = [];
+  const vertices10 = [];
+  const vertices100 = [];
 
-  var scale = inches ? 25.4/5 : 10;
-  var major = inches ? 5 : 10;
-  var ixmin = Math.ceil(xmin / scale);
-  var ixmax = Math.floor(xmax / scale);
-  var iymin = Math.ceil(ymin / scale);
-  var iymax = Math.floor(ymax / scale);
+  const scale = inches ? 25.4/5 : 10;
+  const major = inches ? 5 : 10;
+  const ixmin = Math.ceil(xmin / scale);
+  const ixmax = Math.floor(xmax / scale);
+  const iymin = Math.ceil(ymin / scale);
+  const iymax = Math.floor(ymax / scale);
 
-  for (var i = ixmin; i <= ixmax; i++) {
+  for (let i = ixmin; i <= ixmax; i++) {
     const x = i * scale;
     if (i % major == 0) {
       vertices100.push(x, ymin, 0, x, ymax, 0);
@@ -317,7 +318,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     }
   }
 
-  for (var i = iymin; i <= iymax; i++) {
+  for (let i = iymin; i <= iymax; i++) {
     const y = i * scale;
     if (i % major == 0) {
       vertices100.push(xmin, y, 0, xmax, y, 0);
@@ -326,33 +327,33 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
     }
   }
 
-  var material10 = new THREE.LineBasicMaterial({
+  const material10 = new THREE.LineBasicMaterial({
     color: Theme.GRID_STEP_10_COLOR,
     opacity: Theme.GRID_STEP_10_OPACITY,
     transparent: true
   });
 
-  var geometry10 = new THREE.BufferGeometry();
+  const geometry10 = new THREE.BufferGeometry();
   geometry10.setAttribute('position', new THREE.Float32BufferAttribute( vertices10, 3));
 
-  var grid10 = new THREE.LineSegments(geometry10, material10);
+  const grid10 = new THREE.LineSegments(geometry10, material10);
   grid10.receiveShadow = false;
   grid10.name = "GridHelper10";
 
-  var material100 = new THREE.LineBasicMaterial({
+  const material100 = new THREE.LineBasicMaterial({
     color: Theme.GRID_STEP_100_COLOR,
     opacity: Theme.GRID_STEP_100_OPACITY,
     transparent: true
   });
 
-  var geometry100 = new THREE.BufferGeometry();
+  const geometry100 = new THREE.BufferGeometry();
   geometry100.setAttribute('position', new THREE.Float32BufferAttribute( vertices100, 3));
 
-  var grid100 = new THREE.LineSegments(geometry100, material100);
+  const grid100 = new THREE.LineSegments(geometry100, material100);
   grid100.receiveShadow = false;
   grid100.name = "GridHelper100";
 
-  var grid = new THREE.Group();
+  const grid = new THREE.Group();
   grid.name = "Grid";
   grid.visible = viewSettings.grid;
   grid.add(grid10);
@@ -360,7 +361,7 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
   grid.add(axesgrp);
   gridsystem.add(grid);
 
-  var ruler = drawRuler(xmin, xmax, ymin, ymax, inches);
+  const ruler = drawRuler(xmin, xmax, ymin, ymax, inches);
   ruler.name = "Ruler";
   ruler.visible = viewSettings.ruler;
   gridsystem.add(ruler);
@@ -369,7 +370,6 @@ function redrawGrid(xmin, xmax, ymin, ymax, inches) {
 function init3D() {
 
   if (webgl) {
-    // console.log('WebGL Support found! success: this application will work optimally on this device!');
     printLog("<span class='fg-darkRed'>[ 3D Viewer ] </span><span class='fg-green'>WebGL Support found! success: this application will work optimally on this device!</span>")
     renderer = new THREE.WebGLRenderer({
       autoClearColor: true,
@@ -422,7 +422,6 @@ function init3D() {
     }, 200)
 
   } else {
-    console.log('No WebGL Support found on this computer! Disabled 3D Viewer - Sorry!');
     printLog("<span class='fg-darkRed'>[ ERROR ]</span>  <span class='fg-darkRed'>No WebGL Support found on this computer! Disabled 3D Viewer - Sorry!</span>")
     printLog("<span class='fg-darkRed'>[ ERROR ]</span>  <span class='fg-darkRed'>" + getWebGLErrorMessage() + "</span>")
   }
@@ -456,35 +455,31 @@ function animate() {
 }
 
 function viewExtents(objecttosee) {
-  // console.log("viewExtents. object:", objecttosee);
-  // console.log("controls:", controls);
-
   // lets override the bounding box with a newly
   // generated one
   // get its bounding box
   if (objecttosee) {
     // console.log(objecttosee)
-    var helper = new THREE.BoxHelper(objecttosee);
+    const helper = new THREE.BoxHelper(objecttosee);
     helper.update();
-    var box3 = new THREE.Box3();
+    const box3 = new THREE.Box3();
     box3.setFromObject(helper);
-    var minx = box3.min.x;
-    var miny = box3.min.y;
-    var maxx = box3.max.x;
-    var maxy = box3.max.y;
-    var minz = box3.min.z;
-    var maxz = box3.max.z;
+    const minx = box3.min.x;
+    const miny = box3.min.y;
+    const maxx = box3.max.x;
+    const maxy = box3.max.y;
+    const minz = box3.min.z;
+    const maxz = box3.max.z;
 
-    var lenx = maxx - minx;
-    var leny = maxy - miny;
-    var lenz = maxz - minz;
-    var centerx = minx + (lenx / 2);
-    var centery = miny + (leny / 2);
-    var centerz = minz + (lenz / 2);
+    const lenx = maxx - minx;
+    const leny = maxy - miny;
+    const lenz = maxz - minz;
+    const centerx = minx + (lenx / 2);
+    const centery = miny + (leny / 2);
+    const centerz = minz + (lenz / 2);
 
-    // console.log("lenx:", lenx, "leny:", leny, "lenz:", lenz);
-    var maxlen = Math.max(lenx, leny, lenz);
-    var target = new THREE.Vector3(centerx, centery, centerz);
+    const maxlen = Math.max(lenx, leny, lenz);
+    const target = new THREE.Vector3(centerx, centery, centerz);
 
     // place the camera above the center, at twice the maxlen, looking straight down
     camera.position.set(centerx, centery, centerz + 2 * maxlen);
@@ -501,18 +496,17 @@ function viewExtents(objecttosee) {
 }
 
 function makeSprite(rendererType, vals) {
-  var canvas = document.createElement('canvas'),
-    context = canvas.getContext('2d'),
-    metrics = null,
-    textHeight = 100,
-    textWidth = 0,
-    actualFontSize = 10;
-  var txt = vals.text;
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  const textHeight = 100;
+  let actualFontSize = 10;
+
+  const txt = vals.text;
   if (vals.size) actualFontSize = vals.size;
 
   context.font = "normal " + textHeight + "px Impact";
-  metrics = context.measureText(txt);
-  var textWidth = metrics.width;
+  const metrics = context.measureText(txt);
+  const textWidth = metrics.width;
 
   canvas.width = textWidth;
   canvas.height = textHeight;
@@ -523,22 +517,22 @@ function makeSprite(rendererType, vals) {
 
   context.fillText(txt, textWidth / 2, textHeight / 2);
 
-  var texture = new THREE.Texture(canvas);
+  const texture = new THREE.Texture(canvas);
   texture.needsUpdate = true;
   texture.minFilter = THREE.LinearFilter;
 
-  var material = new THREE.SpriteMaterial({
+  const material = new THREE.SpriteMaterial({
     map: texture,
     // useScreenCoordinates: false,
     transparent: true,
     opacity: Theme.SPRITE_OPACITY
   });
   material.transparent = true;
-  var textObject = new THREE.Object3D();
+  const textObject = new THREE.Object3D();
   textObject.position.x = vals.x;
   textObject.position.y = vals.y;
   textObject.position.z = vals.z;
-  var sprite = new THREE.Sprite(material);
+  const sprite = new THREE.Sprite(material);
   textObject.textHeight = actualFontSize;
   textObject.textWidth = (textWidth / textHeight) * textObject.textHeight;
   if (rendererType == "2d") {
@@ -612,9 +606,9 @@ function updateMachineCoordinates() {
 function readViewSettings() {
 /* decided to make the settings non-persistent
   if (localStorage.getItem('viewSettings')) {
-    var settings = JSON.parse(localStorage.getItem('viewSettings'));
+    const settings = JSON.parse(localStorage.getItem('viewSettings'));
     if (settings != undefined) {
-      for (var prop in settings) {
+      for (let prop in settings) {
         if (prop in viewSettings && typeof(settings[prop]) == typeof(viewSettings[prop]))
           viewSettings[prop] = settings[prop];
       }
@@ -655,18 +649,18 @@ function updateViewSettings() {
     if (cone)
       cone.visible = viewSettings.tool;
 
-    var grid = scene.getObjectByName("Grid");
+    const grid = scene.getObjectByName("Grid");
     if (grid)
       grid.visible = viewSettings.grid;
 
-    var ruler = scene.getObjectByName("Ruler");
+    const ruler = scene.getObjectByName("Ruler");
     if (ruler)
       ruler.visible = viewSettings.ruler;
 
     if (machineCoordinateSpace)
       machineCoordinateSpace.visible = viewSettings.machine;
 
-    var heightmap = scene.getObjectByName("Heightmap");
+    const heightmap = scene.getObjectByName("Heightmap");
     if (heightmap)
       heightmap.visible = viewSettings.heightmap;
   }

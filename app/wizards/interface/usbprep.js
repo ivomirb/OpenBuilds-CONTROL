@@ -121,7 +121,7 @@ function copyFilesToUsb() {
 
   $('#controlTab').click();
   $('#consoletab').click();
-  data = {
+  const data = {
     drive: laststatus.interface.diskdrive,
     controller: $("#profileTargetController").val(),
     ssid: $("#interface-wifi-ssid").val(),

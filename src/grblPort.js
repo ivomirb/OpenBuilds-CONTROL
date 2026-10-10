@@ -111,7 +111,6 @@ function friendlyPort(port) {
 
 async function findPorts() {
   const ports = await SerialPort.list()
-  // console.log(ports)
   status.comms.interfaces.ports = ports;
   for (var i = 0; i < status.comms.interfaces.ports.length; i++) {
     var data = friendlyPort(status.comms.interfaces.ports[i])
@@ -243,13 +242,11 @@ function scanForTelnetDevices(range) {
         response: "Network Scan error: " + err,
         type: 'success'
       });
-      //console.log(err);
       return;
     }
 
     scan.on('result', data => {
       // fired when item is matching options
-      //console.log(data);
       if (data.status == "open") {
         var type = false;
         if (data.banner.indexOf("GrblHAL") != -1) {
@@ -266,6 +263,7 @@ function scanForTelnetDevices(range) {
 
     });
 
+    // eslint-disable-next-line no-unused-vars
     scan.on('error', err => {
       //throw new Error(data.toString());
     });

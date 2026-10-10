@@ -83,6 +83,7 @@ var appIcon = null,
   forceQuit;
 
 
+// eslint-disable-next-line no-unused-vars
 function onSecondInstance(event, commandLine, workingDirectory) {
   //Someone tried to run a second instance, we should focus our window.
   // debug_log('SingleInstance')
@@ -305,8 +306,6 @@ function createTrayIcon() {
     }])
     electronApp.dock.setMenu(dockMenu)
   };
-
-  console.log("Created tray icon");
 }
 
 function destroyTrayIcon() {

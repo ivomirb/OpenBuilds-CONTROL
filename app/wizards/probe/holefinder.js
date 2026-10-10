@@ -104,7 +104,7 @@ function findCenter() {
       if (step == 6) {
         farside = prbdata.y
 
-        var holefindermacroStep7 = `
+        const holefindermacroStep7 = `
         G4 P0.3
         G91
         G0 Y-1
@@ -123,7 +123,7 @@ function findCenter() {
         nearside = prbdata.y
         centerYdistance = (farside - nearside);
         console.log(centerYdistance)
-        var holefindermacroStep7 = `
+        const holefindermacroStep7 = `
         G4 P0.3
         G91
         G0 Y` + centerYdistance / 2 + `
@@ -141,7 +141,7 @@ function findCenter() {
       if (step == 8) {
         leftside = prbdata.x
 
-        var holefindermacroStep7 = `
+        const holefindermacroStep7 = `
         G4 P0.3
         G91
         G0 X1
@@ -160,7 +160,7 @@ function findCenter() {
         rightside = prbdata.x
         centerXdistance = (rightside - leftside);
         console.log(centerXdistance)
-        var holefindermacroStep7 = `
+        const holefindermacroStep7 = `
         G4 P0.3
         G91
         G0 X-` + centerXdistance / 2 + `

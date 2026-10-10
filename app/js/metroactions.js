@@ -1,3 +1,5 @@
+"use strict";
+
 function manualcontrolPanel() {
   $('#manualControlPanel').show()
   $('#grblPanel').hide()

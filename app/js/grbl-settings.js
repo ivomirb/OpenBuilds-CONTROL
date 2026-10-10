@@ -1,3 +1,5 @@
+"use strict";
+
 var settingsUIConstructed = false;
 var editedGrblParams = {};
 var settingsFilterIndex;
@@ -12,27 +14,28 @@ const backupFileFilters = [
 ];
 
 function loadGrblBackupFile() {
-  var loadFileParams = {
+  const loadFileParams = {
     id: "settings",
     title: "Restore Settings",
     filters: backupFileFilters,
     showErrorDlg: true,
   };
 
+  // eslint-disable-next-line no-unused-vars
   invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
     editedGrblParams = {};
     $("#grblSettingsAdvTab").click();
     $('#settingsModifiedFilter:checkbox').prop('checked', false);
     toggleModifiedFilter(false);
 
-    var data = data.split("\n");
-    for (var i = 0; i < data.length; i++) {
-      var parts = data[i].split('=');
+    data = data.split("\n");
+    for (let i = 0; i < data.length; i++) {
+      const parts = data[i].split('=');
       if (data[i].indexOf("$I=") == 0) {
         setMachineButton(parts[1])
       } else {
-        var key = parts[0].substring(1);
-        var value = parts[1];
+        const key = parts[0].substring(1);
+        const value = parts[1];
         if (grblSettingsTemplate[key] == undefined || grblSettingsTemplate[key].type == "text")
           $("#val-" + key + "-input").val(value); // treat unknown properties like strings
         else
@@ -103,7 +106,6 @@ function autoBackup(note) {
   localStorage.setItem('grblParamsBackups', JSON.stringify(backups));
 
   // Optionally, add your existing save functionality here
-  console.log('Settings saved and backup created.');
 }
 
 function restoreAutoBackup(index) {
@@ -119,27 +121,25 @@ function restoreAutoBackup(index) {
   toggleModifiedFilter(false);
 
   // Iterate through the keys in the grblParams object and apply them using jQuery
-  for (const key in grblParamsBackup) {
-    if (grblParamsBackup.hasOwnProperty(key)) {
-      const paramValue = grblParamsBackup[key];
-      var key2 = key.substr(1);
-      const inputElement = $("#val-" + key2 + "-input");
+  for (let key in grblParamsBackup) {
+    const paramValue = grblParamsBackup[key];
+    const key2 = key.substr(1);
+    const inputElement = $("#val-" + key2 + "-input");
 
-      if (grblSettingsTemplate[key2] == undefined || grblSettingsTemplate[key2].type == "text") {
-        inputElement.val(paramValue);
-      } else {
-        const parsedValue = parseFloat(paramValue);
+    if (grblSettingsTemplate[key2] == undefined || grblSettingsTemplate[key2].type == "text") {
+      inputElement.val(paramValue);
+    } else {
+      const parsedValue = parseFloat(paramValue);
 
-        // Check if the parsed value is a valid number
-        if (!isNaN(parsedValue)) {
-          // Update the input field based on the parameter using jQuery
+      // Check if the parsed value is a valid number
+      if (!isNaN(parsedValue)) {
+        // Update the input field based on the parameter using jQuery
 
-          if (inputElement.length) {
-            inputElement.val(parsedValue); // Apply the value to the input field
-          }
-        } else {
-          console.warn(`Invalid value for ${key}: ${paramValue}`);
+        if (inputElement.length) {
+          inputElement.val(parsedValue); // Apply the value to the input field
         }
+      } else {
+        console.warn(`Invalid value for ${key}: ${paramValue}`);
       }
     }
   }
@@ -153,11 +153,11 @@ function restoreAutoBackup(index) {
 
 function backupGrblSettings() {
   autoBackup("Manual Backup");
-  var grblBackup = ""
-  for (var key in grblParams) {
-    var key2 = key.substr(1);
+  let grblBackup = ""
+  for (let key in grblParams) {
+    const key2 = key.substr(1);
 
-    var template = grblSettingsTemplate[key2];
+    const template = grblSettingsTemplate[key2];
     if (template !== undefined && template.type != "text") {
       grblBackup += key + "=" + grblParams[key] + "  ;  " + template.title + "\n";
     } else {
@@ -167,12 +167,12 @@ function backupGrblSettings() {
   if (laststatus.machine.name.length > 0) {
     grblBackup += "$I=" + laststatus.machine.name
   }
-  var blob = new Blob([grblBackup], {
+  const blob = new Blob([grblBackup], {
     type: "plain/text"
   });
-  var date = new Date();
+  const date = new Date();
 
-  var saveFileParams = {
+  const saveFileParams = {
     id: "settings",
     title: "Backup Settings",
     filters: backupFileFilters,
@@ -189,27 +189,25 @@ function backupGrblSettings() {
 
 function grblSaveSettings() {
   autoBackup("Updated Grbl Settings");
-  var toSaveCommandsFirst = [];
-  var toSaveCommandsSecond = [];
-  var saveProgressBar = $("#grblSaveProgress").data("progress");
-  for (var key in grblParams) {
-    if (grblParams.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      // Only send values that changed
-      if (newVal !== undefined) {
-        if (parseFloat(newVal) != parseFloat(grblParams[key]) && newVal != grblParams[key]) {
+  const toSaveCommandsFirst = [];
+  const toSaveCommandsSecond = [];
+  const saveProgressBar = $("#grblSaveProgress").data("progress");
+  for (let key in grblParams) {
+    const j = key.substring(1)
+    const newVal = $("#val-" + j + "-input").val();
+    // Only send values that changed
+    if (newVal !== undefined) {
+      if (parseFloat(newVal) != parseFloat(grblParams[key]) && newVal != grblParams[key]) {
 
-          if (prioritySettings.contains(key))
-            toSaveCommandsFirst.push(key + '=' + newVal);
-          else
-            toSaveCommandsSecond.push(key + '=' + newVal);
-        }
+        if (prioritySettings.contains(key))
+          toSaveCommandsFirst.push(key + '=' + newVal);
+        else
+          toSaveCommandsSecond.push(key + '=' + newVal);
       }
     }
   }
 
-  var toSaveCommands = [...toSaveCommandsFirst, ...toSaveCommandsSecond];
+  let toSaveCommands = [...toSaveCommandsFirst, ...toSaveCommandsSecond];
 
   if (toSaveCommands.length > 0) {
     let counter = 0;
@@ -222,14 +220,13 @@ function grblSaveSettings() {
     // Open Dialog savingGrblSettingsProgress
     Metro.dialog.open('#savingGrblSettingsProgress')
     const sendInterval = setInterval(function() {
-      var newParam = toSaveCommands[counter].split("=")[0];
-      var newParamKey = newParam.substr(1);
+      const newParam = toSaveCommands[counter].split("=")[0];
+      const newParamKey = newParam.substr(1);
+      let newParamName = "unknown";
       if (grblSettingsTemplate[newParamKey] !== undefined) {
-        var newParamName = grblSettingsTemplate[newParamKey].title
-      } else {
-        var newParamName = "unknown"
+        newParamName = grblSettingsTemplate[newParamKey].title;
       }
-      var newParamVal = toSaveCommands[counter].split("=")[1];
+      const newParamVal = toSaveCommands[counter].split("=")[1];
       $("#grblNewParam").html("<code>" + newParam + " : " + newParamName + "</code>")
       $("#grblNewParamVal").html("<code>" + newParamVal + "</code>")
 
@@ -251,11 +248,10 @@ function grblSaveSettings() {
 
 }
 function grblSettings(data) {
-  var template = ``
   const grblconfig = data.split('\n')
-  for (var i = 0; i < grblconfig.length; i++) {
-    var key = grblconfig[i].split('=')[0];
-    var param = grblconfig[i].split(/[= ;(]/)[1]
+  for (let i = 0; i < grblconfig.length; i++) {
+    const key = grblconfig[i].split('=')[0];
+    const param = grblconfig[i].split(/[= ;(]/)[1]
     grblParams[key] = param
   }
 
@@ -273,7 +269,7 @@ function grblSettings(data) {
     }
   }
 
-  var homingEnabled = grblParams['$22'] > 0;
+  const homingEnabled = grblParams['$22'] > 0;
   $('#homeBtn, #homeSingleMenu').attr('disabled', !homingEnabled);
   AddRemoveClass('#gotoXMinMpos, #gotoXMaxMpos, #gotoYMinMpos, #gotoYMaxMpos, #gotoZMinMpos, #gotoZMaxMpos, #gotoAMinMpos, #gotoAMaxMpos', 'disabled', !homingEnabled);
   AddRemoveClass('#gotozeroZmPosXYwPos, #gotozeroMPos', 'disabled', !homingEnabled);
@@ -312,7 +308,7 @@ function grblPopulate() {
 
   $('#grblconfig').show();
   $('#grblconfig').empty();
-  var template = `
+  let template = `
   <form id="grblSettingsTable">
 
   <ul data-role="tabs" data-expand="true" class="mb-2">
@@ -473,8 +469,8 @@ function grblPopulate() {
         <table id="grblMetroTable" data-role="table"
           data-table-search-title="Search for Parameters by Name or $-Key"
           data-search-fields="Key, Parameter"
-          data-on-draw="onTableDraw"
-          data-on-table-create="onTableCreate"
+          data-on-draw="onSettingsTableDraw"
+          data-on-table-create="onSettingsTableCreate"
           data-cell-wrapper="false"
           class="table compact striped row-hover row-border"
           data-show-rows-steps="false" data-rows="200"
@@ -492,11 +488,11 @@ function grblPopulate() {
 
   editedGrblParams = {};
 
-  var sortedKeys = Object.keys(grblParams).sort((a, b) => {
+  const sortedKeys = Object.keys(grblParams).sort((a, b) => {
     return parseInt(a.substr(1)) - parseInt(b.substr(1));
   });
   sortedKeys.forEach((key) => {
-    var key2 = key.substr(1);
+    const key2 = key.substr(1);
     const revertButton = `<button class="button small revert-button" type="button" title="Revert change"` + 
       `onclick="revertGrblSetting('` + key + `')"><i class="fas fa-undo"></i></button>`;
     if (grblSettingsTemplate[key2] !== undefined) {
@@ -560,7 +556,7 @@ function grblPopulate() {
 }
 
 function revertGrblSetting(key) {
-  var j = key.substring(1);
+  const j = key.substring(1);
   const input = $("#val-" + j + "-input");
   input.val(grblParams[key]);
   delete editedGrblParams[key];
@@ -575,93 +571,91 @@ function revertGrblSetting(key) {
 function checkifchanged() {
   if (!settingsUIConstructed) return;
 
-  var hasChanged = false;
+  let hasChanged = false;
 
-  for (var key in grblParams) {
-    if (grblParams.hasOwnProperty(key)) {
-      var j = key.substring(1);
-      const input = $("#val-" + j + "-input");
-      var newVal = input.val();
+  for (let key in grblParams) {
+    const j = key.substring(1);
+    const input = $("#val-" + j + "-input");
+    const newVal = input.val();
 
-      if (newVal !== undefined) {
-        // Determine if the value should be compared as text or number
-        var oldVal = grblParams[key];
-        var compareAsNumber = !isNaN(parseFloat(oldVal)) && !isNaN(parseFloat(newVal));
+    if (newVal !== undefined) {
+      // Determine if the value should be compared as text or number
+      const oldVal = grblParams[key];
+      const compareAsNumber = !isNaN(parseFloat(oldVal)) && !isNaN(parseFloat(newVal));
 
-        // Perform appropriate comparison
-        if ((compareAsNumber && parseFloat(newVal) !== parseFloat(oldVal)) ||
-          (!compareAsNumber && newVal !== oldVal)) {
-          hasChanged = true;
-          editedGrblParams[key] = newVal;
-          input.closest('tr').find('.revert-button').attr('modified', true);
-
-          if (!input.parent().is('td')) {
-            input.parent().addClass('alert');
-          } else if (input.is('select')) {
-            input.addClass('alert');
-          } else if (j == 3) { // axes
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
-              $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
-              $('#ydirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
-              $('#zdirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
-              $('#adirinvert').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
-          } else if (j == 23) { // home axes
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
-              $('#xHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
-              $('#yHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
-              $('#zHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
-
-            if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
-              $('#aHomeDir').parent().children('.app-notification').addClass('bd-red');
-            else
-              $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
-          }
-        } else {
-          input.closest('tr').find('.revert-button').removeAttr('modified');
-          delete editedGrblParams[key];
-          if (!input.parent().is('td')) {
-            input.parent().removeClass('alert');
-          } else if (input.is('select')) {
-            input.removeClass('alert');
-          } else if (j == 3) {
-            $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
-            $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
-            $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
-            $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
-          } else if (j == 23) { // home axes
-            $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
-            $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
-            $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
-            $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
-          }
-        }
-      } else if (editedGrblParams.hasOwnProperty(key)) {
+      // Perform appropriate comparison
+      if ((compareAsNumber && parseFloat(newVal) !== parseFloat(oldVal)) ||
+        (!compareAsNumber && newVal !== oldVal)) {
         hasChanged = true;
+        editedGrblParams[key] = newVal;
+        input.closest('tr').find('.revert-button').attr('modified', true);
+
+        if (!input.parent().is('td')) {
+          input.parent().addClass('alert');
+        } else if (input.is('select')) {
+          input.addClass('alert');
+        } else if (j == 3) { // axes
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+            $('#xdirinvert').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+            $('#ydirinvert').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+            $('#zdirinvert').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+            $('#adirinvert').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+        } else if (j == 23) { // home axes
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 1) != 0)
+            $('#xHomeDir').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 2) != 0)
+            $('#yHomeDir').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 4) != 0)
+            $('#zHomeDir').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+
+          if (!compareAsNumber || ((parseInt(oldVal)^parseInt(newVal)) & 8) != 0)
+            $('#aHomeDir').parent().children('.app-notification').addClass('bd-red');
+          else
+            $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
+        }
+      } else {
+        input.closest('tr').find('.revert-button').removeAttr('modified');
+        delete editedGrblParams[key];
+        if (!input.parent().is('td')) {
+          input.parent().removeClass('alert');
+        } else if (input.is('select')) {
+          input.removeClass('alert');
+        } else if (j == 3) {
+          $('#xdirinvert').parent().children('.app-notification').removeClass('bd-red');
+          $('#ydirinvert').parent().children('.app-notification').removeClass('bd-red');
+          $('#zdirinvert').parent().children('.app-notification').removeClass('bd-red');
+          $('#adirinvert').parent().children('.app-notification').removeClass('bd-red');
+        } else if (j == 23) { // home axes
+          $('#xHomeDir').parent().children('.app-notification').removeClass('bd-red');
+          $('#yHomeDir').parent().children('.app-notification').removeClass('bd-red');
+          $('#zHomeDir').parent().children('.app-notification').removeClass('bd-red');
+          $('#aHomeDir').parent().children('.app-notification').removeClass('bd-red');
+        }
       }
+    } else if (Object.hasOwn(editedGrblParams, key)) {
+      hasChanged = true;
     }
   }
 
@@ -731,8 +725,8 @@ function calcDecFromMask(x, y, z, a) {
 // Call: calcMaskFromDec("4")
 // Returns: {x: false, y: false, z: true, a:false}
 function calcMaskFromDec(dec) {
-  var num = parseInt(dec)
-  var invertmask = {
+  const num = parseInt(dec)
+  const invertmask = {
     x: (num&1) != 0,
     y: (num&2) != 0,
     z: (num&4) != 0,
@@ -742,21 +736,21 @@ function calcMaskFromDec(dec) {
 }
 
 function changeHomeDirInvert() {
-  var xticked = $('#xHomeDir').is(':checked');
-  var yticked = $('#yHomeDir').is(':checked');
-  var zticked = $('#zHomeDir').is(':checked');
-  var aticked = $('#aHomeDir').is(':checked');
-  var value = calcDecFromMask(!xticked, !yticked, !zticked, !aticked);
+  const xticked = $('#xHomeDir').is(':checked');
+  const yticked = $('#yHomeDir').is(':checked');
+  const zticked = $('#zHomeDir').is(':checked');
+  const aticked = $('#aHomeDir').is(':checked');
+  const value = calcDecFromMask(!xticked, !yticked, !zticked, !aticked);
   $("#val-23-input").val(value).trigger("change");
   checkifchanged();
 }
 
 function changeDirInvert() {
-  var xticked = $('#xdirinvert').is(':checked');
-  var yticked = $('#ydirinvert').is(':checked');
-  var zticked = $('#zdirinvert').is(':checked');
-  var aticked = $('#adirinvert').is(':checked');
-  var value = calcDecFromMask(xticked, yticked, zticked, aticked);
+  const xticked = $('#xdirinvert').is(':checked');
+  const yticked = $('#ydirinvert').is(':checked');
+  const zticked = $('#zdirinvert').is(':checked');
+  const aticked = $('#adirinvert').is(':checked');
+  const value = calcDecFromMask(xticked, yticked, zticked, aticked);
   $("#val-3-input").val(value).trigger("change");
   checkifchanged();
 }
@@ -856,7 +850,7 @@ function updateToolOnSValues() {
 }
 
 function getEditorParamValue(key) {
-  return editedGrblParams.hasOwnProperty(key) ? editedGrblParams[key] : grblParams[key];
+  return Object.hasOwn(editedGrblParams, key) ? editedGrblParams[key] : grblParams[key];
 }
 
 function setFluidNcConfig(data) {
@@ -865,17 +859,17 @@ function setFluidNcConfig(data) {
   updateMachineCoordinates();
   updateGotoLimits();
   if ($('#fluidnceditor').length > 0) {
-    var fluidnceditor = ace.edit("fluidnceditor");
+    const fluidnceditor = ace.edit("fluidnceditor");
     fluidnceditor.session.setValue(fluidncConfig);
   }
 }
 
 function setup_settings_table() {
-  for (var key in grblParams) {
-    var key2 = key.substr(1);
-    var input = $("#val-" + key2 + "-input");
+  for (let key in grblParams) {
+    const key2 = key.substr(1);
+    const input = $("#val-" + key2 + "-input");
     input.val(getEditorParamValue(key));
-    var setting = grblSettingsTemplate[key2];
+    const setting = grblSettingsTemplate[key2];
     // Metro UI destroys the tooltips for td and tr elements - readding here
     if (setting !== undefined && setting.description.length > 0)
       input.closest('td').prev().attr('title', setting.description);
@@ -887,8 +881,7 @@ function setup_settings_table() {
 
   // Handle the change event for radio buttons
   $('input[name="toolhead"]').on('change', function() {
-    console.log(`Selected toolhead: ${$(this).val()}`);
-    var selectedToolhead = $(this).val();
+    const selectedToolhead = $(this).val();
     if (selectedToolhead == 'router11') {
       enableRouter();
     } else if (selectedToolhead == 'scribe') {
@@ -918,26 +911,26 @@ function setup_settings_table() {
 }
 
 function toggleModifiedFilter(checked) {
-  var table = $('#grblMetroTable').data('table');
+  const table = $('#grblMetroTable').data('table');
   if (checked) {
-    settingsFilterIndex = table.addFilter((row) => editedGrblParams.hasOwnProperty(row[0]), true);
+    settingsFilterIndex = table.addFilter((row) => Object.hasOwn(editedGrblParams, row[0]), true);
   } else if (settingsFilterIndex != undefined) {
     table.removeFilter(settingsFilterIndex, true);
     settingsFilterIndex = undefined;
   }
 }
 
-function onTableDraw() {
+function onSettingsTableDraw() {
   setup_settings_table();
 }
 
-function onTableCreate() {
+function onSettingsTableCreate() {
   if (laststatus && laststatus.machine.firmware.platform == "FluidNC") {
     $("#grblSettingsTableView .table-container").append(`
       <h6 class="disabled" style="margin:5px; font-size:1rem;">FluidNC configuration</h6>
       <div id="fluidnceditor" class="bd-openbuilds"></div>`);
 
-    var fluidnceditor = ace.edit("fluidnceditor");
+    const fluidnceditor = ace.edit("fluidnceditor");
     fluidnceditor.$blockScrolling = Infinity;
     fluidnceditor.setTheme('ace/theme/sqlserver')
     fluidnceditor.session.setMode("ace/mode/yaml");
@@ -954,11 +947,11 @@ function onTableCreate() {
 }
 
 function enableLimits() {
-  var grblParams_lim = {
+  const grblParams_lim = {
     $21: "0", //"Hard limits enable, boolean"
     $22: "0", //"Homing cycle enable, boolean"
   }
-  var hasLimits = $('#limitsinstalled').is(':checked');
+  const hasLimits = $('#limitsinstalled').is(':checked');
   if (hasLimits) {
     grblParams_lim.$21 = "1"; //"Hard limits enable, boolean"
     grblParams_lim.$22 = "1"; //"Homing cycle enable, boolean"
@@ -966,17 +959,14 @@ function enableLimits() {
     grblParams_lim.$21 = "0"; //"Hard limits enable, boolean"
     grblParams_lim.$22 = "0"; //"Homing cycle enable, boolean"
   }
-  for (var key in grblParams_lim) {
-    if (grblParams_lim.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      $("#val-" + j + "-input").val(parseFloat(grblParams_lim[key]))
-    }
+  for (let key in grblParams_lim) {
+    const j = key.substring(1)
+    $("#val-" + j + "-input").val(parseFloat(grblParams_lim[key]))
   }
   checkifchanged();
 }
 
-var grblParams_scribe = {
+const grblParams_scribe = {
   $32: "0", //PWM Freq for RC Servo
   $33: "50", //PWM Freq for RC Servo
   $34: "5", //Spindle Off Value for RC Servo
@@ -985,17 +975,14 @@ var grblParams_scribe = {
 }
 
 function enableScribe() {
-  for (var key in grblParams_scribe) {
-    if (grblParams_scribe.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      $("#val-" + j + "-input").val(parseFloat(grblParams_scribe[key]))
-    }
+  for (let key in grblParams_scribe) {
+    const j = key.substring(1)
+    $("#val-" + j + "-input").val(parseFloat(grblParams_scribe[key]))
   }
   checkifchanged();
 }
 
-var grblParams_laser = {
+const grblParams_laser = {
   $30: "1000", // S Max
   $32: "1", // Laser Mode On
   $33: "1000", //PWM Freq
@@ -1006,17 +993,14 @@ var grblParams_laser = {
 
 function enableLaser() {
 
-  for (var key in grblParams_laser) {
-    if (grblParams_laser.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      $("#val-" + j + "-input").val(parseFloat(grblParams_laser[key]))
-    }
+  for (let key in grblParams_laser) {
+    const j = key.substring(1)
+    $("#val-" + j + "-input").val(parseFloat(grblParams_laser[key]))
   }
   checkifchanged();
 }
 
-var grblParams_router = {
+const grblParams_router = {
   $30: "1000", // S Max
   $32: "0", // Laser Mode On
   $33: "5000", //PWM Freq
@@ -1027,17 +1011,14 @@ var grblParams_router = {
 
 function enableRouter() {
 
-  for (var key in grblParams_router) {
-    if (grblParams_router.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      $("#val-" + j + "-input").val(parseFloat(grblParams_router[key]))
-    }
+  for (let key in grblParams_router) {
+    const j = key.substring(1)
+    $("#val-" + j + "-input").val(parseFloat(grblParams_router[key]))
   }
   checkifchanged();
 }
 
-var grblParams_plasma = {
+const grblParams_plasma = {
   $30: "1000", // S Max
   $32: "0", // Laser Mode On
   $33: "1000", //PWM Freq
@@ -1048,17 +1029,14 @@ var grblParams_plasma = {
 
 function enablePlasma() {
 
-  for (var key in grblParams_plasma) {
-    if (grblParams_plasma.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      $("#val-" + j + "-input").val(parseFloat(grblParams_plasma[key]))
-    }
+  for (let key in grblParams_plasma) {
+    const j = key.substring(1)
+    $("#val-" + j + "-input").val(parseFloat(grblParams_plasma[key]))
   }
   checkifchanged();
 }
 
-var grblParams_vfd = {
+const grblParams_vfd = {
   $30: "24000", // S Max
   $32: "0", // Laser Mode On
   $33: "1000", //PWM Freq
@@ -1069,12 +1047,9 @@ var grblParams_vfd = {
 
 function enableVFD() {
 
-  for (var key in grblParams_vfd) {
-    if (grblParams_vfd.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      $("#val-" + j + "-input").val(parseFloat(grblParams_vfd[key]))
-    }
+  for (let key in grblParams_vfd) {
+    const j = key.substring(1)
+    $("#val-" + j + "-input").val(parseFloat(grblParams_vfd[key]))
   }
   checkifchanged();
 }
@@ -1122,7 +1097,7 @@ function setSelectedToolhead(value) {
 //
 // This should be the definitive source of the machine limits info
 function computeMachineLimits(pulloffOverride) {
-  var limits = {
+  let limits = {
     X0: 0,
     Y0: 0,
     Z0: 0,
@@ -1177,11 +1152,11 @@ function computeMachineLimits(pulloffOverride) {
     limits.maxA = limits.minA + sizeA;
   } else {
     const pulloff = pulloffOverride != undefined ? pulloffOverride : parseFloat(grblParams.$27);
-    var pulloffMask = 15;
+    let pulloffMask = 15;
     if (grblParams.$22 & 32) {
       pulloffMask = 0; // find which axes can be manually homed using settings $44 through $49
-      for (var i = 44; i <= 49; i++) {
-        var mask = grblParams['$' + i];
+      for (let i = 44; i <= 49; i++) {
+        const mask = grblParams['$' + i];
         if (mask == undefined)
           break;
         pulloffMask |= parseInt(mask);
@@ -1215,7 +1190,7 @@ function computeMachineLimits(pulloffOverride) {
 }
 
 function updateGotoLimits() {
-  var limits = computeMachineLimits();
+  const limits = computeMachineLimits();
   $('#gotoXMinMpos > a > .coord').html(limits.minX.toFixed(0));
   $('#gotoXMaxMpos > a > .coord').html(limits.maxX.toFixed(0));
   $('#gotoYMinMpos > a > .coord').html(limits.minY.toFixed(0));

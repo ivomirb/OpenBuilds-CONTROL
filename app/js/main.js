@@ -1,3 +1,5 @@
+"use strict";
+
 var currentGcode = ""; // this should always match what is in the 3d view, but the editor contents may be different
 var loadedFileName = ""; // name for the contents of the editor, usually the last loaded file
 var editor;
@@ -12,7 +14,7 @@ document.addEventListener("contextmenu", function(e) {
 
 function setWindowTitle(status) {
 
-  var string = ""
+  let string = ""
 
   if (status) {
     string += " v" + status.driver.version;
@@ -36,12 +38,12 @@ function setWindowTitle(status) {
 
 
 function getReleaseStats() {
-  var url = "https://api.github.com/repos/OpenBuilds/OpenBuilds-CONTROL/releases/latest";
+  const url = "https://api.github.com/repos/OpenBuilds/OpenBuilds-CONTROL/releases/latest";
   $.getJSON(url, function(data) {
     console.log(data)
-    var assets = data.assets;
-    var downloadCount = 0
-    for (var i = 0; i < assets.length; i++) {
+    const assets = data.assets;
+    let downloadCount = 0
+    for (let i = 0; i < assets.length; i++) {
       if (assets[i].name.indexOf("exe") != -1) {
         downloadCount = downloadCount + assets[i].download_count;
       }
@@ -68,23 +70,20 @@ function getChangelog() {
   // Splash Screen Begin
 
   $("#changelog").empty()
-  var template2 = `<ul>`
+  let template2 = `<ul>`
   $.get("https://raw.githubusercontent.com/OpenBuilds/OpenBuilds-CONTROL/master/CHANGELOG.txt?date=" + new Date().getTime(), function(data) {
-    var lines = data.split('\n');
-    if (lines.length < 12) {
-      var count = lines.length - 1
-    } else {
-      var count = 12
-    }
-    for (var line = 0; line < count - 1; line++) {
+    const lines = data.split('\n');
+    const count = (lines.length <= 12) ?lines.length - 1 : 12;
+
+    for (let line = 0; line < count - 1; line++) {
       template2 += '<li>' + lines[line] + '</li>'
     }
     template2 += `</ul>`
     $("#changelog").html(template2);
 
     // Update Dialog
-    var template3 = `<h6>Changelog:</h6> <hr> <ul>`
-    for (var line = 0; line < 5; line++) {
+    let template3 = `<h6>Changelog:</h6> <hr> <ul>`
+    for (let line = 0; line < 5; line++) {
       template3 += '<li>' + lines[line] + '</li>'
     }
     template3 += `</ul>`
@@ -258,14 +257,14 @@ function runJobFile() {
 }
 
 function runJobFileInternal(gcode) {
-  var formData = new FormData();
-  var blob = new Blob([gcode], {
+  const formData = new FormData();
+  const blob = new Blob([gcode], {
     type: 'text/plain'
   });
 
-  var fileOfBlob = new File([blob], 'upload.gcode');
+  const fileOfBlob = new File([blob], 'upload.gcode');
   formData.append("file", fileOfBlob);
-  var xhr = new XMLHttpRequest();
+  const xhr = new XMLHttpRequest();
 
   captureWcsHistory("", "", true);
   xhr.open('POST', '/runjob', true);
@@ -288,7 +287,7 @@ function jobNeedsHoming(gcode) {
     return false;
   }
 
-  var command;
+  let command;
   if (gcode.indexOf("G28") >= 0 || editor.getValue().indexOf("g28") >= 0) {
     command = "G28";
   } else if (gcode.indexOf("G30") >= 0 || editor.getValue().indexOf("g30") >= 0) {
@@ -299,7 +298,7 @@ function jobNeedsHoming(gcode) {
     return false;
   }
 
-  var dialog = Metro.dialog.create({
+  Metro.dialog.create({
     clsDialog: 'dark',
     title: "<i class='fas fa-exclamation-triangle'></i> Job uses Machine Coordinates",
     content: `<i class='fas fa-exclamation-triangle fg-darkRed'></i> Alert: The job you are about to run contains a ` + command + ` command, which uses machine coordinates and requires homing.<br><br>` +
@@ -339,10 +338,10 @@ function reloadJobFile(filePath) {
 }
 
 function versionCompare(v1, v2, options) {
-  var lexicographical = options && options.lexicographical,
-    zeroExtend = options && options.zeroExtend,
-    v1parts = v1.split('.'),
-    v2parts = v2.split('.');
+  const lexicographical = options && options.lexicographical;
+  const zeroExtend = options && options.zeroExtend;
+  let v1parts = v1.split('.');
+  let v2parts = v2.split('.');
 
   function isValidPart(x) {
     return (lexicographical ? /^\d+[A-Za-z]*$/ : /^\d+$/).test(x);
@@ -362,7 +361,7 @@ function versionCompare(v1, v2, options) {
     v2parts = v2parts.map(Number);
   }
 
-  for (var i = 0; i < v1parts.length; ++i) {
+  for (let i = 0; i < v1parts.length; ++i) {
     if (v2parts.length == i) {
       return 1;
     }
@@ -392,7 +391,7 @@ function isWebGLAvailable() {
     const canvas = document.createElement('canvas');
     return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
 
-  } catch (e) {
+  } catch {
 
     return false;
 
@@ -407,7 +406,7 @@ function isWebGL2Available() {
     const canvas = document.createElement('canvas');
     return !!(window.WebGL2RenderingContext && canvas.getContext('webgl2'));
 
-  } catch (e) {
+  } catch {
 
     return false;
 
@@ -461,19 +460,18 @@ function getErrorMessage(version) {
 
 
 
-var webgl = (function() {
+const webgl = (function() {
   if (disable3Dviewer) {
     return false;
   } else if (screen.availHeight < 650) {
     // On screens thats not tall enough, disable 3D view - it just doesn't fit
     return false;
   } else {
-    // console.log("Testing WebGL")
     try {
       if (isWebGLAvailable() || isWebGL2Available()) {
         return true
       };
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -485,7 +483,7 @@ function previewGcode() {
 }
 
 function saveGcode() {
-  var saveFileParams = {
+  const saveFileParams = {
     id: "gcode",
     title: "Save G-code",
     filters: [
@@ -497,7 +495,7 @@ function saveGcode() {
   };
 
   socket.emit('saveFileDialog', saveFileParams, (filePath) => {
-  var blob = new Blob([editor.getValue()], {
+  const blob = new Blob([editor.getValue()], {
       type: 'text/plain'
     });
     saveBlobToDisk(blob, filePath, saveFileParams).then((err) => {
@@ -519,13 +517,13 @@ function clearGcode() {
 }
 
 function saveBlobToDisk(blob, filePath, params) {
-  var formData = new FormData();
-  var fileOfBlob = new File([blob], filePath);
+  const formData = new FormData();
+  const fileOfBlob = new File([blob], filePath);
   formData.append("showErrorDlg", params.showErrorDlg ? "true" : "false");
   formData.append("updateLastFilePath", params.updateLastFilePath ? "true" : "false");
   formData.append("file", fileOfBlob);
-  var xhr = new XMLHttpRequest();
-  var promise = new Promise((resolve) => {
+  const xhr = new XMLHttpRequest();
+  let promise = new Promise((resolve) => {
     xhr.onload = function() {
       resolve(xhr.response);
     };
@@ -595,7 +593,7 @@ function invokeSaveAsDialog(file, fileName) {
     file.type = 'text/plain';
   }
 
-  var fileExtension = file.type.split('/')[1];
+  let fileExtension = file.type.split('/')[1];
 
   if (fileName && fileName.indexOf('.') !== -1) {
     var splitted = fileName.split('.');
@@ -603,7 +601,7 @@ function invokeSaveAsDialog(file, fileName) {
     fileExtension = splitted[1];
   }
 
-  var fileFullName = (fileName || (Math.round(Math.random() * 9999999999) + 888888888)) + '.' + fileExtension;
+  const fileFullName = (fileName || (Math.round(Math.random() * 9999999999) + 888888888)) + '.' + fileExtension;
 
   if (typeof navigator.msSaveOrOpenBlob !== 'undefined') {
     return navigator.msSaveOrOpenBlob(file, fileFullName);
@@ -611,19 +609,19 @@ function invokeSaveAsDialog(file, fileName) {
     return navigator.msSaveBlob(file, fileFullName);
   }
 
-  var hyperlink = document.createElement('a');
+  const hyperlink = document.createElement('a');
   hyperlink.href = URL.createObjectURL(file);
   // hyperlink.target = '_blank';
   hyperlink.download = fileFullName;
 
-  if (!!navigator.mozGetUserMedia) {
+  if (navigator.mozGetUserMedia) {
     hyperlink.onclick = function() {
       (document.body || document.documentElement).removeChild(hyperlink);
     };
     (document.body || document.documentElement).appendChild(hyperlink);
   }
 
-  var evt = new MouseEvent('click', {
+  const evt = new MouseEvent('click', {
     view: window,
     bubbles: true,
     cancelable: true
@@ -637,8 +635,8 @@ function invokeSaveAsDialog(file, fileName) {
 }
 
 Date.prototype.yyyymmdd = function() {
-  var mm = this.getMonth() + 1; // getMonth() is zero-based
-  var dd = this.getDate();
+  const mm = this.getMonth() + 1; // getMonth() is zero-based
+  const dd = this.getDate();
 
   return [this.getFullYear(),
     (mm > 9 ? '' : '0') + mm,
@@ -647,11 +645,11 @@ Date.prototype.yyyymmdd = function() {
 };
 
 function timeConvert(n) {
-  var num = n;
-  var hours = (num / 60);
-  var rhours = Math.floor(hours);
-  var minutes = (hours - rhours) * 60;
-  var rminutes = Math.round(minutes);
+  const num = n;
+  let hours = (num / 60);
+  let rhours = Math.floor(hours);
+  let minutes = (hours - rhours) * 60;
+  let rminutes = Math.round(minutes);
   //return num + " minutes = " + rhours + " hour(s) and " + rminutes + " minute(s).";
   if (rhours < 10) {
     rhours = "0" + rhours

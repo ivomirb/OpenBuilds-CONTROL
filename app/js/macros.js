@@ -1,8 +1,14 @@
+"use strict";
+
 var buttonsarray = [];
 var macroCodeType = "gcode";
+
+// eslint-disable-next-line no-unused-vars
+var macroMenuIdx = undefined; // used in context menus
+
 const JAVASCRIPT_LOAD_PREFIX = "// LOAD:"; // in dev mode (with the -devMode command line switch), javascript macros starting with this text will load from external text file
 
-var fs = (typeof require == "function") ? fs = require('fs') : undefined;
+const fs = (typeof require == "function") ? require('fs') : undefined;
 
 function saveMacroButtons() {
   localStorage.setItem('macroButtons', JSON.stringify(buttonsarray));
@@ -11,32 +17,33 @@ function saveMacroButtons() {
 function populateMacroButtons(runStartups) {
   $("#macroToolsBtn").parent().nextAll().remove();
 
-  for (var i = 0; i < buttonsarray.length; i++) {
-    var button = buttonsarray[i];
+  for (let i = 0; i < buttonsarray.length; i++) {
+    const button = buttonsarray[i];
     // Handle old created buttons that didnt have a tooltip
     if (!button.tooltip) {
       button.tooltip = "";
     }
 
+    let keyboardAssignment = "none";
     if (button.macrokeyboardshortcut && button.macrokeyboardshortcut.length) {
-      var keyboardAssignment = button.macrokeyboardshortcut;
-    } else {
-      var keyboardAssignment = "none";
+      keyboardAssignment = button.macrokeyboardshortcut;
     }
 
+    let codetype, codetypeDisplay;
     if (button.codetype && button.codetype.length) {
-      var codetype = button.codetype;
-      var codetypeDisplay = button.codetype;
+      codetype = button.codetype;
+      codetypeDisplay = button.codetype;
     } else {
       button.codetype = "gcode";
-      var codetype = "gcode";
-      var codetypeDisplay = "gcode";
+      codetype = "gcode";
+      codetypeDisplay = "gcode";
     }
     if (button.jsrunonstartup) {
-      var codetypeDisplay = "js:autorun";
+      codetypeDisplay = "js:autorun";
     }
+    let buttonHtml;
     if (codetype == "gcode") {
-      var buttonHtml = `
+      buttonHtml = `
       <button id="macroBtn` + i + `" class="macrobtn m-1 command-button command-button-macro drop-shadow outline ` + button.class + `" title="` + button.tooltip + `" oncontextmenu="macroContextMenu(` + i + `)" onclick="sendGcode('` + button.gcode.replace(/(\r\n|\n|\r)/gm, "\\n") + `');">
         <span class="` + button.icon + ` icon"></span>
         <span class="caption mt-2">` + button.title + `</span>
@@ -49,7 +56,7 @@ function populateMacroButtons(runStartups) {
         button.javascript = loadJavascriptFile(button.javascript);
       }
 
-      var buttonHtml = `
+      buttonHtml = `
       <button id="macroBtn` + i + `" class="macrobtn m-1 command-button command-button-macro drop-shadow outline ` + button.class + `" title="` + button.tooltip + `" oncontextmenu="macroContextMenu(` + i + `)" onclick="runJsMacro('` + i + `');">
         <span class="` + button.icon + ` icon"></span>
         <span class="caption mt-2">
@@ -90,10 +97,10 @@ function populateMacroButtons(runStartups) {
 // Blocking function to load external script file in dev mode
 function loadJavascriptFile(text) {
   if (fs) {
-    var firstLine = text.split('\n', 1)[0];
-    var filePath = firstLine.slice(JAVASCRIPT_LOAD_PREFIX.length).trim();
+    const firstLine = text.split('\n', 1)[0];
+    const filePath = firstLine.slice(JAVASCRIPT_LOAD_PREFIX.length).trim();
     try {
-      var data = fs.readFileSync(filePath, 'utf8');
+      const data = fs.readFileSync(filePath, 'utf8');
       return firstLine + "\n" + data;
     }
     catch (ex) {
@@ -117,46 +124,46 @@ function onMacroShortcutInputChange()
 }
 
 function editMacro(buttonIdx, fileName, script) {
-  var button = undefined;
+  let button = undefined;
+  let icon = "far fa-question-circle";
+  let title = "";
+  let codetype = "gcode"
+  let gcode = "";
+  let javascript = "";
+  let cls = "";
+  let tooltip = "";
+  let macrokeyboardshortcut = "";
+  let jsrunonstartup = "";
+
   if (buttonIdx >= 0) {
     button = buttonsarray[buttonIdx];
-    var icon = button.icon;
-    var title = button.title;
-    var codetype = button.codetype;
-    var gcode = button.gcode;
-    var javascript = button.javascript;
-    var cls = button.class;
-    var tooltip = button.tooltip;
+    icon = button.icon;
+    title = button.title;
+    codetype = button.codetype;
+    gcode = button.gcode;
+    javascript = button.javascript;
+    cls = button.class;
+    tooltip = button.tooltip;
     if (button.macrokeyboardshortcut && button.macrokeyboardshortcut.length > 0) {
-      var macrokeyboardshortcut = button.macrokeyboardshortcut;
+      macrokeyboardshortcut = button.macrokeyboardshortcut;
     } else {
-      var macrokeyboardshortcut = "";
+      macrokeyboardshortcut = "";
     }
-    var jsrunonstartup = button.jsrunonstartup ? "checked" : "";
+    jsrunonstartup = button.jsrunonstartup ? "checked" : "";
   } else {
-    var icon = "far fa-question-circle";
-    var title = "";
-    var codetype = "gcode"
-    var gcode = "";
-    var javascript = "";
-    var cls = "";
-    var tooltip = "";
-    var macrokeyboardshortcut = "";
-    var jsrunonstartup = "";
-
     if (script) {
-      var ext = fileName.split('.').at(-1).toLowerCase();
+      const ext = fileName.split('.').at(-1).toLowerCase();
       if (ext == "js") {
-        var title = fileName.slice(0, -3);
-        var codetype = "javascript";
-        var javascript = script;
+        title = fileName.slice(0, -3);
+        codetype = "javascript";
+        javascript = script;
       } else if (["gcode", "gc", "tap", "nc", "cnc"].indexOf(ext) >= 0) {
-        var title = fileName.slice(0, -ext.length - 1);
-        var gcode = script;
+        title = fileName.slice(0, -ext.length - 1);
+        gcode = script;
       }
       else {
-        var title = fileName;
-        var gcode = script;
+        title = fileName;
+        gcode = script;
       }
     }
   }
@@ -165,7 +172,7 @@ function editMacro(buttonIdx, fileName, script) {
     javascript = loadJavascriptFile(javascript);
   }
 
-  var macroTemplate = `<form id="macroEditForm">
+  const macroTemplate = `<form id="macroEditForm">
   <div class="p-1 m-0">
       <div class="row mb-2" style="align-items:center;">
           <label class="cell-sm-3">Icon</label>
@@ -260,7 +267,7 @@ function editMacro(buttonIdx, fileName, script) {
           if (buttonIdx < 0) {
             buttonsarray.push({});
             button = buttonsarray.at(-1);
-            var activeGroup = macroGroupView == 0 ? 0 : Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
+            const activeGroup = macroGroupView == 0 ? 0 : Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
             button.group = macroGroups[activeGroup];
           }
           button.icon = $('#macroicon').val();
@@ -280,10 +287,8 @@ function editMacro(buttonIdx, fileName, script) {
   });
 
   $('#macrokeyboardshortcut').bind('keydown', null, function(e) {
-    console.log(e)
     e.preventDefault();
-    console.log(e)
-    var newVal = "";
+    let newVal = "";
     if (e.altKey) {
       newVal += 'alt+'
     }
@@ -314,7 +319,7 @@ function editMacro(buttonIdx, fileName, script) {
         newVal += e.key.toLowerCase();
       }
 
-      var alreadyAssigned = newVal != macrokeyboardshortcut && newVal.length > 0 && keyInUse(newVal, true).inUse;
+      const alreadyAssigned = newVal != macrokeyboardshortcut && newVal.length > 0 && keyInUse(newVal, true).inUse;
       if (alreadyAssigned) {
         $('#alreadyAssignedWarnMacro').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal, true).source);
         $('#alreadyAssignedWarnMacro').show();
@@ -331,16 +336,6 @@ function editMacro(buttonIdx, fileName, script) {
   });
 
 
-  // var options = {
-  //   placement: 'bottom',
-  //   collision: 'none',
-  //   animation: true,
-  //   hideOnSelect: true,
-  // };
-  // // fa iconpicker https://github.com/farbelous/fontawesome-iconpicker
-  // $('#macroicon').iconpicker(options);
-
-  // setTimeout(function() {
   IconPicker.Init({
     // Required: You have to set the path of IconPicker JSON file to "jsonUrl" option. e.g. '/content/plugins/IconPicker/dist/iconpicker-1.5.0.json'
     jsonUrl: '/lib/furcanIconPicker/iconpicker-1.5.0.json',
@@ -352,7 +347,6 @@ function editMacro(buttonIdx, fileName, script) {
   });
   // Select your Button element (ID or Class)
   IconPicker.Run('#GetIconPicker');
-  // }, 300)
 
   $("#macrocls").val(cls).trigger("change");
   $('#macrogcode').val(gcode);
@@ -374,7 +368,7 @@ function createMacro() {
 }
 
 function createMacroFromFile() {
-  var loadFileParams = {
+  const loadFileParams = {
     id: "scripts",
     title: "Import Script",
     filters: [
@@ -404,8 +398,7 @@ function macrosDocReady() {
 }
 
 function searchMacro(prop, nameKey, myArray) {
-  console.log(nameKey, prop, myArray)
-  for (var i = 0; i < myArray.length; i++) {
+  for (let i = 0; i < myArray.length; i++) {
     if (myArray[i][prop] === nameKey) {
       return myArray[i];
     }
@@ -428,8 +421,7 @@ function runJsMacro(buttonIdx) {
   if (!buttonsarray[buttonIdx].jsrunonstartup) {
     executeJS(buttonsarray[buttonIdx].javascript)
   } else {
-    var toast = Metro.toast.create;
-    toast("Macro: <b>" + buttonsarray[buttonIdx].title + "</b> is an autorun macro, it runs when CONTROL starts. You cannot run it using the button. You can edit or delete it using the <i class='fas fa-cogs'></i> Edit Macro tool", null, 3000, "bg-darkRed fg-white")
+    Metro.toast.create("Macro: <b>" + buttonsarray[buttonIdx].title + "</b> is an autorun macro, it runs when CONTROL starts. You cannot run it using the button. You can edit or delete it using the <i class='fas fa-cogs'></i> Edit Macro tool", null, 3000, "bg-darkRed fg-white")
   }
 }
 
@@ -444,9 +436,9 @@ function macroContextMenu(buttonIdx) {
   macroMenuIdx = buttonIdx;
 
   // find where the button is in the visible order
-  var visIdx = undefined;
-  var visCount = 0;
-  for (var i = 0; i < buttonsarray.length; i++) {
+  let visIdx = undefined;
+  let visCount = 0;
+  for (let i = 0; i < buttonsarray.length; i++) {
     if (isMacroVisible(buttonsarray[i])) {
       if (i == buttonIdx) {
         visIdx = visCount;
@@ -458,7 +450,7 @@ function macroContextMenu(buttonIdx) {
   $('#moveMacroLeft').attr('disabled', visIdx == undefined || visIdx == 0);
   $('#moveMacroRight').attr('disabled', visIdx == undefined || visIdx == visCount - 1);
 
-  var menu = $("#macroContextMenu");
+  const menu = $("#macroContextMenu");
   menu.css({
     visibility: "hidden",
     display: "block",
@@ -478,10 +470,10 @@ function macroContextMenu(buttonIdx) {
 }
 
 function moveMacro(index, direction) {
-  var button = buttonsarray[index];
+  const button = buttonsarray[index];
   if (direction == -1) {
     // find the previous visible button and move before it. there must be one or the option won't be available
-    for (var i = index - 1; i >= 0; i--) {
+    for (let i = index - 1; i >= 0; i--) {
       if (isMacroVisible(buttonsarray[i])) {
         buttonsarray.splice(index, 1);
         buttonsarray.splice(i, 0, button);
@@ -492,7 +484,7 @@ function moveMacro(index, direction) {
   }
   if (direction == 1) {
     // find the next visible button and move after it. there must be one or the option won't be available
-    for (var i = index + 1; i < buttonsarray.length; i++) {
+    for (let i = index + 1; i < buttonsarray.length; i++) {
       if (isMacroVisible(buttonsarray[i])) {
         buttonsarray.splice(index, 1);
         buttonsarray.splice(i, 0, button);
@@ -536,9 +528,9 @@ const macroFileFilters = [
 ];
 
 function backupMacro(index) {
-  var blob = new Blob([JSON.stringify(buttonsarray[index], null, 2)], {type: "plain/text"});
+  const blob = new Blob([JSON.stringify(buttonsarray[index], null, 2)], {type: "plain/text"});
 
-  var saveFileParams = {
+  const saveFileParams = {
     id: "macros",
     title: "Export Macro",
     filters: macroFileFilters,
@@ -549,10 +541,10 @@ function backupMacro(index) {
 }
 
 function backupMacroAll() {
-  var blob = new Blob([JSON.stringify(buttonsarray, null, 2)], {type: "plain/text"});
-  var date = new Date();
+  const blob = new Blob([JSON.stringify(buttonsarray, null, 2)], {type: "plain/text"});
+  const date = new Date();
 
-  var saveFileParams = {
+  const saveFileParams = {
     id: "macros",
     title: "Backup Macros",
     filters: macroFileFilters,
@@ -579,18 +571,19 @@ function macroReadError(message) {
 }
 
 function importMacroBackupFile() {
-  var loadFileParams = {
+  const loadFileParams = {
     id: "macros",
     title: "Import Macro",
     filters: macroFileFilters,
     showErrorDlg: true,
   };
 
+  // eslint-disable-next-line no-unused-vars
   invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
     try {
-      var newMacro = JSON.parse(data);
+      const newMacro = JSON.parse(data);
       if (!Array.isArray(newMacro) && newMacro.title != undefined && newMacro.codetype != undefined) {
-        var activeIdx = macroGroupView == 0 ? 0 : Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
+        const activeIdx = macroGroupView == 0 ? 0 : Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
         newMacro.group = macroGroups[activeIdx];
         buttonsarray.push(newMacro);
         populateMacroButtons();
@@ -605,16 +598,17 @@ function importMacroBackupFile() {
 }
 
 function importMacroAll() {
-  var loadFileParams = {
+  const loadFileParams = {
     id: "macros",
     title: "Import All",
     filters: macroFileFilters,
     showErrorDlg: true,
   };
 
+  // eslint-disable-next-line no-unused-vars
   invokeOpenDialogReadFile(loadFileParams).then(({filePath, data}) => {
     try {
-      var newButtons = JSON.parse(data);
+      const newButtons = JSON.parse(data);
       if (newButtons && Array.isArray(newButtons)) {
         buttonsarray = newButtons;
         populateMacroButtons();
@@ -636,7 +630,9 @@ var currentMacroGroupLower = ""; // empty when macroTabView is 0
 
 var macroGroups = [""]; // first item is always empty string
 var macroGroupsLower = [""];
-var selectedMacroGroup = undefined; // for context menus
+
+// eslint-disable-next-line no-useless-assignment
+var selectedMacroGroup = undefined; // used in context menus
 
 function saveMacroGroupView() {
   localStorage.setItem("macroGroupView", JSON.stringify({tabVisibility: macroGroupView, currentGroupLower: currentMacroGroupLower}));
@@ -651,7 +647,7 @@ function setCurrentMacroGroup(groupLower)
 }
 
 function sanitizeGroupName(string) {
-  return (string == undefined) ? "" : string.replaceAll(/[\&\<\>\"\']/g, ' ');
+  return (string == undefined) ? "" : string.replaceAll(/[&<>"']/g, ' ');
 }
 
 function isMacroVisible(button) {
@@ -664,13 +660,13 @@ function isMacroVisible(button) {
 }
 
 function refreshMacroVisibility() {
-  for (var i = 0; i < buttonsarray.length; i++) {
+  for (let i = 0; i < buttonsarray.length; i++) {
     $('#macroBtn' + i).toggle(isMacroVisible(buttonsarray[i]));
   }
 }
 
 function renameMacroGroup(groupIdx) {
-  var dialogContent = `
+  const dialogContent = `
 <div class="row mb-2">
 <label class="cell-sm-4 pt-1">Group Name:</label>
 <div class="cell-sm-6">
@@ -701,9 +697,9 @@ function renameMacroGroup(groupIdx) {
           if (currentMacroGroupLower == oldNameLower) {
             setCurrentMacroGroup(newName.toLowerCase());
           }
-          var saveRequired = false;
-          for (var i = 0; i < buttonsarray.length; i++) {
-            var button = buttonsarray[i];
+          let saveRequired = false;
+          for (let i = 0; i < buttonsarray.length; i++) {
+            const button = buttonsarray[i];
             if (button.group != undefined && button.group.toLowerCase() == oldNameLower) {
               button.group = newName;
               saveRequired = true;
@@ -739,9 +735,9 @@ function macroTabContextMenu(event, groupIdx) {
 
 function createMacroTabs(tabs, activeIdx) {
   tabs.empty();
-  var lineHtml = `<li onclick="selectMacroTab(0);"` + (activeIdx == 0 ? `class="active"` : "") + `><a href="#">Default</a></li>`;
+  let lineHtml = `<li onclick="selectMacroTab(0);"` + (activeIdx == 0 ? `class="active"` : "") + `><a href="#">Default</a></li>`;
   tabs.append(lineHtml);
-  for (var i = 1; i < macroGroups.length; i++) {
+  for (let i = 1; i < macroGroups.length; i++) {
     lineHtml = `<li onclick="selectMacroTab(` + i + `);" oncontextmenu="macroTabContextMenu(event, ` + i + `)"` +
     (activeIdx == i ? `class="active"` : "") + `><a href="#">` + macroGroups[i] + `</a></li>`;
     tabs.append(lineHtml);
@@ -763,7 +759,7 @@ function setMacroGroupView(view) {
     setCurrentMacroGroup("");
     $('#macros').css('height', 'calc(100vh - 495px)');
   } else {
-    var activeIdx = Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
+    const activeIdx = Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
     setCurrentMacroGroup(macroGroupsLower[activeIdx]);
     createMacroTabs($(view == 1 ? '#macroHorizontalTabs' : '#macroVerticalTabs'), activeIdx);
     $('#macros').css('height', view == 1 ? 'calc(100vh - 537px)' : 'calc(100vh - 495px)');
@@ -776,9 +772,9 @@ function setMacroGroupView(view) {
 function rebuildMacroGroupNames() {
   macroGroups = [""];
   macroGroupsLower = [""];
-  for (var i = 0; i < buttonsarray.length; i++) {
-    var groupName = sanitizeGroupName(buttonsarray[i].group);
-    var groupNameLower = groupName.toLowerCase();
+  for (let i = 0; i < buttonsarray.length; i++) {
+    const groupName = sanitizeGroupName(buttonsarray[i].group);
+    const groupNameLower = groupName.toLowerCase();
     if (macroGroupsLower.indexOf(groupNameLower) == -1) {
       macroGroups.push(groupName);
       macroGroupsLower.push(groupNameLower);
@@ -792,7 +788,7 @@ function rebuildMacroGroupNames() {
 function rebuildMacroGroups() {
   rebuildMacroGroupNames();
 
-  var activeIdx = macroGroupView == 0 ? 0 : Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
+  const activeIdx = macroGroupView == 0 ? 0 : Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
   setCurrentMacroGroup(macroGroupsLower[activeIdx]);
   if (macroGroupView == 1) {
     createMacroTabs($('#macroHorizontalTabs'), activeIdx);
@@ -805,7 +801,7 @@ function rebuildMacroGroups() {
 }
 
 function moveMacroToGroup(buttonIdx) {
-  var dialogContent = `
+  let dialogContent = `
 <div class="row mb-2">
   <label class="cell-sm-4 pt-1" title="Move to existing group">Group:</label>
   <div class="cell-sm-6">
@@ -813,7 +809,7 @@ function moveMacroToGroup(buttonIdx) {
     <option value="0">Default</option>
 `;
 
-  for (var i = 1; i < macroGroups.length; i++) {
+  for (let i = 1; i < macroGroups.length; i++) {
     dialogContent += `
 <option value="` + i + `">` + macroGroups[i] + `</option>
 `;
@@ -849,13 +845,13 @@ function moveMacroToGroup(buttonIdx) {
         caption: "Apply",
         cls: "js-dialog-close success",
         onclick: function() {
-          var groupIdx = Number($('#macroGroup').val());
+          let groupIdx = Number($('#macroGroup').val());
           if (groupIdx != -1) {
             buttonsarray[buttonIdx].group = macroGroups[groupIdx];
           } else {
-            var groupName = $('#macroGroupName').val();
+            let groupName = $('#macroGroupName').val();
             groupName = sanitizeGroupName(groupName);
-            var groupNameLower = groupName.toLowerCase();
+            const groupNameLower = groupName.toLowerCase();
             groupIdx = (groupNameLower == "default") ? 0 : macroGroupsLower.indexOf(groupNameLower);
             if (groupIdx == -1) {
               macroGroups.push(groupName);
@@ -873,14 +869,14 @@ function moveMacroToGroup(buttonIdx) {
     ]
   });
 
-  var groupName = sanitizeGroupName(buttonsarray[buttonIdx].group);
-  var groupNameLower = groupName.toLowerCase();
-  var groupIdx = Math.max(0, macroGroupsLower.indexOf(groupNameLower));
+  const groupName = sanitizeGroupName(buttonsarray[buttonIdx].group);
+  const groupNameLower = groupName.toLowerCase();
+  const groupIdx = Math.max(0, macroGroupsLower.indexOf(groupNameLower));
   $('#macroGroup').val(groupIdx);
 }
 
 if (localStorage.getItem("macroGroupView")) {
-  var settings = JSON.parse(localStorage.getItem("macroGroupView"));
+  const settings = JSON.parse(localStorage.getItem("macroGroupView"));
   macroGroupView = typeof(settings.tabVisibility) == "number" ? settings.tabVisibility : 2;
   if (macroGroupView != 0 && typeof(settings.currentGroupLower) == "string" && macroGroupsLower.indexOf(settings.currentGroupLower) != -1) {
     macroGroupsLower = settings.currentGroupLower;

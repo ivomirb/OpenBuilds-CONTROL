@@ -1,3 +1,5 @@
+"use strict";
+
 var disable3Dviewer = false;
 var disable3Dcontrols = false;
 var disable3Dskybox = false;
@@ -43,7 +45,7 @@ function initDiagnostics() {
   disableDROupdates = localStorage.getItem('disableDROupdates') && (JSON.parse(localStorage.getItem('disableDROupdates')) == true);
   AddRemoveClass('#disableDROupdatesTick', "checked", disableDROupdates);
 
-  disableAggressiveHomeReset = localStorage.getItem('disableAggressiveHomeReset') && (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true);
+  const disableAggressiveHomeReset = localStorage.getItem('disableAggressiveHomeReset') && (JSON.parse(localStorage.getItem('disableAggressiveHomeReset')) == true);
   AddRemoveClass('#disableAggressiveHomeResetTick', "checked", disableAggressiveHomeReset);
 
   disable4thAxis = localStorage.getItem('disable4thAxis') && (JSON.parse(localStorage.getItem('disable4thAxis')) == true);

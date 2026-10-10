@@ -25,13 +25,6 @@ function storeJob(completedJob) {
 
 function showJobLog() {
 
-  var options = {
-    weekday: "short",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  };
-
   var template = `
   <div style="height: calc(100vh - 550px); min-height: 90px; overflow-x: auto;">
   <table class="table striped compact">
@@ -46,7 +39,7 @@ function showJobLog() {
     <tbody>
     `
 
-  for (i = 0; i < pastJobs.length; i++) {
+  for (let i = 0; i < pastJobs.length; i++) {
     var date = new Date(pastJobs[i].startdate).toDateString()
     var time = new Date(pastJobs[i].startdate).toLocaleTimeString([], {
       // year: 'numeric',

@@ -1,3 +1,5 @@
+"use strict";
+
 var servo = false;
 var penupval = 128;
 var pendownval = 128;
@@ -13,8 +15,7 @@ if (localStorage.getItem("servo-calibration")) {
 }
 
 function servoDocReady() {
-  $('#pP').on('click', function(ev) {
-    console.log('pen up')
+  $('#pP').on('click', function() {
     if (servo) {
       socket.emit('runCommand', "M3S" + servo.up + "\n");
     } else {
@@ -22,8 +23,7 @@ function servoDocReady() {
     }
   })
 
-  $('#pM').on('click', function(ev) {
-    console.log('pen down')
+  $('#pM').on('click', function() {
     if (servo) {
       socket.emit('runCommand', "M3S" + servo.down + "\n");
     } else {

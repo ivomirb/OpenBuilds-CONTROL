@@ -1,3 +1,5 @@
+"use strict";
+
 var lastSelectedMachine = '';
 
 function fixGrblHALSettings(j, type) {
@@ -41,10 +43,12 @@ function fixGrblHALSettings(j, type) {
 }
 
 function selectMachine(type) {
+  let customFirmware;
+  let grblParams_def;
   if (type == "sphinx55") {
     // Sphinx 55 - COMPLETE with homing switches
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -83,8 +87,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "sphinx1050") {
     // Sphinx 1050
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -123,8 +127,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "workbee1050") {
     //Workbee 1050 COMPLETE with homing switches
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -163,8 +167,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "workbee1010") {
     // Workbee 1010
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -203,8 +207,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "workbee1510") {
     // Workbee1510
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -243,8 +247,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "acro55") {
     // Acro 55
-    var customFirmware = 'acro';
-    var grblParams_def = {
+    customFirmware = 'acro';
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //Step idle delay, milliseconds
       $2: "0", //Step pulse invert, mask
@@ -283,8 +287,8 @@ function selectMachine(type) {
     setSelectedToolhead('laser');
   } else if (type == "acro510") {
     // Acro 510
-    var customFirmware = 'acro';
-    var grblParams_def = {
+    customFirmware = 'acro';
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //Step idle delay, milliseconds
       $2: "0", //Step pulse invert, mask
@@ -323,8 +327,8 @@ function selectMachine(type) {
     setSelectedToolhead('laser');
   } else if (type == "acro1010") {
     // Acro 1010
-    var customFirmware = 'acro';
-    var grblParams_def = {
+    customFirmware = 'acro';
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //Step idle delay, milliseconds
       $2: "0", //Step pulse invert, mask
@@ -363,8 +367,8 @@ function selectMachine(type) {
     setSelectedToolhead('laser');
   } else if (type == "acro1510") {
     // Acro 1510
-    var customFirmware = 'acro';
-    var grblParams_def = {
+    customFirmware = 'acro';
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //Step idle delay, milliseconds
       $2: "0", //Step pulse invert, mask
@@ -403,8 +407,8 @@ function selectMachine(type) {
     setSelectedToolhead('laser');
   } else if (type == "acro1515") {
     // Acro 1515
-    var customFirmware = 'acro';
-    var grblParams_def = {
+    customFirmware = 'acro';
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //Step idle delay, milliseconds
       $2: "0", //Step pulse invert, mask
@@ -443,8 +447,8 @@ function selectMachine(type) {
     setSelectedToolhead('laser');
   } else if (type == "acroa1") {
     // Acro 1010
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //Step idle delay, milliseconds
       $2: "0", //Step pulse invert, mask
@@ -465,8 +469,6 @@ function selectMachine(type) {
       $26: "250", //Homing switch debounce delay, milliseconds
       $27: "5.000", //Homing switch pull-off distance, millimeters
       $30: "1000", //Maximum spindle speed, RPM
-      $31: "0", //Minimum spindle speed, RPM
-      $32: "0", //Laser-mode enable, boolean
       $31: "0", //Minimum spindle speed, RPM
       $32: "0", //Laser-mode enable, boolean
       $33: "50", //PWM Freq for RC Servo
@@ -492,8 +494,8 @@ function selectMachine(type) {
     // End default pen up/down
   } else if (type == "minimill") {
     // minimill
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -532,8 +534,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "cbeam") {
     // C-Beam Machine
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -572,8 +574,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "cbeamxl") {
     // C-Beam XL:
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -612,8 +614,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "leadmachine1010") {
     // Leadmachine 1010
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -652,8 +654,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "leadmachine1010plasma") {
     // Leadmachine 1010
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -692,8 +694,8 @@ function selectMachine(type) {
     setSelectedToolhead('plasma')
   } else if (type == "leadmachine1515") {
     // Leadmachine 1010
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -732,8 +734,8 @@ function selectMachine(type) {
     setSelectedToolhead('router11');
   } else if (type == "leadmachine1010laser") {
     // Leadmachine 55
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -772,8 +774,8 @@ function selectMachine(type) {
     setSelectedToolhead('laser');
   } else if (type == "custom") {
     // Leadmachine 55
-    var customFirmware = false;
-    var grblParams_def = {
+    customFirmware = false;
+    grblParams_def = {
       $0: "10", //"Step pulse time, microseconds"
       $1: "255", //"Step idle delay, milliseconds"
       $2: "0", //"Step pulse invert, mask"
@@ -812,14 +814,10 @@ function selectMachine(type) {
     setSelectedToolhead('router11')
   }
 
-  for (var key in grblParams_def) {
-    if (grblParams_def.hasOwnProperty(key)) {
-      var j = key.substring(1)
-      var newVal = $("#val-" + j + "-input").val();
-      $("#val-" + j + "-input").val(parseFloat(grblParams_def[key]))
-      fixGrblHALSettings(j, type);
-      // console.log("$" + j + " = " + newVal)
-    }
+  for (let key in grblParams_def) {
+    const j = key.substring(1)
+    $("#val-" + j + "-input").val(parseFloat(grblParams_def[key]))
+    fixGrblHALSettings(j, type);
   }
 
   updateDirSettingChecks();
@@ -906,6 +904,7 @@ function setMachineButton(type) {
     overlaytype = type;
   } else {
     template = `<img src="img/mch/leadmachine1010.png"/>  Select your machine type from the list:`
+    // eslint-disable-next-line no-unused-vars
     overlaytype = "custom"
   }
   $('#context_toggle2').html(template);

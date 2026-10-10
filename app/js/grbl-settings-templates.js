@@ -1,4 +1,6 @@
-var grblSettingsTemplate = {
+"use strict";
+
+const grblSettingsTemplate = {
   0: {
     key: `$0`,
     title: `Step pulse time, microseconds`,

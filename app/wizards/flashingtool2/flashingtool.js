@@ -211,9 +211,9 @@ function openFlashingTool() {
 
 function readEspFirmwareFile() {
   console.log("Sending")
-  var form = document.getElementById('customFirmwareForm');
-  var formData = new FormData(form);
-  var xhr = new XMLHttpRequest();
+  const form = document.getElementById('customFirmwareForm');
+  const formData = new FormData(form);
+  const xhr = new XMLHttpRequest();
   xhr.onload = function() {
     if (xhr.status == 200) {
       $("#customFirmwareSet").html(xhr.response)
@@ -228,15 +228,16 @@ function flashFirmwarefromWizard() {
   autoBackup("Updated Firmware: " + selectedControllerType);
   if (selectedControllerType == "blackboxx32") {
 
+	  var filename;
     if ($("#grblHalAxesCount").val() == "3axes-grblhal") {
-      var filename = "grblhal-grbl3axis.bin";
+      filename = "grblhal-grbl3axis.bin";
     } else if ($("#grblHalAxesCount").val() == "3axes-grblhal-door") {
-      var filename = "grblhal-grbl3axis-door.bin";
+      filename = "grblhal-grbl3axis-door.bin";
     } else if ($("#grblHalAxesCount").val() == "4axes-grblhal") {
-      var filename = "grblhal-grbl4axis.bin";
+      filename = "grblhal-grbl4axis.bin";
     }
 
-    var data = {
+    const data = {
       port: $("#portUSB2").val(),
       file: filename,
       erase: false,
@@ -250,9 +251,9 @@ function flashFirmwarefromWizard() {
     if ($("#grblHalAxesCount").val() == "custom") {
       // Custom Firmware
       if ($("#firmwareBin").val().length > 0) {
-        var form = document.getElementById('customFirmwareForm');
-        var formData = new FormData(form);
-        var xhr = new XMLHttpRequest();
+        const form = document.getElementById('customFirmwareForm');
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
         xhr.onload = function() {
           if (xhr.status == 200) {
             $("#customFirmwareSet").html(xhr.response);
@@ -278,7 +279,7 @@ function flashFirmwarefromWizard() {
     }
 
   } else if (selectedControllerType == "interfacev1") {
-    var data = {
+    const data = {
       port: $("#portUSB2").val(),
       file: "firmware.bin", // version that ships with Interface
     }
@@ -286,9 +287,9 @@ function flashFirmwarefromWizard() {
     if ($("#interfaceFirmwareVer").val() == "custom") {
       // custom image
       if ($("#firmwareBin").val().length > 0) {
-        var form = document.getElementById('customFirmwareForm');
-        var formData = new FormData(form);
-        var xhr = new XMLHttpRequest();
+        const form = document.getElementById('customFirmwareForm');
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
         xhr.onload = function() {
           if (xhr.status == 200) {
             $("#customFirmwareSet").html(xhr.response);

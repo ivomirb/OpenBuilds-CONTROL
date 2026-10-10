@@ -1,3 +1,5 @@
+"use strict";
+
 function drawRuler(xmin, xmax, ymin, ymax, inches) {
   const unitsVal = inches ? '"' : '';
   const ticSpacing = inches ? 2.54 : 1;
@@ -14,16 +16,16 @@ function drawRuler(xmin, xmax, ymin, ymax, inches) {
   ymin = Math.ceil(ymin / ticSpacing);
   ymax = Math.floor(ymax / ticSpacing);
 
-  var ruler = new THREE.Group();
+  const ruler = new THREE.Group();
 
-  var vertices = [];
+  let vertices = [];
   // x axis
-  for (var i = xmin; i <= xmax; i++) {
-    var length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
+  for (let i = xmin; i <= xmax; i++) {
+    const length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
     vertices.push(i * ticSpacing, -1, 0, i * ticSpacing, -length, 0);
 
     if (i % 10 == 0) {
-      var sprite = makeSprite("webgl", {
+      const sprite = makeSprite("webgl", {
         x: i * ticSpacing,
         y: ticOffset,
         z: 0,
@@ -36,12 +38,12 @@ function drawRuler(xmin, xmax, ymin, ymax, inches) {
   }
 
   // y axis
-  for (var i = ymin; i <= ymax; i++) {
-    var length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
+  for (let i = ymin; i <= ymax; i++) {
+    const length = (i % 10 == 0) ? length10 : ((i % 5 == 0) ? length5 : length1);
     vertices.push(-1, i * ticSpacing, 0, -length, i * ticSpacing, 0);
 
     if (i % 10 == 0) {
-      var sprite = makeSprite("webgl", {
+      const sprite = makeSprite("webgl", {
         x: ticOffset,
         y: i * ticSpacing,
         z: 0,
@@ -53,14 +55,14 @@ function drawRuler(xmin, xmax, ymin, ymax, inches) {
     }
   }
 
-  var material = new THREE.LineBasicMaterial({
+  const material = new THREE.LineBasicMaterial({
     color: Theme.RULER_COLOR,
     opacity: Theme.RULER_OPACITY
   });
 
-  var geometry = new THREE.BufferGeometry();
+  const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute( vertices, 3));
-  var lines = new THREE.LineSegments(geometry, material);
+  const lines = new THREE.LineSegments(geometry, material);
   ruler.add(lines);
 
   ruler.name = "Rulers";
@@ -76,25 +78,22 @@ function drawRulerInches(xmin, xmax, ymin, ymax) {
   const fontsize = 4;
   const ticSpacing = -10;
 
-  // console.log(xmin, xmax, ymin, ymax)
-
   const unitScale = 25.4 / 16; // 1/16th of an inch
   xmin = Math.ceil(xmin / unitScale);
   xmax = Math.floor(xmax / unitScale);
   ymin = Math.ceil(ymin / unitScale);
   ymax = Math.floor(ymax / unitScale);
 
-  var ruler = new THREE.Group();
+  const ruler = new THREE.Group();
 
-  var vertices = [];
+  let vertices = [];
   // x axis
-  for (var i = xmin; i <= xmax; i++) {
-    var length = (i % 16 == 0) ? length16 : ((i % 4 == 0) ? length4 : length1);
-    var geometry = new THREE.Geometry();
+  for (let i = xmin; i <= xmax; i++) {
+    const length = (i % 16 == 0) ? length16 : ((i % 4 == 0) ? length4 : length1);
     vertices.push(i * unitScale, -1, 0, i * unitScale, -length, 0);
 
     if (i % 16 == 0) {
-      var sprite = makeSprite("webgl", {
+      const sprite = makeSprite("webgl", {
         x: i * unitScale,
         y: ticSpacing,
         z: 0,
@@ -107,13 +106,12 @@ function drawRulerInches(xmin, xmax, ymin, ymax) {
   }
 
   // y axis
-  for (var i = ymin; i <= ymax; i++) {
-    var length = (i % 16 == 0) ? length16 : ((i % 4 == 0) ? length4 : length1);
-    var geometry = new THREE.Geometry();
+  for (let i = ymin; i <= ymax; i++) {
+    const length = (i % 16 == 0) ? length16 : ((i % 4 == 0) ? length4 : length1);
     vertices.push(-1, i * unitScale, 0, -length, i * unitScale, 0);
 
     if (i % 16 == 0) {
-      var sprite = makeSprite("webgl", {
+      const sprite = makeSprite("webgl", {
         x: ticSpacing,
         y: i * unitScale,
         z: 0,
@@ -125,14 +123,14 @@ function drawRulerInches(xmin, xmax, ymin, ymax) {
     }
   }
 
-  var material = new THREE.LineBasicMaterial({
+  const material = new THREE.LineBasicMaterial({
     color: Theme.RULER_COLOR,
     opacity: Theme.RULER_OPACITY
   });
 
-  var geometry = new THREE.BufferGeometry();
+  const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute( vertices, 3));
-  var lines = new THREE.LineSegments(geometry, material);
+  const lines = new THREE.LineSegments(geometry, material);
   ruler.add(lines);
 
  ruler.name = "Rulers";

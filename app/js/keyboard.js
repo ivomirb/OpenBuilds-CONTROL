@@ -1,4 +1,7 @@
+"use strict";
+
 var keyboardShortcuts = false;
+var newKeyAssignment = undefined;
 
 function keyboardDocReady() {
 
@@ -91,9 +94,6 @@ function bindKeys() {
   $("#trocell").find(".marker").unbind(Metro.events.keyup);
   $("#frocell").find(".marker").unbind(Metro.events.keyup);
 
-
-  // console.log("Refreshing Keybindings")
-
   // Bind for Electron Devtools
   document.addEventListener('keydown', function(evt) {
 
@@ -122,12 +122,11 @@ function bindKeys() {
   // Bind for Macro keys
 
   if (buttonsarray && buttonsarray.length > 0) {
-    for (var i = 0; i < buttonsarray.length; i++) {
+    for (let i = 0; i < buttonsarray.length; i++) {
       if (buttonsarray[i].macrokeyboardshortcut && buttonsarray[i].macrokeyboardshortcut.length) {
         $(document).bind('keydown', buttonsarray[i].macrokeyboardshortcut, function(e) {
           e.preventDefault();
-          console.log(e)
-          var newVal = "";
+          let newVal = "";
           if (e.altKey) {
             newVal += 'alt+'
           }
@@ -157,16 +156,14 @@ function bindKeys() {
             }
           }
 
-          var macro = searchMacro("macrokeyboardshortcut", newVal, buttonsarray)
-          console.log(macro)
+          const macro = searchMacro("macrokeyboardshortcut", newVal, buttonsarray)
           if (macro && macro.codetype == "gcode") {
-            sendGcode(macro.gcode); // TODO change to runMacro with JS
+            sendGcode(macro.gcode);
           } else if (macro && macro.codetype == "javascript") {
             if (!macro.jsrunonstartup) {
               executeJS(macro.javascript)
             } else {
-              var toast = Metro.toast.create;
-              toast("Macro: <b>" + macro.title + "</b> is an autorun macro, it runs when CONTROL starts. You cannot run it using the button. You can edit or delete it using the <i class='fas fa-cogs'></i> Edit Macro tool", null, 3000, "bg-darkRed fg-white")
+              Metro.toast.create("Macro: <b>" + macro.title + "</b> is an autorun macro, it runs when CONTROL starts. You cannot run it using the button. You can edit or delete it using the <i class='fas fa-cogs'></i> Edit Macro tool", null, 3000, "bg-darkRed fg-white")
             }
           } else {
             printLog("<span class='fg-red'>[ ERROR ]</span>  <span class='fg-red'>Macro not found for " + newVal + "</span>")
@@ -398,7 +395,7 @@ function bindKeys() {
     if (keyboardShortcuts.froInc.length) {
       $(document).bind('keydown', keyboardShortcuts.froInc, function(e) {
         e.preventDefault();
-        var newfeed = laststatus.machine.overrides.feedOverride + 10
+        const newfeed = laststatus.machine.overrides.feedOverride + 10
         feedOverride(newfeed)
       });
     }
@@ -406,7 +403,7 @@ function bindKeys() {
     if (keyboardShortcuts.froDec.length) {
       $(document).bind('keydown', keyboardShortcuts.froDec, function(e) {
         e.preventDefault();
-        var newfeed = laststatus.machine.overrides.feedOverride - 10
+        const newfeed = laststatus.machine.overrides.feedOverride - 10
         feedOverride(newfeed)
       });
     }
@@ -414,7 +411,7 @@ function bindKeys() {
     if (keyboardShortcuts.toInc.length) {
       $(document).bind('keydown', keyboardShortcuts.toInc, function(e) {
         e.preventDefault();
-        var newspeed = laststatus.machine.overrides.spindleOverride + 10
+        const newspeed = laststatus.machine.overrides.spindleOverride + 10
         spindleOverride(newspeed)
       });
     }
@@ -422,7 +419,7 @@ function bindKeys() {
     if (keyboardShortcuts.toDec.length) {
       $(document).bind('keydown', keyboardShortcuts.toDec, function(e) {
         e.preventDefault();
-        var newspeed = laststatus.machine.overrides.spindleOverride - 10
+        const newspeed = laststatus.machine.overrides.spindleOverride - 10
         spindleOverride(newspeed)
       });
     }
@@ -430,11 +427,8 @@ function bindKeys() {
     if (keyboardShortcuts.jogSpeedM.length) {
       $(document).bind('keydown', keyboardShortcuts.jogSpeedM, function(e) {
         e.preventDefault();
-        var currentJogOverride = $('#jro').data('slider').val();
-        var newVal = currentJogOverride - 10
-        if (newVal < 10) {
-          newVal = 10;
-        }
+        const currentJogOverride = $('#jro').data('slider').val();
+        const newVal = Math.max(currentJogOverride - 10, 10);
         jogOverride(newVal)
       });
     }
@@ -442,27 +436,20 @@ function bindKeys() {
     if (keyboardShortcuts.jogSpeedP.length) {
       $(document).bind('keydown', keyboardShortcuts.jogSpeedP, function(e) {
         e.preventDefault();
-        var currentJogOverride = $('#jro').data('slider').val();
-        var newVal = currentJogOverride + 10
-        if (newVal > 100) {
-          newVal = 100;
-        }
+        const currentJogOverride = $('#jro').data('slider').val();
+        const newVal = Math.min(currentJogOverride + 10, 100);
         jogOverride(newVal)
-        // spindleOverride(newspeed)
       });
     }
 
 
     localStorage.setItem('keyboardShortcuts', JSON.stringify(keyboardShortcuts));
   }
-
 }
-
-var newKeyAssignment = undefined;
 
 function onShortcutInputClick(id)
 {
-  var input = $('#' + id);
+  const input = $('#' + id);
   if (newKeyAssignment == undefined || input[0] != newKeyAssignment[0]) {
     if (newKeyAssignment != undefined) {
       $('#alreadyAssignedWarnShortcut').hide();
@@ -486,7 +473,7 @@ function keyboardShortcutsEditor() {
 
   newKeyAssignment = undefined;
 
-  var template = `
+  const template = `
   <span class="text-small fg-red" id="alreadyAssignedWarnShortcut" style="display: none;"></span>
   <div class="p-0 m-0" style="overflow-y: auto; height: calc(100vh - 430px);">
     <form id="keyboardAssignmentForm">
@@ -704,8 +691,7 @@ function keyboardShortcutsEditor() {
   });
   $('#keyboardAssignmentForm').bind('keydown', null, function(e) {
     e.preventDefault();
-    console.log(e)
-    var newVal = "";
+    let newVal = "";
     if (e.altKey) {
       newVal += 'alt+'
     }
@@ -736,13 +722,12 @@ function keyboardShortcutsEditor() {
         newVal += e.key.toLowerCase();
       }
 
-      var inUse = newVal.length > 0 && keyInUse(newVal, false).inUse;
+      const inUse = newVal.length > 0 && keyInUse(newVal, false).inUse;
       if (newKeyAssignment.val() == newVal) {
         $('#alreadyAssignedWarnShortcut').hide();
         newKeyAssignment.removeClass('alert').addClass('primary');
       } else {
         if (inUse) {
-          console.log(newVal + " is already in use")
           $('#alreadyAssignedWarnShortcut').appendTo(newKeyAssignment.parent().parent());
           $('#alreadyAssignedWarnShortcut').show();
           $('#alreadyAssignedWarnShortcut').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal, false).source);
@@ -762,8 +747,8 @@ function keyboardShortcutsEditor() {
 }
 
 function keyInUse(newVal, forMacro) {
-  var inUse = false;
-  var usedBy = false;
+  let inUse = false;
+  let usedBy = false;
 
   // Check Internally hardcoded keys
   if (newVal == "f1") {
@@ -780,7 +765,7 @@ function keyInUse(newVal, forMacro) {
   }
 
   // Check currently assigned Macros
-  for (var i = 0; i < buttonsarray.length; i++) {
+  for (let i = 0; i < buttonsarray.length; i++) {
     if (newVal == buttonsarray[i].macrokeyboardshortcut) {
       inUse = true;
       usedBy = "macro:" + buttonsarray[i].title;
@@ -798,8 +783,8 @@ function keyInUse(newVal, forMacro) {
   }
   else {
   // Check currently edited in keys, not saved yet
-    var inputs = $(".keyboardshortcutinput > input");
-    for (var i = 0; i < inputs.length; i++) {
+    const inputs = $(".keyboardshortcutinput > input");
+    for (let i = 0; i < inputs.length; i++) {
       if (inputs[i].value == newVal) {
         inUse = true;
         usedBy = "keyboard:" + $("#" + inputs[i].id).parent().parent().siblings().html().trim();

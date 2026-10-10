@@ -67,14 +67,12 @@ function startFromHere(lineNumber) {
   else if (lineNumber < 1 || lineNumber > editor.session.getLength())
     error = "The line number " + lineNumber + " is out of range.";
 
-console.log(error);
-
   for (var i = 0; i < lineNumber-1; i++) {
     if (error) break;
     var currentLine = editor.session.getLine(i);
     if (currentLine.length > 0) {
       currentLine = currentLine.split(/[;(]/); // Remove everything after ; or ( = comment
-      line = currentLine[0]
+      var line = currentLine[0]
       line = line.toUpperCase();
 
       const Xindex = line.indexOf("X");
@@ -186,10 +184,11 @@ console.log(error);
   if (lastA)
     resumeXYA += " A" + lastA.toFixed(3);
 
+  var resumeZ;
   if (lastPlungeF != undefined)
-    var resumeZ = "G1 G90 Z" + lastZ.toFixed(3) + " F" + lastPlungeF.toFixed(0);
+    resumeZ = "G1 G90 Z" + lastZ.toFixed(3) + " F" + lastPlungeF.toFixed(0);
   else
-    var resumeZ = "G0 G90 Z" + lastZ.toFixed(3);
+    resumeZ = "G0 G90 Z" + lastZ.toFixed(3);
 
   var context = "";
   if (moveType != undefined) context += "G" + moveType + " ";
@@ -253,7 +252,6 @@ console.log(error);
 }
 
 function redoJob() {
-  var line = "";
   var gcode = "; Recovered G-code. Use at your OWN RISK\n;===== Original header\n";
 
   var preserveLines = $('#preserveLines').html();
@@ -263,8 +261,8 @@ function redoJob() {
   var resumeLineNumber = $('#resumeLastLine').html();
   var resumeLastNumber = editor.session.getLength();
 
-  for (var i = 0; i < preserveLines; i++) {
-    line = editor.session.getLine(i);
+  for (let i = 0; i < preserveLines; i++) {
+    const line = editor.session.getLine(i);
     gcode += line + '\n';
   }
 
@@ -278,8 +276,8 @@ function redoJob() {
   gcode += ContextGcode + '\n';
 
   gcode += "\n;===== The rest of the original program\n";
-  for (var i = resumeLineNumber - 1; i < resumeLastNumber; i++) {
-    line = editor.session.getLine(i);
+  for (let i = resumeLineNumber - 1; i < resumeLastNumber; i++) {
+    const line = editor.session.getLine(i);
     gcode += line + '\n'
   }
 

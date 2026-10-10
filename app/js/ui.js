@@ -1,3 +1,5 @@
+"use strict";
+
 var MAX_WCS_HISTORY = 5;
 var WCS_HISTORY_TIMEOUT = 3000; // WCS changes within that timeout of the last one are ignored
 
@@ -26,6 +28,40 @@ function AddRemoveClass(element, className, add) {
 
 function EnableViaClass(button, enabled) {
   AddRemoveClass(button, "disabled", !enabled);
+}
+
+function rippleEffect(el, color) {
+  if (el.css('position') === 'static') {
+    el.css('position', 'relative');
+  }
+
+  el.css({
+    overflow: 'hidden'
+  });
+
+  $(".ripple").remove();
+
+  const size = Math.max(el.outerWidth(), el.outerHeight());
+
+  // Add the element
+  const ripple = $("<span class='ripple'></span>").css({
+    width: size,
+    height: size
+  });
+
+  el.prepend(ripple);
+
+  // Add the ripples CSS and start the animation
+  ripple.css({
+    background: color,
+    width: size,
+    height: size,
+    top: 0 + 'px',
+    left: 0 + 'px'
+  }).addClass("rippleEffect");
+  setTimeout(function() {
+    $(".ripple").remove();
+  }, 400);
 }
 
 // Toolbar with USB port/connect/disconnect
@@ -152,18 +188,19 @@ function updateWcsHistory(wcs) {
   const has4thAxis = laststatus.machine.has4thAxis && !disable4thAxis;
   const history = wcsHistory[wcs];
 
-  var elements = ``;
+  let elements = ``;
   if (history == undefined || history.length == 0) {
     elements = `<li class="disabled">` + wcs + ` history will show here</li>`;
   } else {
-    for (var i = 0; i < history.length; i++) {
+    for (let i = 0; i < history.length; i++) {
+      let tooltip;
       if (unit == "in") {
-        var tooltip = "ORIGIN:  X = " + (history[i].x / 25.4).toFixed(3) + "in   Y = " + (history[i].y / 25.4).toFixed(3) + "in   Z = " + (history[i].z / 25.4).toFixed(3) + "in";
+        tooltip = "ORIGIN:  X = " + (history[i].x / 25.4).toFixed(3) + "in   Y = " + (history[i].y / 25.4).toFixed(3) + "in   Z = " + (history[i].z / 25.4).toFixed(3) + "in";
       } else {
-        var tooltip = "ORIGIN:  X = " + history[i].x.toFixed(2) + "mm   Y = " + history[i].y.toFixed(2) + "mm   Z = " + history[i].z.toFixed(2) + "mm";
+        tooltip = "ORIGIN:  X = " + history[i].x.toFixed(2) + "mm   Y = " + history[i].y.toFixed(2) + "mm   Z = " + history[i].z.toFixed(2) + "mm";
       }
 
-      if (laststatus.machine.has4thAxis && !disable4thAxis)
+      if (has4thAxis)
         tooltip += "   A = " + history[i].a.toFixed(3) + '\u00b0';
 
       if (history[i].tooltip)
@@ -206,7 +243,7 @@ function captureWcsHistoryInternal(position, wcs, name, tooltip, isRunJob) {
     history.splice(index, 1);
   }
 
-  var newItem = {
+  let newItem = {
     x: position.x,
     y: position.y,
     z: position.z,
@@ -217,8 +254,8 @@ function captureWcsHistoryInternal(position, wcs, name, tooltip, isRunJob) {
     isLastJob: isRunJob == true,
   };
 
-  var index = undefined;
-  for (var i = 0; i < history.length; i++) {
+  let index = undefined;
+  for (let i = 0; i < history.length; i++) {
     if (Math.abs(history[i].x - newItem.x) < 0.001 && Math.abs(history[i].y - newItem.y) < 0.001
       && Math.abs(history[i].z - newItem.z) < 0.001 && (!has4thAxis || Math.abs(history[i].a - newItem.a) < 0.001)) {
       // found matching offset
@@ -229,8 +266,8 @@ function captureWcsHistoryInternal(position, wcs, name, tooltip, isRunJob) {
 
   if (index != undefined) {
     // found an existing item with the same coordinates: update it and bring it to the top
-    if (!isRunJob && history[i].isRunJob) {
-      newItem = history[i]; // keep the original if it is a job item
+    if (!isRunJob && history[index].isRunJob) {
+      newItem = history[index]; // keep the original if it is a job item
     }
     history.splice(index, 1);
   } else {
@@ -242,7 +279,7 @@ function captureWcsHistoryInternal(position, wcs, name, tooltip, isRunJob) {
         history.splice(history.length - 1, 1);
     }
     if (isRunJob) {
-      for (var i = 0; i < history.length; i++) {
+      for (let i = 0; i < history.length; i++) {
         if (history[i].isLastJob) {
           history[i].name = history[i].name.replace(" latest", "");
           history[i].isLastJob = false;
@@ -263,7 +300,7 @@ function gotoHistory(index) {
   const history = wcsHistory[wcs];
 
   if (index >= 0 && index < history.length) {
-    var gcode = "G10 G90 G21 L2 P0 X" + history[index].x.toFixed(3) + " Y" + history[index].y.toFixed(3) + " Z" +  + history[index].z.toFixed(3);
+    let gcode = "G10 G90 G21 L2 P0 X" + history[index].x.toFixed(3) + " Y" + history[index].y.toFixed(3) + " Z" +  + history[index].z.toFixed(3);
     if (has4thAxis) {
       gcode += " A" + history[index].a.toFixed(3);
     }
@@ -276,7 +313,7 @@ function gotoHistory(index) {
       {
         history.splice(0, 1);
       }
-      var newItem = {
+      const newItem = {
         x: laststatus.machine.position.offset.x,
         y: laststatus.machine.position.offset.y,
         z: laststatus.machine.position.offset.z,

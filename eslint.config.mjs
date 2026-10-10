@@ -12,5 +12,12 @@ export default defineConfig([
         ...globals.node,
       },
     },
+
+    rules: {
+      "no-warning-comments": ["warn", { 
+        "terms": ["note", "todo", "notice"], 
+        "location": "anywhere" 
+      }]
+    },
   },
 ]);

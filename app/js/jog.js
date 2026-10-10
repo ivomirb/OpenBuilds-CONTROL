@@ -1,10 +1,12 @@
+"use strict";
+
 var allowContinuousJog = false;
 var continuousJogRunning = false;
 var safeToUpdateSliders = true;
 var jogRate = {x: 4000, y: 4000, z: 2000, a: 2000};
 var showMCS = false;
 
-var jogDistArray = [ // must have 4 items
+const jogDistArray = [ // must have 4 items
   {mm: 0.1, mmStr: '0.1mm', in: 0.0254, inStr: '0.001"', button: '#dist01', label: '#dist01label'},
   {mm: 1, mmStr: '1mm', in: 0.254, inStr: '0.01"', button: '#dist1', label: '#dist1label'},
   {mm: 10, mmStr: '10mm', in: 2.54, inStr: '0.1"', button: '#dist10', label: '#dist10label'},
@@ -18,21 +20,22 @@ var unit = "mm";
 
 function jogOverride(newVal) {
   if (laststatus && laststatus.comms.connectionStatus > 0) {
-    jogRate.x = (grblParams['$110'] * (newVal / 100)).toFixed(0);
-    jogRate.y = (grblParams['$111'] * (newVal / 100)).toFixed(0);
-    jogRate.z = (grblParams['$112'] * (newVal / 100)).toFixed(0);
+    jogRate.x = 4000;
+    jogRate.y = 4000;
+    jogRate.z = 2000;
+    jogRate.a = 2000;
 
-    if (grblParams.hasOwnProperty('$110')) {
-      jogRate.x = (grblParams['$110'] * (newVal / 100)).toFixed(0);
+    if (grblParams.$110 != undefined) {
+      jogRate.x = (grblParams.$110 * (newVal / 100)).toFixed(0);
     }
-    if (grblParams.hasOwnProperty('$111')) {
-      jogRate.y = (grblParams['$111'] * (newVal / 100)).toFixed(0);
+    if (grblParams.$111 != undefined) {
+      jogRate.y = (grblParams.$111 * (newVal / 100)).toFixed(0);
     }
-    if (grblParams.hasOwnProperty('$112')) {
-      jogRate.z = (grblParams['$112'] * (newVal / 100)).toFixed(0);
+    if (grblParams.$112 != undefined) {
+      jogRate.z = (grblParams.$112 * (newVal / 100)).toFixed(0);
     }
-    if (grblParams.hasOwnProperty('$113')) {
-      jogRate.a = (grblParams['$113'] * (newVal / 100)).toFixed(0);
+    if (grblParams.$113 != undefined) {
+      jogRate.a = (grblParams.$113 * (newVal / 100)).toFixed(0);
     }
 
     if ($('#jro').data('slider').val() != newVal)
@@ -43,7 +46,7 @@ function jogOverride(newVal) {
 }
 
 function setJogDist(index) {
-  for (var i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) {
     const jogDist = jogDistArray[i];
     const button = $(jogDist.button);
     const label = $(jogDist.label);
@@ -67,7 +70,7 @@ function setADist(newADist) {
 function mmMode() {
   unit = "mm";
   localStorage.setItem('unitsMode', unit);
-  for (var i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) {
     const jogDist = jogDistArray[i];
     $(jogDist.label).html(jogDist.mmStr);
   }
@@ -85,7 +88,7 @@ function mmMode() {
 function inMode() {
   unit = "in";
   localStorage.setItem('unitsMode', unit);
-  for (var i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) {
     const jogDist = jogDistArray[i];
     $(jogDist.label).html(jogDist.inStr);
   }
@@ -132,7 +135,7 @@ function onDroClick(axis) {
   view.hide();
   main.addClass("drop-shadow");
 
-  var value = laststatus.machine.position.work[axis];
+  let value = laststatus.machine.position.work[axis];
   if (showMCS) {
     value += laststatus.machine.position.offset[axis];
   }
@@ -163,10 +166,10 @@ function updateDro(status) {
     return;
   }
 
-  var xpos = status.machine.position.work.x;
-  var ypos = status.machine.position.work.y;
-  var zpos = status.machine.position.work.z;
-  var apos = status.machine.position.work.a;
+  let xpos = status.machine.position.work.x;
+  let ypos = status.machine.position.work.y;
+  let zpos = status.machine.position.work.z;
+  let apos = status.machine.position.work.a;
   if (showMCS) {
     xpos += status.machine.position.offset.x;
     ypos += status.machine.position.offset.y;
@@ -221,7 +224,6 @@ function onDroKeydown(axis, e) {
     if (e.ctrlKey) return; // ignore Ctrl to avoid confusion with Shift
     if (showMCS && e.shiftKey) return; // can't change the origin of MCS
 
-    const main = $("#" + axis + "PosDro");
     const view = $("#" + axis + "Pos");
     const input = $("#" + axis + "PosInput");
 
@@ -234,8 +236,8 @@ function onDroKeydown(axis, e) {
 
     if (e.key == "Escape") return;
 
-    var Axis = axis.toUpperCase();
-    var value = parseFloat(input.val());
+    const Axis = axis.toUpperCase();
+    let value = parseFloat(input.val());
     if (!showMCS && e.shiftKey) {
       // Modify the origin (always in mm for better precision)
       captureWcsHistory('Before <b>' + Axis + ' input</b>');
@@ -283,13 +285,15 @@ function jogDocReady() {
   setJogDist(jogDistIndex);
   if (localStorage.getItem('unitsMode') == "in") {
     inMode();
+    $('#inMode').click();
   } else {
     mmMode();
+    $('#mmMode').click();
   }
 
-  $(document).mousedown(function(e) {
+  $(document).mousedown(function() {
     safeToUpdateSliders = false;
-  }).mouseup(function(e) {
+  }).mouseup(function() {
     safeToUpdateSliders = true;
     // Added to cancel Jog moves even when user moved the mouse off the button before releasing
     if (allowContinuousJog) {
@@ -297,7 +301,7 @@ function jogDocReady() {
         cancelJog()
       }
     }
-  }).mouseleave(function(e) {
+  }).mouseleave(function() {
     safeToUpdateSliders = true;
   });
 
@@ -306,77 +310,77 @@ function jogDocReady() {
   $('#dist10').on('click', () => { setJogDist(2); });
   $('#dist100').on('click', () => { setJogDist(3); });
 
-  $('#gotozeroWPos').on('click', function(ev) {
+  $('#gotozeroWPos').on('click', function() {
     sendGcode('G21 G90');
     sendGcode('G0 Z5');
     sendGcode('G0 X0 Y0');
     sendGcode('G0 Z0');
   });
 
-  $('#gotoXMinMpos').on('click', function(ev) {
+  $('#gotoXMinMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const minX = computeMachineLimits().minX;
       sendGcode("G0 G53 G90 G21 X" + minX.toFixed(2));
     }
   });
 
-  $('#gotoXMaxMpos').on('click', function(ev) {
+  $('#gotoXMaxMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const maxX = computeMachineLimits().maxX;
       sendGcode("G0 G53 G90 G21 X" + maxX.toFixed(2));
     }
   });
 
-  $('#gotoYMinMpos').on('click', function(ev) {
+  $('#gotoYMinMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const minY = computeMachineLimits().minY;
       sendGcode("G0 G53 G90 G21 Y" + minY.toFixed(2));
     }
   });
 
-  $('#gotoYMaxMpos').on('click', function(ev) {
+  $('#gotoYMaxMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const maxY = computeMachineLimits().maxY;
       sendGcode("G0 G53 G90 G21 Y" + maxY.toFixed(2));
     }
   });
 
-  $('#gotoZMinMpos').on('click', function(ev) {
+  $('#gotoZMinMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const minZ = computeMachineLimits().minZ;
       sendGcode("G0 G53 G90 G21 Z" + minZ.toFixed(2));
     }
   });
 
-  $('#gotoZMaxMpos').on('click', function(ev) {
+  $('#gotoZMaxMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const maxZ = computeMachineLimits().maxZ;
       sendGcode("G0 G53 G90 G21 Z" + maxZ.toFixed(2));
     }
   });
 
-  $('#gotoAMinMpos').on('click', function(ev) {
+  $('#gotoAMinMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const minA = computeMachineLimits().minA;
       sendGcode("G0 G53 G90 G21 A" + minA.toFixed(2));
     }
   });
 
-  $('#gotoAMaxMpos').on('click', function(ev) {
+  $('#gotoAMaxMpos').on('click', function() {
     if (grblParams.$22 > 0) {
       const maxA = computeMachineLimits().maxA;
       sendGcode("G0 G53 G90 G21 A" + maxA.toFixed(2));
     }
   });
 
-  $('#gotozeroZmPosXYwPos').on('click', function(ev) {
+  $('#gotozeroZmPosXYwPos').on('click', function() {
     const maxZ = computeMachineLimits().maxZ;
     sendGcode('G0 G53 G90 G21 Z' + maxZ.toFixed(2));
     sendGcode('G0 X0 Y0');
     sendGcode('G0 Z0');
   });
 
-  $('#gotozeroMPos').on('click', function(ev) {
+  $('#gotozeroMPos').on('click', function() {
     const limits = computeMachineLimits();
     if (limits.homingMask && limits.homingMask.z) {
       // Z0 at the bottom - first move XY, then Z
@@ -390,15 +394,14 @@ function jogDocReady() {
   });
 
   $('.xM').on('touchstart mousedown', function(ev) {
-    //console.log(ev)
     if (ev.which > 1) {
       return
     }
     ev.preventDefault();
     if (allowContinuousJog) {
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
-        var minX = mcsX - 1000;
+        const mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
+        let minX = mcsX - 1000;
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -431,7 +434,6 @@ function jogDocReady() {
   });
 
   $('.xP').on('touchstart mousedown', function(ev) {
-    // console.log("xp down")
     if (ev.which > 1) {
       return
     }
@@ -439,8 +441,8 @@ function jogDocReady() {
 
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
-        var maxX = mcsX + 1000;
+        const mcsX = parseFloat(laststatus.machine.position.offset.x) + parseFloat(laststatus.machine.position.work.x);
+        let maxX = mcsX + 1000;
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -465,7 +467,6 @@ function jogDocReady() {
     $('#confirmNewProbeBtn').removeClass("disabled")
   });
   $('.xP').on('touchend mouseup', function(ev) {
-    // console.log("xp up")
     ev.preventDefault();
     if (allowContinuousJog) {
       cancelJog()
@@ -480,8 +481,8 @@ function jogDocReady() {
 
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
-        var minY = mcsY - 1000;
+        const mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
+        let minY = mcsY - 1000;
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -521,8 +522,8 @@ function jogDocReady() {
 
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
-        var maxY = mcsY + 1000;
+        const mcsY = parseFloat(laststatus.machine.position.offset.y) + parseFloat(laststatus.machine.position.work.y);
+        let maxY = mcsY + 1000;
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -561,8 +562,8 @@ function jogDocReady() {
 
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
-        var minZ = mcsZ - 1000;
+        const mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
+        let minZ = mcsZ - 1000;
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -602,8 +603,8 @@ function jogDocReady() {
 
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
-        var maxZ = mcsZ + 1000;
+        const mcsZ = parseFloat(laststatus.machine.position.offset.z) + parseFloat(laststatus.machine.position.work.z);
+        let maxZ = mcsZ + 1000;
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -642,9 +643,9 @@ function jogDocReady() {
 
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
-        var minA = mcsA - 1000;
-        var travelA = parseFloat(grblParams.$133);
+        const mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
+        let minA = mcsA - 1000;
+        const travelA = parseFloat(grblParams.$133);
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -684,9 +685,9 @@ function jogDocReady() {
 
     if (allowContinuousJog) { // startJog();
       if (!waitingForStatus && laststatus.comms.runStatus == "Idle" || laststatus.comms.runStatus == "Door:0") {
-        var mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
-        var maxA = mcsA + 1000;
-        var travelA = parseFloat(grblParams.$133);
+        const mcsA = parseFloat(laststatus.machine.position.offset.a) + parseFloat(laststatus.machine.position.work.a);
+        let maxA = mcsA + 1000;
+        const travelA = parseFloat(grblParams.$133);
         const hasSoftLimits = Object.keys(grblParams).length > 0 && parseInt(grblParams.$20) == 1;
         if (hasSoftLimits && travelA > 0) {
           // Soft Limits is enabled so lets calculate maximum move distance
@@ -723,10 +724,10 @@ function jogDocReady() {
   })
 
   $('#chkSize').on('click', function() {
-    var bbox2 = new THREE.Box3().setFromObject(object);
+    const bbox2 = new THREE.Box3().setFromObject(object);
     console.log('bbox for Draw Bounding Box: ' + object + ' Min X: ', (bbox2.min.x), '  Max X:', (bbox2.max.x), 'Min Y: ', (bbox2.min.y), '  Max Y:', (bbox2.max.y));
-    var feedrate = 5000;
-    var moves = `
+    const feedrate = 5000;
+    const moves = `
       $J=G90G21X` + (bbox2.min.x).toFixed(3) + ` Y` + (bbox2.min.y).toFixed(3) + ` F` + feedrate + `\n
       $J=G90G21X` + (bbox2.max.x).toFixed(3) + ` Y` + (bbox2.min.y).toFixed(3) + ` F` + feedrate + `\n
       $J=G90G21X` + (bbox2.max.x).toFixed(3) + ` Y` + (bbox2.max.y).toFixed(3) + ` F` + feedrate + `\n
@@ -752,7 +753,7 @@ function jog(dir, dist, feed) {
 }
 
 function jogXY(xincrement, yincrement, feed = null) {
-  var data = {
+  const data = {
     x: xincrement,
     y: yincrement,
     feed: feed
@@ -790,12 +791,10 @@ function smartHome() {
 
 function toastJogWillHit(axis) {
   printLog("<span class='fg-red'>[ jog ] </span><span class='fg-red'>Unable to jog toward " + axis + ", will hit soft-limit</span>")
-  var toast = Metro.toast.create;
-  toast("Unable to jog toward " + axis + ", will hit soft-limit", null, 1000, "bg-darkRed fg-white")
+  Metro.toast.create("Unable to jog toward " + axis + ", will hit soft-limit", null, 1000, "bg-darkRed fg-white")
 }
 
-function toastJogNotIdle(axis) {
+function toastJogNotIdle() {
   printLog("<span class='fg-red'>[ jog ] </span><span class='fg-red'>Please wait for machine to be Idle, before jogging</span>")
-  var toast = Metro.toast.create;
-  toast("Please wait for machine to be Idle, before jogging. Try again once it is Idle", null, 1000, "bg-darkRed fg-white")
+  Metro.toast.create("Please wait for machine to be Idle, before jogging. Try again once it is Idle", null, 1000, "bg-darkRed fg-white")
 }

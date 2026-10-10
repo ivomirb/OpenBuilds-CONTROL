@@ -21,7 +21,7 @@ var xcaltemplate = `
                on your machine to mark where the X-Carriage currently is</small>
                   <hr>
                 <center>
-                  <button class="button success"  onclick="slide2();"><i class="fas fa-check"></i> I've made my 1<sup>st</sup> mark, continue...</button>
+                  <button class="button success"  onclick="xcalslide2();"><i class="fas fa-check"></i> I've made my 1<sup>st</sup> mark, continue...</button>
                </center>
             </td>
          </tr>
@@ -45,8 +45,8 @@ var xcaltemplate = `
                   <button id="xcal100mm" class="button alert" onclick="$('#xcal100mm').attr('disabled', true); $('#xcalcontinue2').attr('disabled', false); jog('X', xcalmovedistance, 1000);"><i class="fas fa-arrow-right"></i> Move X+<span class="xcalmovedistanceval">100</span>mm</button>
 
                   <hr>
-                  <button class="button"  onclick="slide1();"><i class="fas fa-chevron-left"></i> Back</button>
-                  <button id="xcalcontinue2" class="button success"  onclick="slide3();" disabled><i class="fas fa-check"></i> I've made my 2<sup>nd</sup> mark, continue...</button>
+                  <button class="button"  onclick="xcalslide1();"><i class="fas fa-chevron-left"></i> Back</button>
+                  <button id="xcalcontinue2" class="button success"  onclick="xcalslide3();" disabled><i class="fas fa-check"></i> I've made my 2<sup>nd</sup> mark, continue...</button>
                </center>
             </td>
          </tr>
@@ -70,7 +70,7 @@ var xcaltemplate = `
                <small id="showcalc"><span id="currentstepspermm">current steps per mm</span> * (<span id="reqdistance">requested distance</span> / <span id="actualdist">actual distance</span>) = <span id="newsteps">newsteps</span> </small>
                <hr>
                <center>
-                  <button class="button"  onclick="slide2();"><i class="fas fa-chevron-left"></i> Back</button>
+                  <button class="button"  onclick="xcalslide2();"><i class="fas fa-chevron-left"></i> Back</button>
                   <button class="button success js-dialog-close"  onclick="applycalibrationx();"><i class="fas fa-check"></i> Apply new value to Grbl Config</button>
                </center>
             </td>
@@ -146,13 +146,13 @@ function xstepscalibrate() {
 }
 
 
-function slide1() {
+function xcalslide1() {
   $('#xcalstep1').show();
   $('#xcalstep2').hide();
   $('#xcalstep3').hide();
 }
 
-function slide2() {
+function xcalslide2() {
   $('#xcal100mm').attr('disabled', false);
   $('#xcalcontinue2').attr('disabled', true);
   $('#xcalstep1').hide();
@@ -160,7 +160,7 @@ function slide2() {
   $('#xcalstep3').hide();
 }
 
-function slide3() {
+function xcalslide3() {
   $('#xcalstep1').hide();
   $('#xcalstep2').hide();
   $('#xcalstep3').show();

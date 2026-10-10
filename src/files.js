@@ -183,8 +183,6 @@ function openGcodeFile() {
     defaultPath: defaultPath,
     properties: ['openFile']
   }).then(result => {
-    console.log(result.canceled)
-    console.log(result.filePaths)
     if (!result.canceled && result.filePaths.length > 0) {
       allowedFilePaths.add(result.filePaths[0]);
       const openFilePath = result.filePaths[0];
@@ -290,6 +288,8 @@ function uploadGcodeRequest(req, res) {
 
   var form = new formidable.IncomingForm();
   form.maxFileSize = 300 * 1024 * 1024;
+
+  // eslint-disable-next-line no-unused-vars
   form.parse(req, function(err, fields, files) {
     // debug_log(files);
   });

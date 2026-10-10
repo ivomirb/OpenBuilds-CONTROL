@@ -1,15 +1,14 @@
-var socket, laststatus;
+"use strict";
+
+var socket, laststatus, lastsysinfo;
 var server = ''; //192.168.14.100';
-var programBoard = {};
 var grblParams = {}
 var nostatusyet = true;
-var safeToUpdateSliders = false;
-var laststatus, lastsysinfo
 var bellstate = false;
 var waitingForStatus = false;
 var openDialogs = [];
 
-var MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
+const MAX_GCODE_IN_EDITOR = 20 * 1024 * 1024;
 
 function printLogModern(icon, source, string, printLogCls) {
   if (!disableSerialLog) {
@@ -21,11 +20,11 @@ function printLogModern(icon, source, string, printLogCls) {
         // remove oldest if already at 300 lines
         $('#console p').first().remove();
       }
-      var template = '<p class="pf">';
+      let template = '<p class="pf">';
       if (icon) {
         template += icon
       }
-      var time = new Date();
+      const time = new Date();
       template += '<span class="fg-dark">[' + (time.getHours() < 10 ? '0' : '') + time.getHours() + ":" + (time.getMinutes() < 10 ? '0' : '') + time.getMinutes() + ":" + (time.getSeconds() < 10 ? '0' : '') + time.getSeconds() + ']</span> ';
 
       if (source) {
@@ -53,8 +52,8 @@ function printLog(string) {
         // remove oldest if already at 300 lines
         $('#console p').first().remove();
       }
-      var template = '<p class="pf">';
-      var time = new Date();
+      let template = '<p class="pf">';
+      const time = new Date();
 
       template += '<span class="fg-dark">[' + (time.getHours() < 10 ? '0' : '') + time.getHours() + ":" + (time.getMinutes() < 10 ? '0' : '') + time.getMinutes() + ":" + (time.getSeconds() < 10 ? '0' : '') + time.getSeconds() + ']</span> ';
       template += string;
@@ -119,8 +118,8 @@ function onRecentFiles(recentFiles) {
   if (!isJogWidget) {
     $('#recentFilesList').nextAll().remove();
 
-    var elements = ``;
-    for (var i = 0; i < recentFiles.length; i++) {
+    let elements = ``;
+    for (let i = 0; i < recentFiles.length; i++) {
       elements += `<li title="` + recentFiles[i] +`"><a href="#" onclick="reloadJobFile('` + recentFiles[i].replaceAll('\\', '\\\\') + 
         `')"><span class="fas fa-file-alt fg-darkGray icon"></span> ` + recentFiles[i].split(/[/\\]/).at(-1) + `</a></li>\n`;
     }
@@ -133,22 +132,22 @@ function onSysInfo(sysinfo) {
   if (sysinfo) {
     lastsysinfo = sysinfo;
 
-    var mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model;
+    const mobo = sysinfo.hardware.motherboard.manufacturer + " " + sysinfo.hardware.motherboard.model;
     $("#mobospecs").html(mobo);
 
-    var cpu = sysinfo.hardware.cpu[0].model;
+    const cpu = sysinfo.hardware.cpu[0].model;
     $("#cpuspecs").html(cpu);
 
-    var gpu = sysinfo.hardware.gpu.length > 0 ? sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)" : "NONE";
+    const gpu = sysinfo.hardware.gpu.length > 0 ? sysinfo.hardware.gpu[0].model + " (" + sysinfo.hardware.gpu[0].vram + "mb)" : "NONE";
     $("#gpuspecs").html(gpu);
 
-    var memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
+    const memory = "Free: " + sysinfo.hardware.memory.free + " / Total: " + sysinfo.hardware.memory.total;
     $("#memoryspecs").html(memory);
 
-    var operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
+    const operatingsys = sysinfo.operatingSystem.distro + " / " + sysinfo.operatingSystem.arch + " (" + sysinfo.operatingSystem.version + ")";
     $("#osspecs").html(operatingsys);
 
-    var ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
+    const ipaddresses = sysinfo.network.flatMap(iface => iface.addresses.map(addr => addr.address)).join(' / ');
     $("#ipspecs").html(ipaddresses);
   }
 }
@@ -158,10 +157,10 @@ function initSocket() {
     'timeout': 60000,
     'connect timeout': 60000
   }); // socket.io init
-  var icon = ''
-  var source = "websocket"
-  var string = "Bidirectional Websocket Interface Started Succesfully"
-  var printLogCls = "fg-darkGreen"
+  const icon = ''
+  const source = "websocket"
+  const string = "Bidirectional Websocket Interface Started Succesfully"
+  const printLogCls = "fg-darkGreen"
   printLogModern(icon, source, string, printLogCls)
   setTimeout(function() {
     populatePortsMenu();
@@ -169,10 +168,10 @@ function initSocket() {
 
   socket.on('disconnect', function() {
     console.log("WEBSOCKET DISCONNECTED")
-    var icon = ''
-    var source = "websocket"
-    var string = "Disconnected.  OpenBuilds CONTROL probably quit or crashed"
-    var printLogCls = "fg-darkRed"
+    const icon = ''
+    const source = "websocket"
+    const string = "Disconnected.  OpenBuilds CONTROL probably quit or crashed"
+    const printLogCls = "fg-darkRed"
     printLogModern(icon, source, string, printLogCls)
     $("#websocketstatus").html("Disconnected")
   });
@@ -194,21 +193,20 @@ function initSocket() {
   socket.on('gcodeupload', function(data) { onGcodeUpload(data.gcode, data.filename); });
 
   socket.on('integrationpopup', function(data) {
-    var icon = ''
-    var source = "api"
-    var string = "Integration called from " + data
-    var printLogCls = "fg-darkGreen"
+    const icon = ''
+    const source = "api"
+    const string = "Integration called from " + data
+    const printLogCls = "fg-darkGreen"
     printLogModern(icon, source, string, printLogCls)
     $('#controlTab').click()
     $('#consoletab').click()
   });
 
   socket.on('updatedata', function(data) {
-    // console.log(data.length, data)
-    var icon = ''
-    var source = data.command
-    var string = data.response
-    var printLogCls = "fg-darkGreen"
+    const icon = ''
+    const source = data.command
+    const string = data.response
+    const printLogCls = "fg-darkGreen"
     printLogModern(icon, source, string, printLogCls)
   });
 
@@ -236,10 +234,9 @@ function initSocket() {
   socket.on('fluidncConfig', setFluidNcConfig);
 
   socket.on('data', function(data) {
-    // console.log(data)
-    var toPrint = escapeHTML(data.response);
+    let toPrint = escapeHTML(data.response);
 
-    var lineColor = "fg-dark"
+    let lineColor = "fg-dark"
     if (data.type == "error") {
       lineColor = "fg-darkRed"
     } else if (data.type == "success") {
@@ -257,17 +254,18 @@ function initSocket() {
     // Parse Grbl Settings Feedback
     if (data.response.indexOf('$') === 0) {
 
-      var key = data.response.split('=')[0].substr(1);
+      const key = data.response.split('=')[0].substr(1);
+      let descr;
       if (grblSettingsTemplate[key] !== undefined) {
-        var descr = grblSettingsTemplate[key].title
+        descr = grblSettingsTemplate[key].title
       } else {
-        var descr = "unknown"
+        descr = "unknown"
       }
       toPrint = data.response + "  ;" + descr
-      var icon = ''
-      var source = data.command
-      var string = toPrint
-      var printLogCls = lineColor
+      const icon = ''
+      const source = data.command
+      const string = toPrint
+      const printLogCls = lineColor
       printLogModern(icon, source, string, printLogCls)
 
       if (data.response.match(/\$(\d+)(=)/)) {
@@ -277,10 +275,10 @@ function initSocket() {
       }
 
     } else {
-      var icon = ''
-      var source = data.command
-      var string = toPrint
-      var printLogCls = lineColor
+      const icon = ''
+      const source = data.command
+      const string = toPrint
+      const printLogCls = lineColor
       printLogModern(icon, source, string, printLogCls)
     };
 
@@ -288,6 +286,7 @@ function initSocket() {
 
   socket.on("grbl", onGrbl);
 
+  // eslint-disable-next-line no-unused-vars
   socket.on("queueComplete", function(data) {
   });
 
@@ -296,23 +295,22 @@ function initSocket() {
 
     if (data.completed && data.jobStartTime && data.jobEndTime) {
       console.log("jobComplete", data)
-      var runTime = data.jobEndTime - data.jobStartTime; // in Milliseconds
+      const runTime = data.jobEndTime - data.jobStartTime; // in Milliseconds
       $('#timeRemaining').html("DONE: " + msToTime(runTime));
+      let estimateTime = 0;
       if (object && object.userData != undefined) {
-        var estimateTime = object.userData.totalTime; // in Minutes
-      } else {
-        var estimateTime = 0;
+        estimateTime = object.userData.totalTime; // in Minutes
       }
-      var startDate = new Date(data.jobStartTime);
-      var startDateString = startDate.toString();
-      var endDate = new Date(data.jobEndTime);
-      var endDateString = endDate.toString();
-      var completionStatus = "complete"
+      const startDate = new Date(data.jobStartTime);
+      const startDateString = startDate.toString();
+      const endDate = new Date(data.jobEndTime);
+      const endDateString = endDate.toString();
+      let completionStatus = "complete"
       if (data.failed) {
         completionStatus = "incomplete"
       }
       console.log("Completed: " + completionStatus + " / Filename: " + loadedFileName + " / Estimated Runtime: " + timeConvert(estimateTime) + " / Streaming Runtime: " + msToTime(runTime) + " / Start Date: " + startDateString + " / End Date: " + endDateString)
-      var completedJob = {
+      const completedJob = {
         "completed": !data.failed, // Did job complete?
         "filename": loadedFileName, // File Name
         "estruntime": estimateTime, // in Minutes
@@ -326,7 +324,7 @@ function initSocket() {
 
     // With jobCompletedMsg Message
     if (data.jobCompletedMsg && data.jobCompletedMsg.length > 0) {
-      var runTime = undefined;
+      let runTime = undefined;
       if (data.jobStartTime && data.jobEndTime) {
         runTime = data.jobEndTime - data.jobStartTime;
         $("#completeMsgDiv").html("Job completed in " + msToTime(runTime) + "<hr>" + data.jobCompletedMsg);
@@ -336,19 +334,19 @@ function initSocket() {
         $('#timeRemaining').html("DONE: " + msToTime(runTime));
       }
       Metro.dialog.open("#completeMsgModal");
-      var icon = ''
-      var source = "JOB COMPLETE"
-      var string = (runTime != undefined ? "Job completed in " + msToTime(runTime) : "Job completed") + " / " + data.jobCompletedMsg
-      var printLogCls = "fg-darkGreen"
+      const icon = ''
+      const source = "JOB COMPLETE"
+      const string = (runTime != undefined ? "Job completed in " + msToTime(runTime) : "Job completed") + " / " + data.jobCompletedMsg
+      const printLogCls = "fg-darkGreen"
       printLogModern(icon, source, string, printLogCls)
       $('#timeRemaining').html("DONE: " + msToTime(runTime));
     } else if (data.jobStartTime && data.jobEndTime) {
       // Without jobCompletedMsg Message (Normal Job)
-      var runTime = data.jobEndTime - data.jobStartTime;
-      var icon = ''
-      var source = "JOB COMPLETE"
-      var string = "Job completed in " + msToTime(runTime)
-      var printLogCls = "fg-darkGreen"
+      const runTime = data.jobEndTime - data.jobStartTime;
+      const icon = ''
+      const source = "JOB COMPLETE"
+      const string = "Job completed in " + msToTime(runTime)
+      const printLogCls = "fg-darkGreen"
       printLogModern(icon, source, string, printLogCls)
       $('#timeRemaining').html("DONE: " + msToTime(runTime));
     }
@@ -370,11 +368,11 @@ function initSocket() {
 
   socket.on("queueCount", function(data) {
     // calc percentage
-    var left = data[0]
-    var total = data[1]
-    var done = total - left;
-    var donepercent = done / total * 100
-    var progressbar = $("#progressbar").data("progress");
+    const left = data[0]
+    const total = data[1]
+    const done = total - left;
+    const donepercent = done / total * 100
+    const progressbar = $("#progressbar").data("progress");
     if (progressbar) {
       progressbar.val(donepercent);
     }
@@ -382,7 +380,7 @@ function initSocket() {
     if (laststatus) {
       if (typeof object !== 'undefined' && done > 0) {
         if (object.userData !== 'undefined' && object.userData && object.userData.pointCount > 2) {
-          var timeremain = object.userData.totalTime;
+          const timeremain = object.userData.totalTime;
           if (!isNaN(timeremain)) {
             if (lastJobStartTime) {
               $('#timeRemaining').html(timeConvert((new Date().getTime() - lastJobStartTime) / 1000 / 60) + " / " + timeConvert(timeremain));
@@ -398,14 +396,13 @@ function initSocket() {
   })
 
   socket.on('toastErrorAlarm', function(data) {
-    console.log(data)
-    var icon = ''
-    var source = "ALARM"
-    var string = data
-    var printLogCls = "fg-darkRed"
+    const icon = ''
+    const source = "ALARM"
+    const string = data
+    const printLogCls = "fg-darkRed"
     printLogModern(icon, source, string, printLogCls)
 
-    var dialog = Metro.dialog.create({
+    const dialog = Metro.dialog.create({
       clsDialog: 'dark',
       title: "<i class='fas fa-exclamation-triangle'></i> Grbl Alarm:",
       content: "<i class='fas fa-exclamation-triangle fg-darkRed'></i>  " + data,
@@ -437,15 +434,13 @@ function initSocket() {
   });
 
   socket.on('toastError', function(data) {
-    console.log(data)
-
-    var icon = ''
-    var source = "ERROR"
-    var string = data
-    var printLogCls = "fg-darkRed"
+    const icon = ''
+    const source = "ERROR"
+    const string = data
+    const printLogCls = "fg-darkRed"
     printLogModern(icon, source, string, printLogCls)
 
-    var dialog = Metro.dialog.create({
+    const dialog = Metro.dialog.create({
       title: "<i class='fas fa-exclamation-triangle'></i> Grbl Error:",
       content: "<i class='fas fa-exclamation-triangle fg-darkRed'></i>  " + data,
       clsDialog: 'dark',
@@ -466,7 +461,7 @@ function initSocket() {
 
   socket.on("errorsCleared", function(data) {
     if (data) {
-      for (var i = 0; i < openDialogs.length; i++) {
+      for (let i = 0; i < openDialogs.length; i++) {
         Metro.dialog.close(openDialogs[i]);
       }
       openDialogs.length = 0;
@@ -476,8 +471,7 @@ function initSocket() {
   socket.on('progStatus', function(data) {
     $('#controlTab').click();
     $('#consoletab').click();
-    console.log(data.port, data.string)
-    var string = data.string
+    let string = data.string
     if (string) {
       if (string.indexOf('flash complete') != -1) {
         setTimeout(function() {
@@ -504,22 +498,24 @@ function initSocket() {
         string = "<span class='fg-darkRed'>" + string + ":  Make sure the device is in BOOTLOADER MODE. Your computer failed to put it into Bootloader mode automatically. You can enter bootloader mode by: Press and hold down MODE, then Press RESET while still holding MODE. Let go of RESET, then wait a second or two and let go of MODE.  Best performed right after starting the Firmware Flashing operation."
       }
 
-
-      var icon = ''
-      var source = " Firmware Upgrade"
-      //var string = string
-      var printLogCls = "fg-dark"
-      printLogModern(icon, source, string, printLogCls)
+      {
+        const icon = ''
+        const source = " Firmware Upgrade"
+        //const string = string
+        const printLogCls = "fg-dark"
+        printLogModern(icon, source, string, printLogCls)
+      }
 
       if (data.code != undefined) {
-        var icon = ''
-        var source = " Firmware Upgrade"
+        const icon = ''
+        const source = " Firmware Upgrade"
+        let printLogCls;
         if (data.code == 0) {
-          var string = "<i class='fas fa-check fa-fw fg-darkGreen fa-fw'></i> <b>Firmware Update COMPLETED!</b>  Please click the Reset button on the device now, to reboot it with the new firmware. "
-          var printLogCls = "fg-darkGreen"
+          string = "<i class='fas fa-check fa-fw fg-darkGreen fa-fw'></i> <b>Firmware Update COMPLETED!</b>  Please click the Reset button on the device now, to reboot it with the new firmware. "
+          printLogCls = "fg-darkGreen"
         } else {
-          var string = "<i class='fas fa-times fa-fw fg-darkRed fa-fw'></i> <b>Firmware Update FAILED!</b>  Please review the logs above, or try again"
-          var printLogCls = "fg-darkRed"
+          string = "<i class='fas fa-times fa-fw fg-darkRed fa-fw'></i> <b>Firmware Update FAILED!</b>  Please review the logs above, or try again"
+          printLogCls = "fg-darkRed"
         }
         printLogModern(icon, source, string, printLogCls)
         populatePortsMenu()
@@ -540,8 +536,8 @@ function initSocket() {
     }
     nostatusyet = false;
 
-    var featuresChanged = false;
-    var offsetChanged = false;
+    let featuresChanged = false;
+    let offsetChanged = false;
 
     if (laststatus !== undefined) {
 
@@ -549,35 +545,35 @@ function initSocket() {
       offsetChanged = !_.isEqual(status.machine.position.offset, laststatus.machine.position.offset);
 
       if (!_.isEqual(status.comms.interfaces.ports, laststatus.comms.interfaces.ports)) {
-        var string = "Detected a change in available ports: ";
-        for (var i = 0; i < status.comms.interfaces.ports.length; i++) {
+        let string = "Detected a change in available ports: ";
+        for (let i = 0; i < status.comms.interfaces.ports.length; i++) {
           string += "[" + status.comms.interfaces.ports[i].path + "]"
         }
 
         if (!status.comms.interfaces.ports.length) {
           string += "[ No devices connected ]"
         }
-        var icon = ''
-        var source = "usb ports"
-        var printLogCls = "fg-dark"
+        const icon = ''
+        const source = "usb ports"
+        const printLogCls = "fg-dark"
         printLogModern(icon, source, string, printLogCls)
         laststatus.comms.interfaces.ports = status.comms.interfaces.ports;
         populatePortsMenu();
       }
 
       if (!_.isEqual(status.comms.interfaces.networkDevices, laststatus.comms.interfaces.networkDevices)) {
-        var string = "Detected a change in IP devices: ";
-        for (var i = 0; i < status.comms.interfaces.networkDevices.length; i++) {
+        let string = "Detected a change in IP devices: ";
+        for (let i = 0; i < status.comms.interfaces.networkDevices.length; i++) {
           string += "[" + status.comms.interfaces.networkDevices[i].ip + "]"
         }
 
         if (!status.comms.interfaces.networkDevices.length) {
           string += "[ No IP devices ]"
         }
-        var icon = ''
-        var source = "network ports"
-        //var string = string
-        var printLogCls = "fg-dark"
+        const icon = ''
+        const source = "network ports"
+        //const string = string
+        const printLogCls = "fg-dark"
         printLogModern(icon, source, string, printLogCls)
         laststatus.comms.interfaces.networkDevices = status.comms.interfaces.networkDevices;
         populatePortsMenu();
@@ -585,8 +581,8 @@ function initSocket() {
     }
 
     if (status.comms.runStatus.indexOf("Door") == 0) {
-      var doorType = status.comms.runStatus.split(":")[1]
-      var doorMsg = "";
+      const doorType = status.comms.runStatus.split(":")[1]
+      let doorMsg = "";
       if (doorType == 0) {
         doorMsg += "Door Closed: Ready to Resume"
       }
@@ -672,39 +668,30 @@ function initSocket() {
     $('#resetpin').html('RST:OFF')
     $('#startpin').html('START:OFF')
     if (status.machine.inputs.length > 0) {
-      for (var i = 0; i < status.machine.inputs.length; i++) {
+      for (let i = 0; i < status.machine.inputs.length; i++) {
         switch (status.machine.inputs[i]) {
           case 'X':
-            // console.log('PIN: X-LIMIT');
             $('.xpin').removeClass('success').addClass('alert').html('TRIGGERED')
             break;
           case 'Y':
-            // console.log('PIN: Y-LIMIT');
             $('.ypin').removeClass('success').addClass('alert').html('TRIGGERED')
             break;
           case 'Z':
-            // console.log('PIN: Z-LIMIT');
             $('.zpin').removeClass('success').addClass('alert').html('TRIGGERED')
             break;
           case 'P':
-            // console.log('PIN: PROBE');
             $('.prbpin').removeClass('success').addClass('alert').html('TRIGGERED')
             break;
           case 'D':
-            // console.log('PIN: DOOR');
             $('.doorpin').removeClass('success').addClass('alert').html('DOOR OPEN')
-
             break;
           case 'H':
-            // console.log('PIN: HOLD');
             $('.holdpin').removeClass('success').addClass('alert').html('HOLD/DOOR:ON')
             break;
           case 'R':
-            // console.log('PIN: SOFTRESET');
             $('.resetpin').removeClass('success').addClass('alert').html('RST:ON')
             break;
           case 'S':
-            // console.log('PIN: CYCLESTART');
             $('.startpin').removeClass('success').addClass('alert').html('START:ON')
             break;
         }
@@ -718,7 +705,7 @@ function initSocket() {
       $('#firmwarever').html(status.machine.firmware.type + " v" + status.machine.firmware.version);
     }
     $('#commblocked').html(status.comms.blocked ? "BLOCKED" : "Ready");
-    var string = '';
+    let string = '';
     switch (status.comms.connectionStatus) {
       case 0:
         string += "Not Connected"
@@ -819,7 +806,7 @@ function initSocket() {
   socket.on('features', function(data) {
 
 /* Ivo: none of these UI elements exist anymore. Besides, there is no code to revert the state if the feature disappears. Disabling the entire thing.
-    for (var i = 0; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
       switch (data[i]) {
         case 'Q':
           // console.log('SPINDLE_IS_SERVO Enabled')
@@ -909,22 +896,21 @@ function initSocket() {
   socket.on('recentFiles', onRecentFiles);
 
   $('#sendCommand').on('click', function() {
-    var commandValue = $('#command').val();
+    const commandValue = $('#command').val();
     sendGcode(commandValue);
-    // $('#command').val('');
   });
 
   $('#command').on('keypress', function(e) {
     if (e.which === 13) {
       $(this).attr("disabled", "disabled");
-      var commandValue = $('#command').val();
+      const commandValue = $('#command').val();
       sendGcode(commandValue);
       $('#command').val('');
       $(this).removeAttr("disabled");
     }
   });
 
-  var bellflash = setInterval(function() {
+  setInterval(function() {
     if (!nostatusyet && laststatus) {
       if (laststatus.comms.connectionStatus == 5) {
         bellstate = !bellstate;
@@ -941,8 +927,8 @@ function initSocket() {
 
 function scanNetwork() {
 
-  var currentIp = laststatus.driver.ipaddress.split(".")
-  var scanTemplate = `
+  const currentIp = laststatus.driver.ipaddress.split(".")
+  const scanTemplate = `
   <div class="row mt-2">
     <div class="cell-md-12 mb-1">
       Enter the IP address range to scan for devices.  <p>
@@ -973,8 +959,8 @@ function scanNetwork() {
       caption: "Start Scan",
       cls: "js-dialog-close success",
       onclick: function() {
-        var network = $("#scanIp1").val() + '.' + $("#scanIp2").val() + '.' + $("#scanIp3").val();
-        var range = network + ".1-" + network + ".254"
+        const network = $("#scanIp1").val() + '.' + $("#scanIp2").val() + '.' + $("#scanIp3").val();
+        const range = network + ".1-" + network + ".254"
         socket.emit('scannetwork', range)
         $('#controlTab').click();
         $('#consoletab').click();
@@ -995,8 +981,9 @@ function selectPort(port) {
   if (port == undefined) {
     port = $("#portUSB").val()
   }
+  let data;
   if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(port)) {
-    var data = {
+    data = {
       ip: port,
       port: false,
       baud: false,
@@ -1004,7 +991,7 @@ function selectPort(port) {
     };
     localStorage.setItem("lastip", port);
   } else {
-    var data = {
+    data = {
       port: port,
       baud: 115200,
       type: "usb"
@@ -1028,16 +1015,16 @@ function closePort() {
 
 function populatePortsMenu() {
   if (laststatus) {
-    var lastGrblPort = localStorage.getItem("lastGrblPort");
-    var foundPort = false;
-    var response = ``
+    const lastGrblPort = localStorage.getItem("lastGrblPort");
+    let foundPort = false;
+    let response = ``
     if (!laststatus.comms.interfaces.ports.length) {
       response += `<optgroup label="USB/Serial Ports">`
       response += `<option value="">No USB/Serial Ports</option>`
     } else {
       response += `<optgroup label="USB Ports">`
-      for (var i = 0; i < laststatus.comms.interfaces.ports.length; i++) {
-        var lastUsedPort = localStorage.getItem('lastUsedPort');
+      for (let i = 0; i < laststatus.comms.interfaces.ports.length; i++) {
+        const lastUsedPort = localStorage.getItem('lastUsedPort');
         if (laststatus.comms.interfaces.ports[i].path == lastUsedPort) {
           response += `<option value="` + laststatus.comms.interfaces.ports[i].path + `" selected>` + laststatus.comms.interfaces.ports[i].path.replace("/dev/tty.", "") + " " + laststatus.comms.interfaces.ports[i].note + `</option>`;
         } else {
@@ -1050,7 +1037,7 @@ function populatePortsMenu() {
     response += `</optgroup>`
 
     // Set USB Ports menu for Firmware Flashing tool before we add the Network ports - you cannot flash over the network
-    var select2 = $("#portUSB2").data("select");
+    const select2 = $("#portUSB2").data("select");
     if (select2) {
       select2.data(response);
     }
@@ -1062,8 +1049,8 @@ function populatePortsMenu() {
       response += `<option value="">No Network Ports</option>`
     } else {
       response += `<optgroup label="Network Ports">`
-      for (var i = 0; i < laststatus.comms.interfaces.networkDevices.length; i++) {
-        var name = laststatus.comms.interfaces.networkDevices[i].ip;
+      for (let i = 0; i < laststatus.comms.interfaces.networkDevices.length; i++) {
+        const name = laststatus.comms.interfaces.networkDevices[i].ip;
         if (laststatus.comms.interfaces.networkDevices[i].type) {
           response += `<option value="` + name + `">` + name + " [ " + laststatus.comms.interfaces.networkDevices[i].type + ` ]</option>`;
         } else {
@@ -1075,7 +1062,7 @@ function populatePortsMenu() {
       };
     }
     response += `</optgroup>`
-    var select = $("#portUSB").data("select");
+    const select = $("#portUSB").data("select");
     select.data(response);
     if (foundPort) {
       select.val(lastGrblPort);
@@ -1117,7 +1104,7 @@ function pauseSpindle() {
     socket.emit('serialInject', String.fromCharCode(0x84));
 
     if (localStorage.getItem('disablePauseSpindleDlg') != "true") {
-      var dialog = Metro.dialog.create({
+      Metro.dialog.create({
         clsDialog: 'dark',
         title: "<i class='fas fa-exclamation-triangle'></i> Spindle Paused",
         content: `The spindle will automatically turn back on when the job is resumed.<br>The movement will continue a few seconds later.<br><br>` +
@@ -1141,14 +1128,14 @@ function escapeHTML(html) {
 }
 
 function msToTime(duration) {
-  var milliseconds = parseInt((duration % 1000) / 100),
-    seconds = Math.floor((duration / 1000) % 60),
-    minutes = Math.floor((duration / (1000 * 60)) % 60),
-    hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
+//  let milliseconds = parseInt((duration % 1000) / 100);
+//  let seconds = Math.floor((duration / 1000) % 60);
+  let minutes = Math.floor((duration / (1000 * 60)) % 60);
+  let hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
 
   hours = (hours < 10) ? "0" + hours : hours;
   minutes = (minutes < 10) ? "0" + minutes : minutes;
-  seconds = (seconds < 10) ? "0" + seconds : seconds;
+//  seconds = (seconds < 10) ? "0" + seconds : seconds;
 
   return hours + "h" + minutes + "m";
 }

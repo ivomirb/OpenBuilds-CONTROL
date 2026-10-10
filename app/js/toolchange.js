@@ -1,10 +1,12 @@
+"use strict";
+
 var toolchanges = [];
 
 // Skeleton script to replace the Visualiser cone with an STL of an endmill
 function replaceConeWith(toolid) {
-  if (toolid = "635mmendmill") {
+  if (toolid == "635mmendmill") {
     workspace.remove(cone);
-    var loader = new THREE.STLLoader();
+    const loader = new THREE.STLLoader();
     loader.load("./img/tools/endmill635.stl", function(geometry) {
 
       const material = new THREE.MeshPhongMaterial({
@@ -49,15 +51,15 @@ function populateToolChanges(gcode) {
     $('#runBtn').hide()
     $('#runToolsBtn').show()
     $('#toolChangesMenu').empty();
-    var dropdownTemplate = ``;
+    let dropdownTemplate = ``;
     if (toolchanges[0].lineNum > 0) {
       dropdownTemplate += `<li onclick="runGcodeAllTools()"><a href="#" onclick=""><i class="fas fa-play"></i> Run Complete Job</a></li>`
       dropdownTemplate += `<li class="divider"></li>`
       dropdownTemplate += `<li onclick="runGcodeSection(` + 0 + `,` + toolchanges[0].lineNum + `)"><a href="#" onclick=""><i class="fas fa-play"></i> Run Header (lines 1-` + toolchanges[0].lineNum + `)</a></li>`
 
     }
-    for (var i = 0; i < toolchanges.length; i++) {
-      var endline = false;
+    for (let i = 0; i < toolchanges.length; i++) {
+      let endline = false;
       if (toolchanges[i + 1]) {
         endline = toolchanges[i + 1].lineNum
       }
@@ -84,15 +86,16 @@ function populateToolChanges(gcode) {
 
 function runGcodeAllTools() {
 
-  var gcode = editor.getValue()
-  gcodeLines = gcode.split("\n")
+  const gcode = editor.getValue()
+  const gcodeLines = gcode.split("\n")
 
-  var multiToolJob = [];
+  let multiToolJob = [];
 
   // Header
   if (toolchanges[0].lineNum > 0) {
-    var headergcode = gcodeLines.slice(0, toolchanges[0].lineNum).join("\n").replace(/M6|M06|M006/i, "");
-    var section = {
+    const headergcode = gcodeLines.slice(0, toolchanges[0].lineNum).join("\n").replace(/M6|M06|M006/i, "");
+    const sectionComment = toolchanges[0].sectionComment;
+    const section = {
       gcode: headergcode,
       toolNum: false,
       toolComment: false,
@@ -105,28 +108,25 @@ function runGcodeAllTools() {
   }
 
   // Toolchanges
-  for (var i = 0; i < toolchanges.length; i++) {
-    var startLine = toolchanges[i].lineNum + 1
+  for (let i = 0; i < toolchanges.length; i++) {
+    const startLine = toolchanges[i].lineNum + 1
+    let endLine;
     if (toolchanges[i + 1]) {
-      var endLine = toolchanges[i + 1].lineNum
+      endLine = toolchanges[i + 1].lineNum
     } else {
       endLine = false;
     }
-    if (toolchanges[i].toolNum) {
-      var toolNum = toolchanges[i].toolNum
-    }
-    if (toolchanges[i].toolComment) {
-      var toolComment = toolchanges[i].toolComment
-    }
-    if (toolchanges[i].sectionComment) {
-      var sectionComment = toolchanges[i].sectionComment
-    }
+    const toolNum = toolchanges[i].toolNum;
+    const toolComment = toolchanges[i].toolComment
+    const sectionComment = toolchanges[i].sectionComment
+
+    let newgcode;
     if (endLine) {
-      var newgcode = gcodeLines.slice(startLine, endLine).join("\n").replace(/M6|M06|M006/i, "");
+      newgcode = gcodeLines.slice(startLine, endLine).join("\n").replace(/M6|M06|M006/i, "");
     } else {
-      var newgcode = gcodeLines.slice(startLine).join("\n").replace(/M6|M06|M006/i, "");
+      newgcode = gcodeLines.slice(startLine).join("\n").replace(/M6|M06|M006/i, "");
     }
-    var section = {
+    const section = {
       gcode: newgcode,
       toolNum: toolNum,
       toolComment: toolComment,
@@ -143,15 +143,11 @@ function runGcodeAllTools() {
 
 // endline can be Blank
 function runGcodeSection(startline, endline) {
-  var gcode = editor.getValue()
-  gcodeLines = gcode.split("\n")
-  if (endline) {
-    var newgcode = gcodeLines.slice(startline, endline)
-  } else {
-    var newgcode = gcodeLines.slice(startline)
-  }
+  const gcode = editor.getValue()
+  const gcodeLines = gcode.split("\n")
+  const newgcode = endline ? gcodeLines.slice(startline, endline) : gcodeLines.slice(startline);
 
-  var newGcodeString = newgcode.join("\n").replace(/M6|M06|M006/i, "");
+  const newGcodeString = newgcode.join("\n").replace(/M6|M06|M006/i, "");
 
   console.log(newGcodeString)
   socket.emit('runJob', {
@@ -163,30 +159,30 @@ function runGcodeSection(startline, endline) {
 
 function setupToolChanges(gcode) {
   // scan gcode for tool change info
-  var fileLines = gcode
-  fileLines = fileLines.split("\n")
+  const fileLines = gcode.split("\n")
   // console.log("about to look for tool changes in gcode editor:", fileLines.length, "\n\n\n");
 
-  var toolComments = {};
-  var toolChanges = {};
-  var toolChangesKeys = [];
+  let toolComments = {};
+  let toolChanges = {};
+  let toolChangesKeys = [];
 
-  for (var i = 0; i < fileLines.length; i++) {
-    var line = fileLines[i];
+  for (let i = 0; i < fileLines.length; i++) {
+    const line = fileLines[i];
 
     // see if we have line where comment starts with
     // look for something like:
     // (T1 D=3.175 CR=0. - ZMIN=-4.2 - FLAT END MILL)
     // ;T1 1/4 inch flat bottom endmill
     // T0 ; 1/4 inch flat bottom endmill
-    if (line.match(/\(T(\d+)\s+(.*)\)/i) || line.match(/\;T(\d+)\s+(.*)\)/i) || line.match(/\T(\d+)/i)) {
-      var toolNum = parseInt(RegExp.$1);
+    if (line.match(/\(T(\d+)\s+(.*)\)/i) || line.match(/;T(\d+)\s+(.*)\)/i) || line.match(/T(\d+)/i)) {
+      let toolNum = parseInt(RegExp.$1);
+      let toolComment;
       if (toolComments[toolNum] && !toolComments[toolNum].toolComment) {
         // var toolComment = "T" + toolNum + " " + RegExp.$2;
       } else if (toolComments[toolNum] && toolComments[toolNum].toolComment) {
-        var toolComment = toolComments[toolNum].toolComment + " " + RegExp.$2;
+        toolComment = toolComments[toolNum].toolComment + " " + RegExp.$2;
       } else {
-        var toolComment = "T" + toolNum + " " + RegExp.$2;
+        toolComment = "T" + toolNum + " " + RegExp.$2;
       }
       // var toolComment = "T" + toolNum + " " + RegExp.$2;
       console.log("found tool comment. lineNum:", i, "toolNum:", toolNum, "comment:", toolComment, "line:", line);
@@ -199,7 +195,7 @@ function setupToolChanges(gcode) {
 
     // look for M6 line
     if (line.match(/M6|M06|M006/i)) {
-      var toolNum;
+      let toolNum;
       if (line.match(/T(\d+)/i)) {
         toolNum = parseInt(RegExp.$1);
       }
@@ -216,20 +212,20 @@ function setupToolChanges(gcode) {
   // console.log("this.toolChanges:", toolChanges);
 
   // now look for a comment up to 10 lines above the M6 tool change line to see if any comments are there
-  var keys = toolChangesKeys; //Object.keys(this.toolChanges).sort();
+  let keys = toolChangesKeys; //Object.keys(this.toolChanges).sort();
   // console.log("looking for comments above m6 to get a label for this tool change. keys:", keys);
-  for (var i = 0; i < keys.length; i++) {
-    var toolChangeLineNum = keys[i];
-    var lookBackToLineNum = toolChangeLineNum - 10;
+  for (let i = 0; i < keys.length; i++) {
+    const toolChangeLineNum = keys[i];
+    let lookBackToLineNum = toolChangeLineNum - 10;
     if (lookBackToLineNum < 1) lookBackToLineNum = 1; // first line
 
     // now look backwards until we've seen just 1 comment
-    for (var lineNum = toolChangeLineNum; lineNum >= lookBackToLineNum; lineNum--) {
-      var line = fileLines[lineNum - 1]; // index of array is 1 less than lineNum
+    for (let lineNum = toolChangeLineNum; lineNum >= lookBackToLineNum; lineNum--) {
+      const line = fileLines[lineNum - 1]; // index of array is 1 less than lineNum
       // console.log("looking at lineNum:", lineNum, "line:", line);
       // see if comment
       if (line.match(/\((.*?)\)/) || line.match(/;(.*)/)) {
-        var comment = RegExp.$1;
+        const comment = RegExp.$1;
         // console.log("found comment:", comment);
 
         // stick comment into toolChanges
@@ -245,14 +241,14 @@ function setupToolChanges(gcode) {
   // console.log("after adding section comments. this.toolComments:", toolComments);
   // console.log("after adding section comments. this.toolChangesKeys:", toolChangesKeys);
 
-  var toolChangesArray = []
+  let toolChangesArray = []
 
-  for (var i = 0; i < keys.length; i++) {
+  for (let i = 0; i < keys.length; i++) {
 
-    var toolChange = toolChanges[keys[i]];
+    const toolChange = toolChanges[keys[i]];
     console.log(toolChange)
-    var tool = toolComments[toolChange.toolNum];
-    var newToolChange = {
+    const tool = toolComments[toolChange.toolNum];
+    const newToolChange = {
       lineNum: false,
       toolNum: false,
       toolComment: false,

@@ -148,10 +148,11 @@ function populateSurfaceToolForm() {
     ]
   });
 
+	var data;
   if (localStorage.getItem("lastSurfacingTool")) {
-    var data = JSON.parse(localStorage.getItem("lastSurfacingTool"));
+    data = JSON.parse(localStorage.getItem("lastSurfacingTool"));
   } else {
-    var data = {
+    data = {
       surfaceDiameter: 22,
       surfaceStepover: 40,
       surfaceFeedrate: 800,
@@ -173,7 +174,6 @@ function populateSurfaceToolForm() {
   $("#surfaceY").val(data.surfaceY);
   $("#surfaceDepth").val(data.surfaceDepth);
   if (data.surfaceFinalDepth != undefined) {
-    data.surfaceFinalDepth = data.surfaceFinalDepth;
     $("#surfaceFinalDepth").val(data.surfaceFinalDepth);
   } else {
     $("#surfaceFinalDepth").val(data.surfaceDepth);
@@ -215,8 +215,6 @@ function createSurfaceGcode() {
     extendRadius: $('#extendRadius').val(),
     surfaceDirection: $('#surfaceDirection').val() // New dropdown value
   };
-
-  console.log(data);
 
   if (data.surfaceFinalDepth > data.surfaceDepth) {
     console.log("multipass");
@@ -299,9 +297,8 @@ G1 F` +
     data.surfaceFeedrate + ` ; Set feedrate\n`;
 
   // MULTIPASS
-  for (q = data.surfaceDepth; q < data.surfaceFinalDepth + data.surfaceDepth; q += data.surfaceDepth) {
+  for (let q = data.surfaceDepth; q < data.surfaceFinalDepth + data.surfaceDepth; q += data.surfaceDepth) {
     var zval = q > data.surfaceFinalDepth ? -data.surfaceFinalDepth : -q;
-    console.log(q, zval);
 
     gcode += `\nG0 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + startpoint.secondary.toFixed(4) + ` Z10 ; Move to start Position
 `;
@@ -310,7 +307,7 @@ G1 F` +
     var reverse = false;
 
     var secondary = startpoint.secondary;
-    for (i = 0; i < lines; i++) {
+    for (let i = 0; i < lines; i++) {
       if (!reverse) {
         gcode += `G1 ` + secondaryAxis + secondary.toFixed(4) + `\n`;
         gcode += `G1 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + secondary.toFixed(4) + ` Z` + zval + `\n`;

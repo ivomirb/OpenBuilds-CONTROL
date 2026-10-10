@@ -145,28 +145,26 @@ function checkPowerSettings() {
       exec
     } = require('child_process');
 
+    // eslint-disable-next-line no-unused-vars
     const cfg = exec('powercfg /GETACTIVESCHEME', function(error, stdout, stderr) {
       if (error) {
         debug_log(error.stack);
         debug_log('Error code: ' + error.code);
         debug_log('Signal received: ' + error.signal);
       }
-      // console.log('Child Process STDOUT: ' + stdout);
-      // console.log('Child Process STDERR: ' + stderr);
       powerplan = stdout.split(":")[1].split("()")[0].trim()
     });
 
     cfg.on('exit', function(code) {
       debug_log('powercfg /GETACTIVESCHEME exited with exit code ' + code);
       if (code == 0) {
+        // eslint-disable-next-line no-unused-vars
         const usbsetting = exec('powercfg /q ' + powerplan, function(error, stdout, stderr) {
           if (error) {
             debug_log(error.stack);
             debug_log('Error code: ' + error.code);
             debug_log('Signal received: ' + error.signal);
           }
-          // console.log('Child Process STDOUT: ' + stdout);
-          // console.log('Child Process STDERR: ' + stderr);
           var usbselective = (stdout.slice(stdout.search("USB selective suspend setting") - 1)).split("\n")
           usbselective.length = 7;
 

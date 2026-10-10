@@ -33,6 +33,7 @@ function createAutoUpdater() {
     serverEmit('updatedata', output);
   })
 
+  // eslint-disable-next-line no-unused-vars
   autoUpdater.on('update-available', (ev, info) => {
     updateIsDownloading = true;
     var string = "Starting Download: v" + ev.version;
@@ -45,6 +46,7 @@ function createAutoUpdater() {
     debug_log(JSON.stringify(ev))
   })
 
+  // eslint-disable-next-line no-unused-vars
   autoUpdater.on('update-not-available', (ev, info) => {
     var string = 'Update not available. Installed version: ' + status.driver.version + " / Available version: " + ev.version + ".\n";
     if (status.driver.version === ev.version) {
@@ -67,6 +69,7 @@ function createAutoUpdater() {
     serverEmit('updatedata', output);
   })
 
+  // eslint-disable-next-line no-unused-vars
   autoUpdater.on('download-progress', (ev, progressObj) => {
     updateIsDownloading = true;
     var string = 'Download update ... ' + ev.percent.toFixed(1) + '%';
@@ -79,6 +82,7 @@ function createAutoUpdater() {
     serverEmit('updateprogress', ev.percent.toFixed(0));
   })
 
+  // eslint-disable-next-line no-unused-vars
   autoUpdater.on('update-downloaded', (info) => {
     var string = "New update ready";
     var output = {

@@ -49,12 +49,12 @@ $(document).ready(function() {
   }
 
   if (localStorage.getItem('probediameterxyz')) {
-    probediameterxyz = localStorage.getItem('probediameterxyz')
+    const probediameterxyz = localStorage.getItem('probediameterxyz')
     $("#probediameterxyz").val(probediameterxyz)
   }
 
   if (localStorage.getItem('probeunitxyz')) {
-    probeunitxyz = localStorage.getItem('probeunitxyz')
+    const probeunitxyz = localStorage.getItem('probeunitxyz')
     $('#probeunitxyz').data('select').val(probeunitxyz)
   }
 });
@@ -385,7 +385,7 @@ function probetype(type) {
   if (type == "xyz") {
     $(".needsXYZProbe").show()
     probemode.probe = xyzprobeplate // customprobeplate, xyzprobeplate, zprobeplate
-    var template = `<span class="icon"><img src="/img/xyzprobe/xyztouch.png"/></span> OpenBuilds XYZ Probe Plus`;
+    const template = `<span class="icon"><img src="/img/xyzprobe/xyztouch.png"/></span> OpenBuilds XYZ Probe Plus`;
     $("#probetypebtn").html(template)
     $(".probetabz").hide();
     $(".probetabxyz").show();
@@ -396,7 +396,7 @@ function probetype(type) {
   } else if (type == "z") {
     $(".needsXYZProbe").hide()
     probemode.probe = zprobeplate // customprobeplate, xyzprobeplate, zprobeplate
-    var template = `<span class="icon"><img src="/img/xyzprobe/ztouch.png"/></span> Z Touch Plate`;
+    const template = `<span class="icon"><img src="/img/xyzprobe/ztouch.png"/></span> Z Touch Plate`;
     $("#probetypebtn").html(template)
     $(".probetabxyz").hide();
     $(".probetabz").show();
@@ -407,7 +407,7 @@ function probetype(type) {
   } else if (type == "custom") {
     $(".needsXYZProbe").show()
     probemode.probe = customprobeplate // customprobeplate, xyzprobeplate, zprobeplate
-    var template = `<span class="icon"><img src="/img/xyzprobe/custom.png"/></span> Custom XYZ Probe`;
+    const template = `<span class="icon"><img src="/img/xyzprobe/custom.png"/></span> Custom XYZ Probe`;
     $("#probetypebtn").html(template)
     $(".probetabz").hide();
     $(".probetabxyz").show();
@@ -418,7 +418,7 @@ function probetype(type) {
   }
 }
 
-function confirmProbeInPlace(operation) {
+function confirmProbeInPlace() {
   $('#confirmNewProbeBtn').addClass("disabled");
   $('#runNewProbeBtn').removeClass("disabled").focus();
   clearInterval(probemode.interval);
@@ -450,7 +450,7 @@ function runProbeNew() {
   probemode.stock.x = $("#stockwidth").val();
   probemode.stock.y = $("#stocklength").val();
 
-  template = `Code todo: run: \n`
+  var template = `Code todo: run: \n`
   template += `Mode: ` + probemode.mode + `\n`
   template += `Probe: ` + probemode.probe.name + `\n`
   template += `Probe: X:` + probemode.probe.xoffset + `\n`
@@ -504,6 +504,7 @@ function runProbeNew() {
     template += `Stock y: ` + probemode.stock.y + `\n`;
     template += `Offset: Center:\n`;
     template += `Offset x:` + probemode.stock.x / 2 + `\n`;
+    // eslint-disable-next-line no-useless-assignment, no-unused-vars
     template += `Offset y: ` + probemode.stock.y / 2 + `\n`;
     stockoffset.x = probemode.stock.x / 2
     stockoffset.y = probemode.stock.y / 2
@@ -516,13 +517,13 @@ function runProbeNew() {
   }
 
   if (probemode.mode == "xzero") {
-    var xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
-    var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
-    var zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
+    const xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
+//    const yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
+//    const zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
 
     captureWcsHistory('Before <b>Probe X</b>');
 
-    var xmacro = `
+    const xmacro = `
     ; Header
     G21 ; mm mode
     G10 P0 L20 X0 ; zero out current location
@@ -545,12 +546,12 @@ function runProbeNew() {
   }
 
   if (probemode.mode == "yzero") {
-    var xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
-    var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
-    var zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
+//    const xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
+    const yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
+//    const zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
 
     captureWcsHistory('Before <b>Probe Y</b>');
-    var ymacro = `
+    const ymacro = `
     ; Header
     G21 ; mm mode
     G10 P0 L20 Y0 ; zero out current location
@@ -570,13 +571,13 @@ function runProbeNew() {
   }
 
   if (probemode.mode == "zzero") {
-    var xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
-    var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
-    var zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
+//    const xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
+//    const yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
+    const zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
 
     captureWcsHistory('Before <b>Probe Z</b>');
 
-    var zmacro = `
+    const zmacro = `
     G21
     G10 P0 L20 Z0
     G38.2 Z-25 F100
@@ -596,15 +597,15 @@ function runProbeNew() {
   }
 
   if (probemode.mode == "zplate") {
-    var zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
-    var thickness = $('#z0platethickness').val()
+    let zoffset = probemode.probe.zoffset // not *-1 as its offset in z pos
+    const thickness = $('#z0platethickness').val()
     if (thickness != probemode.probe.zoffset) {
       zoffset = thickness; // custom value from Advanced
     }
 
     captureWcsHistory('Before <b>Probe Z</b>');
 
-    var zmacro = `
+    const zmacro = `
     ; Header
     G21 ; mm mode
     G10 P0 L20 Z0 ; zero out current location
@@ -627,9 +628,9 @@ function runProbeNew() {
   }
 
   if (probemode.mode == "xyz") {
-    var xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
-    var yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
-    var zoffset = parseFloat(probemode.probe.zoffset) // not *-1 as its offset in z pos
+    const xoffset = (probemode.probe.xoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the left too far from x0
+    const yoffset = (probemode.probe.yoffset + probemode.endmilldia / 2) * -1 // *-1 to make negative as we are off to the front too far from y0
+    const zoffset = parseFloat(probemode.probe.zoffset) // not *-1 as its offset in z pos
 
     captureWcsHistory('Before <b>Probe XYZ</b>');
 
@@ -682,43 +683,6 @@ function runProbeNew() {
     });
 
   }
-}
-
-function rippleEffect(el, color) {
-  var timer = null;
-
-  if (el.css('position') === 'static') {
-    el.css('position', 'relative');
-  }
-
-  el.css({
-    overflow: 'hidden'
-  });
-
-  $(".ripple").remove();
-
-  var size = Math.max(el.outerWidth(), el.outerHeight());
-
-  // Add the element
-  var ripple = $("<span class='ripple'></span>").css({
-    width: size,
-    height: size
-  });
-
-  el.prepend(ripple);
-
-  // Add the ripples CSS and start the animation
-  ripple.css({
-    background: color,
-    width: size,
-    height: size,
-    top: 0 + 'px',
-    left: 0 + 'px'
-  }).addClass("rippleEffect");
-  timer = setTimeout(function() {
-    timer = null;
-    $(".ripple").remove();
-  }, 400);
 }
 
 function editCustomProbe() {

@@ -168,7 +168,6 @@ function parseStatusReport(data) {
   var startF = data.search(/\|F:/i) + 3;
   if (startF > 3) {
     var f = data.replace(">", "").substr(startF).split(/,|\|/);
-    console.log(JSON.stringify(f, null, 4))
     if (Array.isArray(f)) {
       if (f[0]) {
         status.machine.overrides.realFeed = parseInt(f[0]);
