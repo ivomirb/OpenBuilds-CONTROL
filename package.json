@@ -1,6 +1,6 @@
 {
   "name": "OpenBuildsCONTROL",
-  "version": "1.0.390",
+  "version": "0.5.100",
   "license": "AGPL-3.0",
   "description": "OpenBuildsCONTROL CNC Machine Host Software",
   "author": "github.com/ivomirb <cnc@ibeltchev.com>",
@@ -75,8 +75,8 @@
       }
     },
     "icon": "build/icon.icns",
-    "appId": "openbuilds.control",
-    "productName": "OpenBuildsCONTROL",
+    "appId": "groove.control",
+    "productName": "Groove Control",
     "asar": true,
     "nsis": {
       "oneClick": false,
@@ -97,32 +97,32 @@
       },
       {
         "ext": "gcode",
-        "name": "GCODE File",
-        "description": "GCODE File",
+        "name": "G-code File",
+        "description": "G-code File",
         "role": "Viewer"
       },
       {
         "ext": "gc",
-        "name": "GCODE File",
-        "description": "GCODE File",
+        "name": "G-code File",
+        "description": "G-code File",
         "role": "Viewer"
       },
       {
         "ext": "tap",
-        "name": "GCODE File",
-        "description": "GCODE File",
+        "name": "G-code File",
+        "description": "G-code File",
         "role": "Viewer"
       },
       {
         "ext": "nc",
-        "name": "GCODE File",
-        "description": "GCODE File",
+        "name": "G-code File",
+        "description": "G-code File",
         "role": "Viewer"
       },
       {
         "ext": "cnc",
-        "name": "GCODE File",
-        "description": "GCODE File",
+        "name": "G-code File",
+        "description": "G-code File",
         "role": "Viewer"
       }
     ],

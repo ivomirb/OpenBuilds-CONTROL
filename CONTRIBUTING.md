@@ -1,6 +1,6 @@
-# Contributing to OpenBuilds-CONTROL
+# Contributing to Groove Control
 
-Thank you for your interest in contributing to **OpenBuilds-CONTROL**! Whether you're reporting bugs, improving documentation, or writing code, we welcome your contributions. Please take a moment to review this document before you begin contributing.
+Thank you for your interest in contributing to **Groove Control**! Whether you're reporting bugs, improving documentation, or writing code, we welcome your contributions. Please take a moment to review this document before you begin contributing.
 
 ## Table of Contents
 
@@ -13,18 +13,18 @@ Thank you for your interest in contributing to **OpenBuilds-CONTROL**! Whether y
 
 ## Code of Conduct
 
-This project adheres to the [OpenBuilds Code of Conduct](link to code of conduct). By participating, you are expected to uphold this code. Please report unacceptable behavior to [email@example.com].
+This project adheres to the [Groove Code of Conduct](link to code of conduct). By participating, you are expected to uphold this code. Please report unacceptable behavior to [email@example.com].
 
 ## How to Contribute
 
 ### Reporting Bugs
 
-If you find a bug, please submit an issue through the [GitHub Issues](https://github.com/OpenBuilds/OpenBuilds-CONTROL/issues) page. Provide detailed information, including:
+If you find a bug, please submit an issue through the [GitHub Issues](https://github.com/ivomirb/OpenBuilds-CONTROL/issues) page. Provide detailed information, including:
 - Steps to reproduce the issue
 - Expected behavior
 - Actual behavior
 - Screenshots or error logs, if applicable
-- Version of OpenBuilds-CONTROL and environment details (OS, hardware, etc.)
+- Version of Groove Control and environment details (OS, hardware, etc.)
 
 ### Submitting Pull Requests
 
@@ -40,7 +40,7 @@ We welcome pull requests (PRs) for fixes, features, and improvements! Please ens
 2. Create a new branch from `main` (e.g., `feature/your-feature-name`).
 3. Make your changes and commit them with a descriptive message.
 4. Push the branch to your forked repository.
-5. Open a pull request against the `main` branch of OpenBuilds-CONTROL.
+5. Open a pull request against the `main` branch of Groove Control.
 6. Ensure your PR passes all continuous integration (CI) checks.
 
 ## Commit Message Guidelines

@@ -187,7 +187,7 @@ function parseStatusReport(data) {
         pause();
         serverEmitOutput({
           command: '[external from hardware]',
-          response: "OpenBuilds CONTROL received a FEEDHOLD notification from Grbl: This could be due to someone pressing the HOLD button (if connected)",
+          response: "Groove Control received a FEEDHOLD notification from Grbl: This could be due to someone pressing the HOLD button (if connected)",
           type: 'info'
         });
       } // end if HOLD
@@ -202,7 +202,7 @@ function parseStatusReport(data) {
         stop(true);
         serverEmitOutput({
           command: '[external from hardware]',
-          response: "OpenBuilds CONTROL received a RESET/ABORT notification from Grbl: This could be due to someone pressing the RESET/ABORT button (if connected)",
+          response: "Groove Control received a RESET/ABORT notification from Grbl: This could be due to someone pressing the RESET/ABORT button (if connected)",
           type: 'info'
         });
       } // end if ABORT
@@ -212,7 +212,7 @@ function parseStatusReport(data) {
         unpause();
         serverEmitOutput({
           command: '[external from hardware]',
-          response: "OpenBuilds CONTROL received a CYCLESTART/RESUME notification from Grbl: This could be due to someone pressing the CYCLESTART/RESUME button (if connected)",
+          response: "Groove Control received a CYCLESTART/RESUME notification from Grbl: This could be due to someone pressing the CYCLESTART/RESUME button (if connected)",
           type: 'info'
         });
       } // end if RESUME/START

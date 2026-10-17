@@ -32,7 +32,7 @@ function setWindowTitle(status) {
   }
 
   $('#windowtitle').html(string)
-  document.title = "OpenBuilds CONTROL" + string;
+  document.title = "Groove Control" + string;
 }
 
 $(document).ready(function() {

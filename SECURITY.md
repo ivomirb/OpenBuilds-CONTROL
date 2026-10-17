@@ -12,7 +12,7 @@ We aim to support the latest stable release of our software, but **security patc
 
 If you discover a vulnerability in this project, please report it by creating an issue on our GitHub repository:
 
-- Go to the [Issues page](https://github.com/OpenBuilds/OpenBuilds-CONTROL/issues)
+- Go to the [Issues page](https://github.com/ivomirb/OpenBuilds-CONTROL/issues)
 - Create a new issue and provide as much detail as possible, including:
   - A detailed description of the issue
   - Steps to reproduce the vulnerability
@@ -24,4 +24,4 @@ We appreciate responsible disclosure and will address valid issues as promptly a
 
 All software provided is **as-is** without any warranty, express or implied. **We do not guarantee any security** and recommend users evaluate the risks before using this software.
 
-For further legal terms, please refer to our [Installer License](https://github.com/OpenBuilds/OpenBuilds-CONTROL/blob/master/build/licence.txt).
+For further legal terms, please refer to our [Installer License](https://github.com/ivomirb/OpenBuilds-CONTROL/blob/master/build/licence.txt).

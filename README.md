@@ -1,7 +1,7 @@
-# OpenBuilds CONTROL
-OpenBuilds CONTROL is a G-code sender software for all CNC style machines running Grbl.
+# Groove Control
+Groove Control is a G-code sender software for all CNC style machines running Grbl.
 
-This is a fork by Ivo Beltchev with multiple improvements.
+It is a fork of the popular software OpenBuilds-CONTROL with multiple improvements.
 
 ### Workflow
 
@@ -83,12 +83,12 @@ The goal is to improve the readability and maintainability for long-term develop
 
 ## Useful Macros
 
-The Javascript macros and the open UI architecture of OpenBuilds make it easy to extend it with custom functionality.
+The Javascript macros and the open UI architecture of OpenBuilds (as well as Groove) make them easy to extend with custom functionality.
 
 Over the years I have created multiple useful macros.
 You can find them in the [Useful Macros folder](UsefulMacros/UsefulMacros.md).
 
-Some are standalone versions of the new features, which can be added to the original software if you don't want to upgrade:
+Some are standalone versions of the new Groove features, which can be added to the original OpenBuilds if you don't want to upgrade:
 
 * **Macro manager** - Allows organizing macros into groups, export and import all macros into a single file
 * **Heightmap** - Probes the height at points on a grid and modifies the G-code to follow the surface
@@ -96,7 +96,7 @@ Some are standalone versions of the new features, which can be added to the orig
 * **Open File** - Removes the dropdown from the Open G-code button
 * **StoreWcs** - Stores the work origin of the last job. This is a simplified version of the new WCS history feature
 
-Others are new features that can be added to either this version or the original software:
+Others are new features that can be added to either Groove or the original OpenBuilds:
 
 * **Disable Z** - Disables the Z jog buttons for large step sizes (a safety feature)
 * **Measure Z** - Measures the height of a surface without changing the work zero
@@ -112,8 +112,6 @@ with the software (a bug, a quirk, a missing feature) and I promise I will look 
 
 Why not open beta? Few reasons. I want people to have an established contact with me to report bugs.
 I want to be able to quickly distribute a new build in case a serious issue is found.
-And frankly, I am considering changing the name of the software, but naming is hard, and I need more time to
-come up with a good one (suggestions are welcome!)
 
 Of course, you are free to build your own copy from the source code. These steps work for Windows and Linux, and I suspect it is the same for Mac:
 * Install a recent version of node js (24 or above should work)

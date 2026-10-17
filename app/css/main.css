@@ -330,3 +330,11 @@ select {
 #macroVerticalTabs > li > a {
   justify-content: left;
 }
+
+.light_theme_only {
+  display: block;
+}
+
+.dark_theme_only {
+  display: none;
+}

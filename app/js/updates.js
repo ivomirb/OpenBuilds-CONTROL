@@ -96,7 +96,7 @@ function handleNewVersion(currentVersion, latestVersion) {
     // The original OpenBuilds disables it for Mac for some unknown reason.
     // On Linux it doesn't work for Deb files. Maybe in the future enable it for the AppImage case.
     updateCountdown = 10;
-    printLog("<span class='fg-darkRed'>[ Update Available! ] </span><span class='fg-green'>OpenBuilds CONTROL <code>" + latestVersion + "</code>. is available now.</span>")
+    printLog("<span class='fg-darkRed'>[ Update Available! ] </span><span class='fg-green'>Groove Control <code>" + latestVersion + "</code>. is available now.</span>")
     printLog("<span class='fg-darkRed'>[ Update Available! ] </span><span class='fg-darkGray'>Download will start in <span class='tally' id='countdown'>10</span> seconds (<a href='#' onclick='cancelUpdateTimer();'>cancel</a>) </span>")
     printLog("<span class='fg-darkRed'>[ Update Available! ] </span><span class='fg-darkGray'>You will be prompted when its ready to be installed </span>")
     $('#consoletab').click();
@@ -106,7 +106,7 @@ function handleNewVersion(currentVersion, latestVersion) {
   } else {
     let template = `
     <div class="dialog-content">
-      OpenBuilds-CONTROL v` + latestVersion + ` is available to be downloaded.<br>
+      Groove Control v` + latestVersion + ` is available to be downloaded.<br>
       <p id="changelogupdate" class="text-small"></p>
       This release has already been downloaded <span id="releaseStats">several</span> times since its release on <span id="releaseDate"></span>
     </div>`;
@@ -162,7 +162,7 @@ function checkUpdate() {
       if (localStorage.getItem('skipVersion') == latestVersion) {
         printLog("<span class='fg-darkRed'>[ update ] </span><span class='fg-green'>Skipping upgrade to version " + latestVersion + "</span>")
       } else if (versionCompare(latestVersion, currentVersion) != 1) {
-        printLog("<span class='fg-darkRed'>[ update ] </span><span class='fg-green'>You are already running OpenBuilds CONTROL " + currentVersion + "</span>")
+        printLog("<span class='fg-darkRed'>[ update ] </span><span class='fg-green'>You are already running Groove Control " + currentVersion + "</span>")
       } else {
         handleNewVersion(currentVersion, latestVersion);
       }
@@ -195,11 +195,11 @@ function onUpdateReady(latestVersion) {
 
   let template = `
   <div class="dialog-content">
-    OpenBuilds-CONTROL v` + latestVersion + ` has finished downloading and is ready to be installed.<br>
+    Groove Control v` + latestVersion + ` has finished downloading and is ready to be installed.<br>
     <small>Note that proceeding will:
       <ul>
         <li>Stop any running jobs</li>
-        <li>Shut down this instance of OpenBuilds CONTROL</li>
+        <li>Shut down this instance of Groove Control</li>
         <li>Launch the installer for the new version</li>
       </ul>
     </small>

@@ -2,7 +2,7 @@
 <html lang="en">
 
   <head>
-    <title>OpenBuilds CONTROL</title>
+    <title>Groove Control</title>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="author" content="">
@@ -24,7 +24,7 @@
     <div class="pos-fixed pos-center" id="splash">
       <center>
         <div id="openbuildslogosplash" style="display: none;">
-          <img src="/img/OpenBuildsCONTROL.svg">
+          <img src="/img/groove-control-logo.svg">
         </div>
       </center>
     </div>
@@ -33,8 +33,8 @@
     <div class="window bd-black" style="height: 100vh; overflow-y: hidden;">
       <div id="windowtitlebar" class="window-caption bg-black bd-black" style="-webkit-app-region: drag; height: 42px; padding-left: 3px;">
         <!-- <span class="icon mif-cog"></span> -->
-        <span><img src="/img/OpenBuildsCONTROL.svg" height="40" /></span>
-        <span class="title" id="windowtitle" style="padding-left: 10px;">OpenBuilds CONTROL</span>
+        <span><img src="/img/groove-control-logo.svg" height="40" /></span>
+        <span class="title" id="windowtitle" style="padding-left: 10px;">Groove Control</span>
 
         <div class="buttons" style="-webkit-app-region: no-drag">
           <span title="Minimize" class="btn-custom" onclick="socket.emit('minimize')"><i class="fas fa-window-minimize"></i></span>
@@ -168,15 +168,6 @@
             <!-- Start Jog/Main -->
 
             <div class="section" id="section-jog">
-              <div class="group">
-                <button class="ribbon-button" onclick="socket.emit('openbuilds', true);">
-                  <span class="icon">
-                    <img src="img/openbuilds-logo.svg">
-                  </span>
-                  <span class="caption">OpenBuilds<br>&nbsp;</span>
-                </button>
-                <span class="title">Visit</span>
-              </div>
               <div class="group">
                 <div class="form-group">
                   <form class="form">
@@ -465,6 +456,16 @@ The spindle will automatically start when the job is resumed.">
 
             <div class="section" id="section-troubleshooting">
               <div class="group">
+                <button class="ribbon-button" onclick="socket.emit('opengroove', true);">
+                  <span class="icon" style="justify-items:center;">
+                    <img class="light_theme_only" src="img/groove-logo_b.svg">
+                    <img class="dark_theme_only" src="img/groove-logo_w.svg">
+                  </span>
+                  <span class="caption">Groove<br>Control</span>
+                </button>
+                <span class="title">Website</span>
+              </div>
+              <div class="group">
                 <button class="ribbon-button" onclick="appSettings()">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
@@ -485,20 +486,20 @@ The spindle will automatically start when the job is resumed.">
               </div>
 
               <div class="group">
-                <button class="ribbon-button" onclick="socket.emit('opendocs', true);">
+                <button class="ribbon-button" onclick="socket.emit('openwiki');">
                   <span class="icon">
                     <i class="fas fa-book" data-fa-transform=""></i>
                   </span>
-                  <span class="caption">OpenBuilds<br>Documentation</span>
+                  <span class="caption">OpenBuilds<br>Archive</span>
                 </button>
-                <button class="ribbon-button" onclick="socket.emit('openforum', true);">
+                <button class="ribbon-button" onclick="socket.emit('openforum');">
                   <span class="icon">
                     <span class="fa-layers fa-fw">
                       <i class="far fa-comment-alt" data-fa-transform=""></i>
                       <i class="fas fa-question" data-fa-transform="shrink-8 up-1"></i>
                     </span>
                   </span>
-                  <span class="caption">OpenBuilds<br>Forum</span>
+                  <span class="caption">Groove<br>Forum</span>
                 </button>
                 <span class="title">Support</span>
               </div>
