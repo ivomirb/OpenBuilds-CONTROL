@@ -140,7 +140,7 @@ function onSocketDisconnect() {
   console.log("WEBSOCKET DISCONNECTED")
   const icon = ''
   const source = "websocket"
-  const string = "Disconnected.  Groove Control probably quit or crashed"
+  const string = "Disconnected. Groove Control probably quit or crashed"
   const printLogCls = "fg-darkRed"
   printLogModern(icon, source, string, printLogCls)
   $("#websocketstatus").html("Disconnected")

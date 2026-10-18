@@ -239,7 +239,7 @@ function createTrayIcon() {
       click: showJogWindow
     },
     {
-      label: 'Quit OpenBuilds CONTROL',
+      label: 'Quit Groove Control',
       click: exitApp
     }];
     if (process.platform == 'win32' || process.platform == 'linux') {
@@ -281,7 +281,7 @@ function createTrayIcon() {
     }
   } else { // darwin
     const dockMenu = Menu.buildFromTemplate([{
-      label: 'Quit OpenBuilds CONTROL',
+      label: 'Quit Groove Control',
       click() {
         electronApp.exit(0);
       }

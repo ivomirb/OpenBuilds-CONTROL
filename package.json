@@ -1,8 +1,8 @@
 {
-  "name": "OpenBuildsCONTROL",
+  "name": "GrooveControl",
   "version": "0.5.100",
   "license": "AGPL-3.0",
-  "description": "OpenBuildsCONTROL CNC Machine Host Software",
+  "description": "GrooveControl G-code Sender",
   "author": "github.com/ivomirb <cnc@ibeltchev.com>",
   "resolutions": {
     "@electron/notarize": "2.3.2"
@@ -76,7 +76,7 @@
     },
     "icon": "build/icon.icns",
     "appId": "groove.control",
-    "productName": "Groove Control",
+    "productName": "GrooveControl",
     "asar": true,
     "nsis": {
       "oneClick": false,
