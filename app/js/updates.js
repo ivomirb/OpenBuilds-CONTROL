@@ -161,7 +161,7 @@ function updatesFirstStatus() {
   if (!laststatus.misc.enableUpdates) {
     const icon = '';
     const source = "autoupdate";
-    const string = "The check for new version is disabled.";
+    const string = "The check for software updates is disabled.";
     const printLogCls = "fg-darkRed";
     printLogModern(icon, source, string, printLogCls);
   }

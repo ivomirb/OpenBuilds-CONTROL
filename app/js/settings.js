@@ -56,7 +56,7 @@ const appSettingsDlg = `
   </div>
 
   <div class="cell-sm-10" style="padding-left:8px;">
-    <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Check for new version on startup" id="enableUpdatesCheck" />
+    <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Check for updates on startup" id="enableUpdatesCheck" />
   </div>
   <div class="row" style="padding-left:8px;">
     <div class="cell-sm-5" id="enableTrayIconCell">
