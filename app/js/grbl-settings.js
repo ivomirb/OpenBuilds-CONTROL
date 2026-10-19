@@ -28,8 +28,8 @@ function loadGrblBackupFile() {
     $('#settingsModifiedFilter:checkbox').prop('checked', false);
     toggleModifiedFilter(false);
 
-    data = data.split('\n');
-    for (let line of data) {
+    data = data.split(/\r?\n/);
+    for (const line of data) {
       if (!line.startsWith("$I=")) {
         const parts = line.split('=');
         const key = parts[0].substring(1);
@@ -151,19 +151,22 @@ function restoreAutoBackup(index) {
 
 function backupGrblSettings() {
   autoBackup("Manual Backup");
-  let grblBackup = ""
+
+  const EOL = laststatus.driver.operatingsystem == "windows" ? "\r\n" : "\n";
+
+  let grblBackup = "";
   for (let key in grblParams) {
     const key2 = key.substr(1);
 
     const template = grblSettingsTemplate[key2];
     if (template !== undefined && template.type != "text") {
-      grblBackup += key + "=" + grblParams[key] + "  ;  " + template.title + "\n";
+      grblBackup += key + "=" + grblParams[key] + "  ;  " + template.title + EOL;
     } else {
-        grblBackup += key + "=" + grblParams[key] + "\n";
+        grblBackup += key + "=" + grblParams[key] + EOL;
     }
   }
   if (laststatus.machine.name.length > 0) {
-    grblBackup += "$I=" + laststatus.machine.name
+    grblBackup += "$I=" + laststatus.machine.name + EOL;
   }
   const blob = new Blob([grblBackup], {
     type: "plain/text"
@@ -232,7 +235,7 @@ function grblSaveSettings() {
         saveProgressBar.val(counter / toSaveCommands.length * 100);
       }
       //
-      sendGcode(toSaveCommands[counter] + "\n");;
+      sendGcode(toSaveCommands[counter] + "\n");
       counter++;
       if (counter === toSaveCommands.length) {
         // Finished running
@@ -246,11 +249,11 @@ function grblSaveSettings() {
 
 }
 function grblSettings(data) {
-  const grblconfig = data.split('\n')
-  for (let i = 0; i < grblconfig.length; i++) {
-    const key = grblconfig[i].split('=')[0];
-    const param = grblconfig[i].split(/[= ;(]/)[1]
-    grblParams[key] = param
+  const grblconfig = data.split('\n');
+  for (const line of grblconfig) {
+    const key = line.split('=')[0];
+    const param = line.split(/[= ;(]/)[1];
+    grblParams[key] = param;
   }
 
   $('#grblSettings').show();
