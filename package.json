@@ -58,6 +58,35 @@
       }
     ],
     "afterSign": "./notarize.js",
+    "icon": "build/icon.icns",
+    "appId": "groove.control",
+    "productName": "GrooveControl",
+    "asar": true,
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "license": "build/licence.txt",
+      "installerIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "include": "build/installer.nsh"
+    },
+    "files": [
+      "**/*",
+      "ssl/**/*",
+      "firmware/**/*",
+      "CHANGELOG.txt",
+      "!icons_b/*",
+      "!icons_w/*",
+      ""
+    ],
+    "extraFiles": [
+      "ssl"
+    ],
+    "asarUnpack": [
+    ],
     "mac": {
       "icon": "build/icon.icns",
       "category": "public.app-category.graphics-design",
@@ -72,72 +101,46 @@
           "x64",
           "arm64"
         ]
-      }
+      },
+      "fileAssociations": [
+        {
+          "ext": "obc",
+          "name": "OpenBuilds CAM Project",
+          "description": "OpenBuilds CAM Project",
+          "role": "Viewer"
+        },
+        {
+          "ext": "gcode",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "gc",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "tap",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "nc",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "cnc",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        }
+      ]
     },
-    "icon": "build/icon.icns",
-    "appId": "groove.control",
-    "productName": "GrooveControl",
-    "asar": true,
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "allowElevation": true,
-      "license": "build/licence.txt",
-      "installerIcon": "build/icon.ico",
-      "installerSidebar": "build/installerSidebar.bmp",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
-    },
-    "fileAssociations": [
-      {
-        "ext": "obc",
-        "name": "OpenBuilds CAM Project",
-        "description": "OpenBuilds CAM Project",
-        "role": "Viewer"
-      },
-      {
-        "ext": "gcode",
-        "name": "G-code File",
-        "description": "G-code File",
-        "role": "Viewer"
-      },
-      {
-        "ext": "gc",
-        "name": "G-code File",
-        "description": "G-code File",
-        "role": "Viewer"
-      },
-      {
-        "ext": "tap",
-        "name": "G-code File",
-        "description": "G-code File",
-        "role": "Viewer"
-      },
-      {
-        "ext": "nc",
-        "name": "G-code File",
-        "description": "G-code File",
-        "role": "Viewer"
-      },
-      {
-        "ext": "cnc",
-        "name": "G-code File",
-        "description": "G-code File",
-        "role": "Viewer"
-      }
-    ],
-    "files": [
-      "**/*",
-      "ssl/**/*",
-      "firmware/**/*",
-      "CHANGELOG.txt",
-      ""
-    ],
-    "extraFiles": [
-      "ssl"
-    ],
-    "asarUnpack": [
-    ],
     "win": {
       "target": [
         {
@@ -154,6 +157,44 @@
       "target": [
         "deb",
         "AppImage"
+      ],
+      "fileAssociations": [
+        {
+          "ext": "obc",
+          "name": "OpenBuilds CAM Project",
+          "description": "OpenBuilds CAM Project",
+          "role": "Viewer"
+        },
+        {
+          "ext": "gcode",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "gc",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "tap",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "nc",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        },
+        {
+          "ext": "cnc",
+          "name": "G-code File",
+          "description": "G-code File",
+          "role": "Viewer"
+        }
       ]
     },
     "dmg": {

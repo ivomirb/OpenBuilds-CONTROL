@@ -352,7 +352,7 @@ function createJogWindow() {
     frame: false,
     autoHideMenuBar: true,
     icon: nativeImage.createFromPath(
-      path.join(rootDir, "/app/favicon.png")
+      path.join(rootDir, "/app/icon_w.png")
     ),
     webgl: true,
     experimentalFeatures: true,
