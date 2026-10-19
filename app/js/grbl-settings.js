@@ -391,19 +391,6 @@ function grblPopulate() {
   $('#grblSettingsTable').on('keyup paste click change', 'input, select', checkifchanged);
 
   $('#grblSettingsBadge').hide();
-  $('#limitsinstalled:checkbox').prop('checked', grblParams['$21'] == 1 && grblParams['$22'] > 0);
-
-  if (isMatchingConfig(grblParams, grblParams_scribe)) {
-    setSelectedToolhead('scribe')
-  } else if (isMatchingConfig(grblParams, grblParams_plasma)) {
-    setSelectedToolhead('plasma')
-  } else if (isMatchingConfig(grblParams, grblParams_router)) {
-    setSelectedToolhead('router11')
-  } else if (isMatchingConfig(grblParams, grblParams_laser)) {
-    setSelectedToolhead('laser')
-  } else if (isMatchingConfig(grblParams, grblParams_vfd)) {
-    setSelectedToolhead('vfd_spindle')
-  }
 
   populateRestoreMenu();
 }
@@ -731,9 +718,6 @@ function setup_settings_table() {
   }
   settingsUIConstructed = true;
 
-  $('#limitsinstalled:checkbox').change(enableLimits);
-//  $('#scribeinstalled:checkbox').change(enableScribe);
-
   // Handle the change event for radio buttons
   $('input[name="toolhead"]').on('change', function() {
     const selectedToolhead = $(this).val();
@@ -799,146 +783,6 @@ function onSettingsTableCreate() {
   }
 
   setup_settings_table();
-}
-
-function enableLimits() {
-  const grblParams_lim = {
-    $21: "0", //"Hard limits enable, boolean"
-    $22: "0", //"Homing cycle enable, boolean"
-  }
-  const hasLimits = $('#limitsinstalled').is(':checked');
-  if (hasLimits) {
-    grblParams_lim.$21 = "1"; //"Hard limits enable, boolean"
-    grblParams_lim.$22 = "1"; //"Homing cycle enable, boolean"
-  } else {
-    grblParams_lim.$21 = "0"; //"Hard limits enable, boolean"
-    grblParams_lim.$22 = "0"; //"Homing cycle enable, boolean"
-  }
-  for (let key in grblParams_lim) {
-    const j = key.substring(1)
-    $("#val-" + j + "-input").val(parseFloat(grblParams_lim[key]))
-  }
-  checkifchanged();
-}
-
-const grblParams_scribe = {
-  $32: "0", //PWM Freq for RC Servo
-  $33: "50", //PWM Freq for RC Servo
-  $34: "5", //Spindle Off Value for RC Servo
-  $35: "5", //Spinde Min Value for RC Servo
-  $36: "10", //Spindle max Value for RC Servo
-}
-
-function enableScribe() {
-  for (let key in grblParams_scribe) {
-    const j = key.substring(1)
-    $("#val-" + j + "-input").val(parseFloat(grblParams_scribe[key]))
-  }
-  checkifchanged();
-}
-
-const grblParams_laser = {
-  $30: "1000", // S Max
-  $32: "1", // Laser Mode On
-  $33: "1000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enableLaser() {
-
-  for (let key in grblParams_laser) {
-    const j = key.substring(1)
-    $("#val-" + j + "-input").val(parseFloat(grblParams_laser[key]))
-  }
-  checkifchanged();
-}
-
-const grblParams_router = {
-  $30: "1000", // S Max
-  $32: "0", // Laser Mode On
-  $33: "5000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enableRouter() {
-
-  for (let key in grblParams_router) {
-    const j = key.substring(1)
-    $("#val-" + j + "-input").val(parseFloat(grblParams_router[key]))
-  }
-  checkifchanged();
-}
-
-const grblParams_plasma = {
-  $30: "1000", // S Max
-  $32: "0", // Laser Mode On
-  $33: "1000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enablePlasma() {
-
-  for (let key in grblParams_plasma) {
-    const j = key.substring(1)
-    $("#val-" + j + "-input").val(parseFloat(grblParams_plasma[key]))
-  }
-  checkifchanged();
-}
-
-const grblParams_vfd = {
-  $30: "24000", // S Max
-  $32: "0", // Laser Mode On
-  $33: "1000", //PWM Freq
-  $34: "0", //Spindle Off Value
-  $35: "0", //Spinde Min Value
-  $36: "100", //Spindle max Value
-}
-
-function enableVFD() {
-
-  for (let key in grblParams_vfd) {
-    const j = key.substring(1)
-    $("#val-" + j + "-input").val(parseFloat(grblParams_vfd[key]))
-  }
-  checkifchanged();
-}
-
-function isMatchingConfig(currentParams, predefinedParams) {
-  for (let key in predefinedParams) {
-    // Compare values as numbers to handle type mismatches
-    if (parseFloat(currentParams[key]) !== parseFloat(predefinedParams[key])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-
-// Function to programmatically set the selected radio
-function setSelectedToolhead(value) {
-  const $radio = $(`input[name="toolhead"][value="${value}"]`);
-  if ($radio.length) {
-    $radio.prop('checked', true).trigger('change'); // Trigger the change event
-  } else {
-    console.error('Toolhead not found:', value);
-  }
-
-  if (value == "scribe") {
-    // Set Default Pen Up/Down values
-    penupval = 250
-    pendownval = 0
-    servo = {
-      up: penupval,
-      down: pendownval
-    }
-    localStorage.setItem("servo-calibration", JSON.stringify(servo));
-  }
 }
 
 // Compute the accurate machine dimensions. Takes into account:

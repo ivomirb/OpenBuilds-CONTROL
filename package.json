@@ -58,7 +58,7 @@
       }
     ],
     "afterSign": "./notarize.js",
-    "icon": "build/icon.icns",
+    "icon": "build/icons_w2/icon_w2.icns",
     "appId": "groove.control",
     "productName": "GrooveControl",
     "asar": true,
@@ -68,7 +68,7 @@
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
       "license": "build/licence.txt",
-      "installerIcon": "build/icon.ico",
+      "installerIcon": "build/icons_w2/icon_w2.ico",
       "installerSidebar": "build/installerSidebar.bmp",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "include": "build/installer.nsh"
@@ -88,7 +88,7 @@
     "asarUnpack": [
     ],
     "mac": {
-      "icon": "build/icon.icns",
+      "icon": "build/icons_w2/icon_w2.icns",
       "category": "public.app-category.graphics-design",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
@@ -150,10 +150,10 @@
           ]
         }
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icons_w2/icon_w2.ico"
     },
     "linux": {
-      "icon": "build/",
+      "icon": "build/icons_w2",
       "target": [
         "deb",
         "AppImage"
@@ -199,7 +199,7 @@
     },
     "dmg": {
       "sign": false,
-      "icon": "build/icon.icns",
+      "icon": "build/icons_w2/icon_w2.icns",
       "contents": [
         {
           "x": 410,
