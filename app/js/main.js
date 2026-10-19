@@ -35,16 +35,35 @@ function setWindowTitle(status) {
   document.title = "Groove Control" + string;
 }
 
-$(document).ready(function() {
+function resetSplash() {
+  $('#openbuildslogosplash').hide();
+}
+
+function animateSplash() {
   $('#openbuildslogosplash').fadeIn(100);
   setTimeout(function() {
     $('#splash').fadeOut(500);
-  }, 1400)
+  }, 1500);
 
+  const splashSvg = document.getElementById('openbuildslogosplash');
+  splashSvg.querySelector("#animation1").beginElement();
+  splashSvg.querySelector("#animation2").beginElement();
+}
+
+async function initSplash() {
+  const svgImage = await fetch('/img/groove-control-logo_anim.svg');
+  const svgSrc = await svgImage.text();
+  $('#openbuildslogosplash').html(svgSrc);
+  animateSplash();
+}
+
+$(document).ready(function() {
   if (isJogWidget) {
     jogDocReady();
   }
   else {
+    resetSplash();
+    initSplash();
     init3D();
 
     jogDocReady();
