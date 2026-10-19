@@ -72,7 +72,7 @@ const {
 
 
 // Global variables
-const iconPath = path.join(rootDir, 'app/icon.png');
+const iconPath = path.join(rootDir, 'app/icon_w.png');
 
 var devMode = false;
 var safeMode = false;
