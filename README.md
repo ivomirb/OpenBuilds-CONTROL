@@ -9,71 +9,95 @@ Every feature has been enhanced. Frustrating bugs and quirks have been fixed. Th
 New features like the file history, origin history, a macro manager, a heightmap tool,
 and a slick job simulator fit seamlessly into the existing design.
 
-Here's a list of the major changes.
+## Download
+
+**Latest version**
+
+You can find the latest version here: [Latest Release](releases/latest)
+
+**Older versions**
+
+See all past versions here: [All Releases](releases)
+
+**Few things to keep in mind**
+
+* The Windows binaries are unsigned. You will have to work around the Smart Screen restrictions to get it running.<br>
+Signing the installer requires a certificate, which is not free.
+One will be added in the future, but at this time I can't justify the expense until I know that enough people are even going to use it
+
+* The Mac binaries are completely untested and not notarized. I don't have a Mac to test them.
+The last Apple product I've ever used was an Apple II, which was 40 years ago.
+If you are a Mac developer and you are willing to help get things started, let me know
+
+
+## Changes in Groove Control
+
+See the major changes from the original OpenBuilds CONTROL
 
 ### Workflow
 
-* Ability to view and set machine coordinates
-* Stores a history of work origins and allows for rolling back to a previous one
-* Corrected the calculations and improved the safety of the "goto zero" buttons
-* More accurate machine limits, compatible with a variety of homing settings for Grbl, GrblHAL and FluidNC
-* The Pause and Stop buttons remain available until the very end of the job
-* While the job is paused, the Tool Off button can stop the spindle. It will resume automatically
-* A new setting to insert a delay for a few seconds after the spindle starts up
-* A new setting to hide the controls for the 4th axis if it is supported, but not used
-* The "Recover from line" feature is more reliable
-* Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
-* The homing button prevents accidental homing, and has a menu for homing a single axis if the hardware supports it
-* Improved the speed and reliability of the controller detection over USB cable
+* **New Feature:** Ability to view and set machine coordinates
+* **New Feature:** Stores a history of work origins and allows for rolling back to a previous one
+* **New Feature:** While the job is paused, the Tool Off button can stop the spindle. It will resume automatically
+* **New Feature:** A new setting to insert a delay for a few seconds after the spindle starts up
+* **Improvement:** Corrected the calculations and improved the safety of the "goto zero" buttons
+* **Improvement:** More accurate machine limits, compatible with a variety of homing settings for Grbl, GrblHAL and FluidNC
+* **Improvement:** The Pause and Stop buttons remain available until the very end of the job
+* **Improvement:** A new setting to hide the controls for the 4th axis if it is supported, but not used
+* **Improvement:** The "Recover from line" feature is more reliable
+* **Improvement:** Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
+* **Improvement:** The homing button prevents accidental homing, and has a menu for homing a single axis if the hardware supports it
+* **Improvement:** Improved the speed and reliability of the controller detection over USB cable
 
 ### User Interface
 
-* Removed the dropdown menu from the Open G-code button to save unnecessary mouse click
-* New button to reload the current G-code file or load from a list of recent files
-* New dialog for editing all application settings in one place
-* New settings to disable the autostart and the tray icon, making it behave like a regular desktop app
-* Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
-* The dialogs for opening and saving files have independent default directories for G-code, macros and grbl settings
-* The position of the main window is preserved between runs
-* Fix for dragging sliders with the mouse
-* Improved readability for Light and Dark themes
+* **New Feature:** New button to reload the current G-code file or load from a list of recent files
+* **Improvement:** Removed the dropdown menu from the Open G-code button to save unnecessary mouse click
+* **Improvement:** New dialog for editing all application settings in one place
+* **Improvement:** New settings to disable the autostart and the tray icon, making it behave like a regular desktop app
+* **Improvement:** Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
+* **Improvement:** The dialogs for opening and saving files have independent default directories for G-code, macros and grbl settings
+* **Improvement:** The position of the main window is preserved between runs
+* **Improvement:** Improved readability for Light and Dark themes
+* **Bug fix:** Fix for dragging sliders with the mouse
 
 ### 3D View
 
-* Updated the 3D view to properly handle arcs in the XZ and YZ planes
-* Fixed the orbiting controls rotation axis
-* Added playback controls to the simulation and fixed many bugs
-* Fixed the wrong bounding box for the machine area
-* Fixed the grid alignment and sizing
-* Optimized memory usage to allow for loading of larger files
-* Options to hide graphical elements like the grid, ruler, tool marker, and more
-* Fixed GPU memory leaks
+* **New Feature:** Added playback controls to the simulation and fixed many bugs
+* **Improvement:** Options to hide graphical elements like the grid, ruler, tool marker, and more
+* **Improvement:** Optimized memory usage to allow for loading of larger files
+* **Bug fix:** Updated the 3D view to properly show arcs in the XZ and YZ planes
+* **Bug fix:** Fixed the orbiting controls rotation axis
+* **Bug fix:** Fixed the wrong bounding box for the machine area
+* **Bug fix:** Fixed the grid alignment and sizing
+* **Bug fix:** Fixed GPU memory leaks
 
 ### Grbl Settings Editor
 
-* The "Advanced" tab is selected by default because it is more useful for non-OpenBuilds customers
-* Added a new option to view only the modified settings, and buttons to revert each change
-* Fixed a bug where using the search filter loses all unsaved changes
-* Fixed the broken tooltips for the setting descriptions
-* Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
-* Added more known GrblHAL settings and updated wrong descriptions
-* Added support for a 4th axis in settings $3 and $23
-* Basic support for FluidNC that shows the configuration file
+* **Improvement:** Added a new option to view only the modified settings, and buttons to revert each change
+* **Improvement:** Added more known GrblHAL settings and updated wrong descriptions
+* **Improvement:** Added support for a 4th axis in settings $3 and $23
+* **Improvement:** Basic support for FluidNC that shows the configuration file
+* **Improvement:** The "Basic" settings tab is removed, as it is specific to hardware that is no longer manufactured
+* **Improvement:** The flashing capabilities are removed for the same reason
+* **Bug fix:** Fixed a bug where using the search filter loses all unsaved changes
+* **Bug fix:** Fixed the broken tooltips for the setting descriptions
+* **Bug fix:** Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
 
 ### Surfacing Wizard
 
-* Fix for a bug where the last row was sometimes skipped
-* New option to extend the surfaced area by the tool radius
+* **Improvement:** New option to extend the surfaced area by the tool radius
+* **Bug fix:** Fix for a bug where the last row was sometimes skipped
 
 ### Macro Management
 
-* Added ability to organize macros into groups
-* Added menu command to back up all macros to a single file
-* Added menu command to create a new macro from existing G-code or JavaScript file
-* Added ability to automatically reload JavaScript macros from external files in development mode
-* Enabled security isolation measures to prevent scripts from accessing the operating system
+* **New Feature:** Added ability to organize macros into groups
+* **Improvement:** Added ability to back up all macros to a single file
+* **Improvement:** Added ability to create a new macro from existing G-code or JavaScript file
+* **Improvement:** Added ability to automatically reload JavaScript macros from external files in development mode
+* **Improvement:** Enabled security isolation measures to prevent scripts from accessing the operating system
 
-### Heightmap Tool
+### **New Feature:** Heightmap Tool
 
 * You can generate a heightmap by sampling the surface at multiple points
 * The heightmap can then be used to modify the G-code to follow the surface
@@ -111,56 +135,28 @@ Others are new features that can be added to either Groove or the original OpenB
 * **Find Hole Center** - Fast and precise method for finding the center of a circular or rectangular hole
 * **Spindle Delay** - Inserts a short delay after the spindle starts, without using the G4 command. Useful for hardware that has problems with G4.
 
-## Closed Beta
+## Building the app
 
-Currently the software is in closed beta.
-If you wish to give it a try on Windows or Linux, please send an email to cnc@ibeltchev.com.
-I will reply with a download link. Everyone who contacts me gets to submit one of their favorite pet peeves
-with the software (a bug, a quirk, a missing feature) and I promise I will look into it seriously.
-
-Why not open beta? Few reasons. I want people to have an established contact with me to report bugs.
-I want to be able to quickly distribute a new build in case a serious issue is found.
-
-Of course, you are free to build your own copy from the source code. These steps work for Windows and Linux, and I suspect it is the same for Mac:
-* Install a recent version of node js (24 or above should work)
+These steps work for Windows and Linux, and I suspect it is the same for Mac:
+* Install a recent version of node js (22 or above should work)
 * Install git
 * Clone the repo
 * Run the command "npm install"
 * Run the app locally with the command "node_modules\\.bin\electron ."
 * Build a package with the command "node_modules\\.bin\electron-builder"
-
+* Linux may require a few extra steps to adjust ownership and permissions
 
 ## Roadmap
 
-### Cleanup
-
-Before the official release, I plan to remove the parts that are specific to OpenBuilds hardware.
-This includes the flashing capabilities and the bespoke configuration presets.
-The hardware is no longer in production, and I can't realistically validate any of those features.
-
-I will restore the update feature that checks for new versions and auto-updates the software.
-
-### Public Release
-
-After the closed beta I will make the binaries publicly available, with a few caveats:
-
-* The Windows binaries will be unsigned. You will have to work around the Smart Screen restrictions to get it running.
-Signing the installer requires a certificate, which is not free. At this time I can't justify the expense until I know that enough people
-are even going to use it
-
-* The Mac binaries will be completely untested and not notarized. I don't have a Mac to test them.
-The last Apple product I've ever used was an Apple II, which was 40 years ago.
-If you are a Mac developer and you are willing to help out, let me know
-
 ### Stabilization Period
 
-The first few iterations of the public release will focus on stability, addressing bugs and compatibility issues that people report.
+The first few iterations of the public release will focus on stability, addressing bugs and compatibility issues that people report.<br>
 Please, report any issues you encounter. They can't be fixed if I don't know about them.
 
 ### Future Features
 
-Adding new features is tricky, especially to this software. What made the original OpenBuilds so brilliant is its clean
-and approachable user interface. New features by their very nature complicate the interface as they need their own space on the screen.
+Adding new features is tricky, especially to this software. What made the original OpenBuilds so great is its clean user interface.<br>
+New features by their very nature complicate the interface as they need their own space on the screen.<br>
 I have seen too many apps get bloated over time to an unusable mess because of the urge to add new features in each release.
 
 New features will be added only if they don't sacrifice usability. Here are a few things I am considering:
@@ -174,4 +170,4 @@ New features will be added only if they don't sacrifice usability. Here are a fe
 That said, new features can be added via macros as well. The bar for those is lower than for features in the main software,
 since they are optional addons, and usually address a niche need.
 I am more willing to add new features this way, especially if they can be back-ported to the original software.
-A new feature could realistically start up as a macro, and then find its way into the main software after it as proven to work well.
+A new feature could realistically start up as a macro, and then find its way into the main software after it has proven to work well.
