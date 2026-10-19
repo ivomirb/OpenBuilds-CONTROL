@@ -1,7 +1,15 @@
 # Groove Control
-Groove Control is a G-code sender software for all CNC style machines running Grbl.
+Groove Control is a G-code sender software for CNC machines running Grbl, GrblHAL, and FluidNC.
 
-It is a fork of the popular software OpenBuilds-CONTROL with multiple improvements.
+It is the spiritual successor of the popular OpenBuilds CONTROL software.
+It builds on what made the original great - its simple and extremely approachable interface -
+and takes it to the next level of polish, safety and usability.
+
+Every feature has been enhanced. Frustrating bugs and quirks have been fixed. The job control is improved and more reliable.
+New features like the file history, origin history, a macro manager, a heightmap tool,
+and a slick job simulator fit seamlessly into the existing design.
+
+Here's a list of the major changes.
 
 ### Workflow
 
@@ -65,7 +73,7 @@ It is a fork of the popular software OpenBuilds-CONTROL with multiple improvemen
 * Added ability to automatically reload JavaScript macros from external files in development mode
 * Enabled security isolation measures to prevent scripts from accessing the operating system
 
-### New Heightmap Tool
+### Heightmap Tool
 
 * You can generate a heightmap by sampling the surface at multiple points
 * The heightmap can then be used to modify the G-code to follow the surface
