@@ -137,10 +137,6 @@
       "ssl"
     ],
     "asarUnpack": [
-      "esptool.exe",
-      "esptool-mac",
-      "esptool-linux",
-      "*.bin"
     ],
     "win": {
       "target": [

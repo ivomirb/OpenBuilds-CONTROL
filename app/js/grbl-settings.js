@@ -28,12 +28,10 @@ function loadGrblBackupFile() {
     $('#settingsModifiedFilter:checkbox').prop('checked', false);
     toggleModifiedFilter(false);
 
-    data = data.split("\n");
-    for (let i = 0; i < data.length; i++) {
-      const parts = data[i].split('=');
-      if (data[i].indexOf("$I=") == 0) {
-        setMachineButton(parts[1])
-      } else {
+    data = data.split('\n');
+    for (let line of data) {
+      if (!line.startsWith("$I=")) {
+        const parts = line.split('=');
         const key = parts[0].substring(1);
         const value = parts[1];
         if (grblSettingsTemplate[key] == undefined || grblSettingsTemplate[key].type == "text")
@@ -293,16 +291,6 @@ function grblSettings(data) {
   }
 }
 
-function showBasicSettings() {
-  $("#grbl-settings-basic").show();
-  $("#grbl-settings-advanced").hide();
-}
-
-function showAdvSettings() {
-  $("#grbl-settings-basic").hide();
-  $("#grbl-settings-advanced").show();
-}
-
 function grblPopulate() {
   if (isJogWidget) return;
 
@@ -311,140 +299,6 @@ function grblPopulate() {
   let template = `
   <form id="grblSettingsTable">
 
-  <ul data-role="tabs" data-expand="true" class="mb-2">
-    <li id="grblSettingsBasicTab" onclick="showBasicSettings()"><a href="#"><small><i class="fas fa-fw fa-cog mr-1 fg-darkGreen"></i>Basic Settings</a></small></li>
-    <li id="grblSettingsAdvTab" onclick="showAdvSettings()" class="active"><a href="#"><small><i class="fas fa-fw fa-cogs mr-1 fg-darkRed"></i>Advanced Settings</a></small></li>
-  </ul>
-
-
-  <div id="grbl-settings-basic" style="display: none;">
-      <ul class="step-list mb-3">
-        <li>
-          <h6>Select your Machine<br><small>Tell us what machine you have?</small></h6>
-          <a style="width: 100%;"
-            class="button dropdown-toggle bd-dark dark outline"
-            id="context_toggle2"><img src="img/mch/leadmachine1010.png" /> Select
-            your machine type from the list:</a>
-          <ul class="ribbon-dropdown machine-profile-menu" data-role="dropdown"
-            data-duration="100">
-            <li><a href="#" onclick="selectMachine('custom');"><img
-                  src="img/mch/custom.png" width="16px" /> CUSTOM Machine (Profile
-                sets sane defaults)</a></li>
-            <li>
-              <a href="#" class="dropdown-toggle"><img src="img/mch/acro55.png"
-                  width="16px" /> OpenBuilds ACRO</a>
-              <ul class="ribbon-dropdown" data-role="dropdown">
-                <li onclick="selectMachine('acro55');"><a href="#"><img
-                      src="img/mch/acro55.png" width="16px" /> OpenBuilds ACRO 55</a></li>
-                <li onclick="selectMachine('acro510');"><a href="#"><img
-                      src="img/mch/acro510.png" width="16px" /> OpenBuilds ACRO
-                    510</a></li>
-                <li onclick="selectMachine('acro1010');"><a href="#"><img
-                      src="img/mch/acro1010.png" width="16px" /> OpenBuilds ACRO
-                    1010</a></li>
-                <li onclick="selectMachine('acro1510');"><a href="#"><img
-                      src="img/mch/acro1510.png" width="16px" /> OpenBuilds ACRO
-                    1510</a></li>
-                <li onclick="selectMachine('acro1515');"><a href="#"><img
-                      src="img/mch/acro1515.png" width="16px" /> OpenBuilds ACRO
-                    1515</a></li>
-                <li class="divider"></li>
-                <li onclick="selectMachine('acroa1');"><a href="#"><img
-                      src="img/mch/acroa1.png" width="16px" /> OpenBuilds ACRO A1</a></li>
-              </ul>
-            </li>
-            <li>
-              <a href="#" class="dropdown-toggle"><img src="img/mch/cbeam.png"
-                  width="16px" /> OpenBuilds C-Beam Machine</a>
-              <ul class="ribbon-dropdown" data-role="dropdown">
-                <li onclick="selectMachine('cbeam');"><a href="#"><img
-                      src="img/mch/cbeam.png" width="16px" /> OpenBuilds C-Beam
-                    Machine</a></li>
-                <li onclick="selectMachine('cbeamxl');"><a href="#"><img
-                      src="img/mch/cbeamxl.png" width="16px" /> OpenBuilds C-Beam
-                    XL</a></li>
-              </ul>
-            </li>
-            <li>
-              <a href="#" class="dropdown-toggle"><img
-                  src="img/mch/leadmachine1010.png" width="16px" /> OpenBuilds
-                LEAD Machine</a>
-              <ul class="ribbon-dropdown" data-role="dropdown">
-                <li onclick="selectMachine('leadmachine1010');"><a href="#"><img
-                      src="img/mch/leadmachine1010.png" width="16px" />OpenBuilds
-                    LEAD 1010</a></li>
-                <li onclick="selectMachine('leadmachine1010laser');"><a href="#"><img
-                      src="img/mch/leadmachine1010laser.png" width="16px" />OpenBuilds
-                    LEAD 1010 with Laser Module</a></li>
-                <li onclick="selectMachine('leadmachine1010plasma');"><a href="#"><img
-                      src="img/mch/leadmachine1010plasma.png" width="16px" />OpenBuilds
-                    LEAD 1010 Plasma Add-On</a></li>
-                <li onclick="selectMachine('leadmachine1515');"><a href="#"><img
-                      src="img/mch/leadmachine1515.png" width="16px" />OpenBuilds
-                    LEAD 1515</a></li>
-              </ul>
-            </li>
-            <li><a href="#" onclick="selectMachine('minimill');"><img
-                  src="img/mch/minimill.png" width="16px" /> OpenBuilds MiniMill</a>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <h6>Add-Ons Installed<br><small>Telling us what kind of attachments the
-              machine has, allows us to pre-configure your Grbl Settings to match</small></h6>
-          <ul class="image-checkbox-ul">
-            <li>
-              <input type="checkbox" name="limits" id="limitsinstalled"
-                value="limits">
-              <label for="limitsinstalled"><img
-                  src="./img/toolhead/xtensionslimit.png" /></label>
-              <div class="image-checkbox-text">Xtension Limit Switches</div>
-            </li>
-            <!-- Radio Group -->
-            <li>
-              <input type="radio" name="toolhead" id="toolhead_router11"
-                value="router11">
-              <label for="toolhead_router11"><img
-                  src="./img/toolhead/router11.png" /></label>
-              <div class="image-checkbox-text">RoutER11 with IoT Relay</div>
-            </li>
-            <li>
-              <input type="radio" name="toolhead" id="toolhead_plasma"
-                value="plasma">
-              <label for="toolhead_plasma"><img
-                  src="./img/toolhead/leadplasma.png" /></label>
-              <div class="image-checkbox-text">LEAD 1010 Plasma Add-On</div>
-            </li>
-            <li>
-              <input type="radio" name="toolhead" id="toolhead_laser"
-                value="laser">
-              <label for="toolhead_laser"><img src="./img/toolhead/laser.png" /></label>
-              <div class="image-checkbox-text">Laser Diode Module</div>
-            </li>
-            <li>
-              <input type="radio" name="toolhead" id="toolhead_scribe"
-                value="scribe">
-              <label for="toolhead_scribe"><img src="./img/toolhead/plotter.png" /></label>
-              <div class="image-checkbox-text">SCRIBE<br>Pen Lifter</div>
-            </li>
-            <li>
-              <input type="radio" name="toolhead" id="toolhead_vfd_spindle"
-                value="vfd_spindle">
-              <label for="toolhead_vfd_spindle"><img src="./img/toolhead/vfd.png" /></label>
-              <div class="image-checkbox-text">Variable Speed Spindle</div>
-            </li>
-            <!-- End Radio Group -->
-          </ul>
-        </li>
-
-        <li>
-          <h6>Finished<br><small>Remember to "Save to Firmware" and Reset when Prompted. <br>If you have any custom requirements,
-              please customise the settings in the Advanced Settings section above</small></h6>
-        </li>
-
-
-      </ul>
-  </div>
   <div id="grbl-settings-advanced">
       <div id="grblSettingsTableView">
         <style>
@@ -547,10 +401,6 @@ function grblPopulate() {
   } else if (isMatchingConfig(grblParams, grblParams_vfd)) {
     setSelectedToolhead('vfd_spindle')
   }
-
-  setTimeout(function() {
-    setMachineButton(laststatus.machine.name);
-  }, 500)
 
   populateRestoreMenu();
 }

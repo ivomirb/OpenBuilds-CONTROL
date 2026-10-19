@@ -63,10 +63,6 @@ const {
 } = require('./grblUtilities.js');
 
 const {
-  initFlash
-} = require('./flash.js');
-
-const {
   initUpdate
 } = require('./update.js');
 
@@ -275,7 +271,7 @@ function createTrayIcon() {
     if (appIcon) {
       appIcon.displayBalloon({
         icon: nativeImage.createFromPath(iconPath),
-        title: "OpenBuildsGroove Started",
+        title: "Groove Control Started",
         content: "Groove Control has started successfully"
       })
     }
@@ -564,7 +560,6 @@ function main() {
   initGrblPort();
   initGrblSender();
   initGrblUtilities();
-  initFlash();
 
   initUpdate(electronApp.isPackaged);
 

@@ -734,10 +734,6 @@ function initSocket() {
 
   socket.on("jobComplete", onJobComplete);
 
-  if (typeof setMachineButton !== 'undefined') {
-    socket.on("machinename", setMachineButton);
-  }
-
   socket.on('status', onStatus);
 
   socket.on('features', onFeatures);
@@ -751,8 +747,6 @@ function initSocket() {
   socket.on("errorsCleared", errorsCleared);
 
   if (!isJogWidget) {
-    socket.on('progStatus', onProgStatus);
-
     socket.on('sysinfo', onSysInfo);
 
     socket.on("interfaceOutdated", function(status) {
