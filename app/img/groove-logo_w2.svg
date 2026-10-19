@@ -32,8 +32,8 @@
      inkscape:cy="196.05208"
      inkscape:window-width="1920"
      inkscape:window-height="1141"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:window-x="1912"
+     inkscape:window-y="1192"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1" />
   <defs
@@ -78,7 +78,7 @@
        sodipodi:nodetypes="ccccccc" />
     <path
        id="path28"
-       style="font-weight:700;font-size:13.2979px;font-family:SpaceBT-Bold, 'Space Bd BT';fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;stroke-dasharray:none;stroke-opacity:1"
+       style="font-weight:700;font-size:13.2979px;font-family:SpaceBT-Bold, 'Space Bd BT';fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:2.5;stroke-dasharray:none;stroke-opacity:1"
        d="M 42.181531,116.38059 20.034075,87.792595 C 10.590173,75.60259 9.2424007,75.749379 9.2424007,58.680998 V 3.2572579 H 36.720471 V 56.686016 c 0,5.078377 1.061457,9.185381 3.660213,12.770873 l 20.39689,28.141202 c 2.337581,3.225439 5.316227,4.537589 6.9559,4.529069 1.639533,0.009 4.61818,-1.30308 6.955761,-4.529069 L 95.086124,69.456889 c 2.598896,-3.585632 3.660214,-7.692496 3.660214,-12.770873 V 3.2572579 H 126.22441 V 58.680998 c 0,17.068381 -1.34777,16.921592 -10.79168,29.111597 L 93.285277,116.38059 c -9.510243,12.2759 -16.109018,15.82982 -25.551803,15.82982 -9.442784,0 -16.0417,-3.55392 -25.551943,-15.82982 z"
        sodipodi:nodetypes="sssccsscccssccssszs" />
     <path
