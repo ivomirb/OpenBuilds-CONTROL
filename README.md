@@ -9,6 +9,8 @@ Every feature has been enhanced. Frustrating bugs and quirks have been fixed. Th
 New features like the file history, origin history, a macro manager, a heightmap tool,
 and a slick job simulator fit seamlessly into the existing design.
 
+![Screenshot](docs/screenshot.png)
+
 ## Download
 
 **Latest version**

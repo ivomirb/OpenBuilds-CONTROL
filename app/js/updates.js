@@ -30,11 +30,36 @@ function getReleaseStats() {
 }
 
 function setChangelog(changelogText) {
-  let template = `<ul>`;
+  let closeUl = false;
+  let firstLine = false;
+  let template = "";
   for (let line of changelogText.split('\n')) {
-    template += '<li>' + line + '</li>';
+    if (line[0] == '*') {
+      if (!closeUl) {
+        template += firstLine ? '<ul style="padding-bottom:4px; padding-left:6px; margin:0px;">\n' : '<ul style="padding-top:4px; padding-bottom:4px; padding-left:6px; margin:0px;">\n';
+        closeUl = true;
+      }
+      firstLine = false;
+      template += '<li>' + line.substr(1) + '</li>\n';
+      continue;
+    }
+
+    if (closeUl) {
+      template += '</ul>\n';
+      closeUl = false;
+    }
+
+    if (line[0] == 'v') {
+      template += '<b style="line-height:2rem;">' + line + '</b><br>\n';
+      firstLine = true;
+    } else if (line.length > 0) {
+      template += line + '<br>\n';
+      firstLine = false;
+    }
   }
-  template += `</ul>`;
+  if (!closeUl) {
+    template += '<ul><br>\n';
+  }
 
   $("#changelog").html(template);
 }

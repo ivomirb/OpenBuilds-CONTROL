@@ -1,7 +1,7 @@
 {
   "name": "GrooveControl",
-  "version": "0.5.100",
-  "license": "AGPL-3.0",
+  "version": "1.0.0",
+  "license": "GPL-3.0",
   "description": "GrooveControl G-code Sender",
   "author": "github.com/ivomirb <cnc@ibeltchev.com>",
   "resolutions": {
