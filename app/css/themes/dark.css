@@ -519,6 +519,6 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
 }
 
 .theme_dark .gutter {
-  border-color: #888;
-  background-color: #888;
+  border-color: #888 !important;
+  background-color: #888 !important;
 }

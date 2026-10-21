@@ -61,8 +61,7 @@ function printLog(string) {
 
 function onGcodeUpload(gcode, filename) {
   if (isJogWidget) return;
-  printLogModern('', "api", "Received new G-code from API", "fg-darkGreen");
-  printLogModern('', "api", "API called window into focus", "fg-darkGreen");
+  printLogModern('', "g-code parser", "Received new G-code", "fg-darkGreen");
 
   currentGcode = gcode;
   loadedFileName = filename;
@@ -88,9 +87,9 @@ The editor is currently disabled. You can click the Clear button to clear the cu
   parseGcodeInWebWorker(gcode);
   $('#controlTab').click()
   if (webgl) {
-    $('#gcodeviewertab').click();
+    activateContentTab('gcodeviewertab');
   } else {
-    $('#gcodeeditortab').click();
+    activateContentTab('gcodeeditortab');
   }
 }
 
@@ -840,7 +839,7 @@ function scanNetwork() {
         const range = network + ".1-" + network + ".254"
         socket.emit('scannetwork', range)
         $('#controlTab').click();
-        $('#consoletab').click();
+        activateContentTab('consoletab');
       }
     }, {
       caption: "Cancel",
@@ -852,7 +851,7 @@ function scanNetwork() {
 }
 
 function selectPort(port) {
-  $('#consoletab').click();
+  activateContentTab('consoletab');
   if (port == undefined) {
     port = $("#portUSB").val()
   }
@@ -885,7 +884,7 @@ function closePort() {
   socket.emit('closePort', 1);
   populatePortsMenu();
   $('#controlTab').click();
-  $('#consoletab').click();
+  activateContentTab('consoletab');
 }
 
 function populatePortsMenu() {

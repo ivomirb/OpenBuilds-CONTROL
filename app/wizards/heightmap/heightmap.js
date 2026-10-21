@@ -1216,7 +1216,7 @@ function toggleHeightmapTools() {
   if (heightmapSettings.enabled) {
     viewSettings.heightmap = true;
     $('#viewHeighmtapSetting:checkbox').prop('checked', true);
-    $('#gcodeviewertab').click();
+    activateContentTab('gcodeviewertab');
   }
 }
 

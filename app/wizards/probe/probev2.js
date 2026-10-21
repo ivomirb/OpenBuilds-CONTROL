@@ -445,8 +445,8 @@ function resetJogModeAfterProbe() {
 
 function runProbeNew() {
   $('#confirmNewProbeBtn')[0].innerHTML = "Confirm Probe Position";
-  resetJogModeAfterProbe()
-  $("#consoletab").click()
+  resetJogModeAfterProbe();
+  activateContentTab("consoletab");
   probemode.stock.x = $("#stockwidth").val();
   probemode.stock.y = $("#stocklength").val();
 

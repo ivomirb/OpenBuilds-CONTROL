@@ -336,3 +336,8 @@ select {
   -webkit-box-pack: start;
   justify-content: flex-start;
 }
+
+.gutter {
+  border-color: #ddd !important;
+  background-color: #ddd !important;
+}

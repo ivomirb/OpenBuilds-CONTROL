@@ -2,7 +2,7 @@
 
 var MAX_WCS_HISTORY = 5;
 var WCS_HISTORY_TIMEOUT = 3000; // WCS changes within that timeout of the last one are ignored
-var MIN_SIDEPANEL_WIDTH = 1500; // the window width at which the side panel becomes available
+var MIN_SIDEPANEL_WIDTH = 1400; // the window width at which the side panel becomes available
 
 var wcsHistory = {
   G54: [],
@@ -348,6 +348,20 @@ function clearWcsHistory() {
   wcsHistoryEmpty = true;
 }
 
+function deleteContentTab(tabName) {
+	// only called on startup
+  const tab = $('#' + tabName);
+	tab.remove();
+  $('#sidePanel-' + tabName).remove();
+}
+
+function activateContentTab(tabName) {
+  if (tabName != currentTabName) {
+    const tab = $('#' + tabName);
+	  tab.click();
+	}
+}
+
 function sidePanelTabInternal(tabName) {
   if (currentTabName == tabName) {
     return;
@@ -407,8 +421,26 @@ function onWindowResize() {
 
 function uiDocReady() {
   $(window).on('resize', onWindowResize);
-  if (localStorage.getItem("sidePanelTab") == null) {
-		localStorage.setItem("sidePanelTab", "gcodeviewertab");
+  if (localStorage.getItem("sidePanelTab") == null) { // on first run show the viewer
+    localStorage.setItem("sidePanelTab", "gcodeviewertab");
+  }
+	const tabName = localStorage.getItem("sidePanelTab");
+	if (tabName && $('#' + tabName).length == 0) { // tab doesn't exist
+    localStorage.setItem("sidePanelTab", "");
 	}
+
+	if (localStorage.getItem("sidePanelSize")) {
+		let panelSize = JSON.parse(localStorage.getItem("sidePanelSize"));
+		if (Array.isArray(panelSize) && typeof panelSize[0] == 'string' && typeof panelSize[1] == 'string') {
+			$('#jogcontrols').parent().css('flex-basis', panelSize[0]);
+			$('#sidePanel').css('flex-basis', panelSize[1]);
+		}
+	}
+
+  const observer = new ResizeObserver(() => {
+		const panelSize = [$('#jogcontrols').parent().css('flex-basis'), $('#sidePanel').css('flex-basis')];
+		localStorage.setItem("sidePanelSize", JSON.stringify(panelSize));
+	});
+  observer.observe(document.getElementById("sidePanel"));
   onWindowResize();
 }

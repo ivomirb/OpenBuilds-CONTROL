@@ -53,7 +53,6 @@ $(document).ready(function() {
     servoDocReady();
     themeDocReady();
     heightmapDocReady();
-    uiDocReady();
 
     $("#command").inputHistory({
       enter: function() {
@@ -91,13 +90,15 @@ $(document).ready(function() {
         $('.linenumber').html((editor.getSelectionRange().start.row + 1));
       }, false);
     } else {
-    $('#gcodeeditortab').hide();
+      deleteContentTab('gcodeeditortab');
     }
 
     if (!webgl) {
-      $('#gcodeviewertab').hide();
-      $('#consoletab').click();
+      deleteContentTab('gcodeviewertab');
+      activateContentTab('consoletab');
     }
+
+    uiDocReady();
   }
 
   setInterval(function() {
@@ -190,9 +191,9 @@ function runJobFileInternal(gcode) {
   xhr.open('POST', '/runjob', true);
   xhr.send(formData);
   if (useEditor) {
-    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from gcode editor) sent to backend </span>`);
+    printLog(`<span class="fg-darkRed">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from gcode editor) sent to backend </span>`);
   } else {
-    printLog(`<span class="fg-red">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
+    printLog(`<span class="fg-darkRed">[ g-code parser ]</span><span class='fg-darkGray'> G-code File (from memory) sent to backend </span>`);
   }
 
   lastJobStartTime = new Date().getTime();
