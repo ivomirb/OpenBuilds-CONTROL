@@ -486,13 +486,19 @@ function onStatus(status) {
     }
   }
 
+  let html;
   if (unit == "in") {
-    $("#realFeed").html((status.machine.overrides.realFeed / 25.4).toFixed(0) + "<br>in/min");
+    html = (status.machine.overrides.realFeed / 25.4).toFixed(0) + "<br>in/min";
   } else {
-    $("#realFeed").html(status.machine.overrides.realFeed.toFixed(0) + "<br>mm/min");
+    html = status.machine.overrides.realFeed.toFixed(0) + "<br>mm/min";
   }
-  $("#realSpeed").html( status.machine.overrides.realSpindle.toFixed(0) + "<br>rpm");
-
+  if ($("#realFeed").html() != html) {
+    $("#realFeed").html(html);
+  }
+  html = status.machine.overrides.realSpindle.toFixed(0) + "<br>rpm";
+  if ($("#realSpeed").html() != html) {
+    $("#realSpeed").html(html);
+  }
 
   // Windows Power Management
   if (status.driver.operatingsystem == "windows") {
@@ -597,6 +603,7 @@ function onStatus(status) {
   // Enable or disable 4th axis UI elements
   $(".4thaxis-present").toggle(status.machine.has4thAxis);
   $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
+  $("#jogcell").css('max-width', (status.machine.has4thAxis && !disable4thAxis) ? "427px" : "348px");
 
   if (!isJogWidget && (!laststatus || laststatus.misc.trayIcon != status.misc.trayIcon) &&
       (status.driver.platform == 'win32' || status.driver.platform == 'linux')) {

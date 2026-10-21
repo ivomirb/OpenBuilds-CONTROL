@@ -457,6 +457,22 @@ The spindle will automatically start when the job is resumed.">
                 <span class="title">E-Stop</span>
               </div>
 
+              <div style="margin-left:auto;">
+                <button id="sidePanelBtn" class="button small dropdown-toggle" style="position:absolute; right:4px; bottom:0px;"><i class="fas fa-columns"></i> Side Panel</button>
+                <ul class="ribbon-dropdown grblmode" id="sidePanelMenu" data-role="dropdown" data-duration="100" style="left:auto; right:4px; width:max-content;">
+                  <style>
+                    #sidePanelMenu > li > a {
+                      white-space: nowrap;
+                      padding-right: 12px !important;
+                    }
+                  </style>
+                  <li id="sidePanel-" class="checked" onclick="sidePanelTab('')"><a href="#">Hide</a></li>
+                  <li id="sidePanel-gcodeviewertab" onclick="sidePanelTab('gcodeviewertab')"><a href="#"><i class="mif-3d-rotation fa-fw fg-blue"></i> 3D View</a></li>
+                  <li id="sidePanel-consoletab" onclick="sidePanelTab('consoletab')"><a href="#"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
+                  <li id="sidePanel-macrostab" onclick="sidePanelTab('macrostab')"><a href="#"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
+                  <li id="sidePanel-gcodeeditortab" onclick="sidePanelTab('gcodeeditortab')"><a href="#"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
+                </ul>
+              </div>
             </div>
 
             <!-- End Jog/Main -->
@@ -532,13 +548,14 @@ The spindle will automatically start when the job is resumed.">
           </div>
         </nav>
 
-        <div id="manualControlPanel">
+
+        <div id="manualControlPanel" data-role="splitter" data-min-sizes="1000, 400" data-gutter-size="6">
           <center>
             <div id="jogcontrols" class="mt-1">
-              <div class="row flex-justify-center flex-align-start" style="width: 100%; height: 100%;">
-                <div class="cell border-right bd-gray ">
+              <div class="row flex-align-start" style="width: 100%; height: 100%; flex-wrap:nowrap;">
+                <div class="cell border-right bd-gray" style="max-width:300px;">
 
-                  <table class="drotable mt-1">
+                  <table class="drotable" style="margin-top:-4px;">
                     <tr>
                       <td>
                         <div class="pos-relative">
@@ -782,7 +799,7 @@ Restore previous origins from history.">
                     </tr>
                   </table>
                 </div>
-                <div class="cell">
+                <div class="cell" id="jogcell" style="max-width:350px; padding-top: 1px;">
 
                   <table class="jogtable">
                     <tr>
@@ -956,74 +973,79 @@ Restore previous origins from history.">
                   </table>
                 </div>
 
-                <div class="cell border-left bd-gray" id="jrocell">
+                <div class="cell border-left bd-gray" id="jrocell" style="min-width:75px; max-width:100px; display:flex; flex-direction:column; align-items:center; padding-top:3px;">
                   <button class="button light mini mb-1" onclick="jogOverride(100);">reset</button>
-                  <input id="jro" data-on-stop="jogOverride(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="true" data-size="180" data-min="1" data-max="100" data-value="100" data-hint="true" data-hint-always="true"
+                  <input id="jro" data-on-stop="jogOverride(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="true" data-size="160" data-min="1" data-max="100" data-value="100" data-hint="true" data-hint-always="true"
                     data-hint-position="bottom" data-hint-mask="Jog: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                   <span class="tally text-small bg-openbuilds fg-white" id="realJog" style="display:none;"></span>
                 </div>
 
-                <div class="cell border-left bd-gray" id="frocell">
+                <div class="cell border-left bd-gray" id="frocell" style="min-width:75px; max-width:100px; display:flex; flex-direction:column; align-items:center; padding-top:3px;">
                   <button class="button light mini mb-1" onclick="feedOverride(100);">reset</button>
-                  <input id="fro" data-on-stop="feedOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
+                  <input id="fro" data-on-stop="feedOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="160" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Feed: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                   <span class="tally text-small bg-openbuilds fg-white" id="realFeed" style="width:64px; height:fit-content; vertical-align:top; padding-bottom:3px; margin-top:2px;"></span>
                 </div>
-                <div class="cell border-left bd-gray" id="trocell">
+                <div class="cell border-left bd-gray" id="trocell" style="min-width:75px; max-width:100px; display:flex; flex-direction:column; align-items:center; padding-top:3px;">
                   <button class="button light mini  mb-1" onclick="spindleOverride(100);">reset</button>
-                  <input id="tro" data-on-stop="spindleOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="180" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
+                  <input id="tro" data-on-stop="spindleOverride(arguments[0])" data-role="slider" data-accuracy="5" data-vertical="true" data-size="160" data-accuracy="1" data-min="10" data-max="200" data-value="100" data-hint="true"
                     data-hint-always="true" data-hint-position="bottom" data-hint-mask="Tool: $1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                   <span class="tally text-small bg-openbuilds fg-white" id="realSpeed" style="width:64px; height:fit-content; vertical-align:top; padding-bottom:3px; margin-top:2px;"></span>
                 </div>
+                <div></div>
               </div>
             </div>
 
 
             <div id="controlLogs" class="mt-0">
 
-              <nav data-role="ribbonmenu">
+              <nav data-role="ribbonmenu" style="height: calc(100vh - 465px); display:flex; flex-direction:column;">
                 <ul class="tabs-holder">
-                  <li><a href="#tab-three" id="gcodeviewertab" onclick="fixRenderSize();"><i class="mif-3d-rotation fa-fw fg-darkCobalt" id="3dviewicon"></i><span id="3dviewlabel"> 3D View</span></a></li>
-                  <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Log / Serial Console</a></li>
+                  <li><a href="#tab-three" id="gcodeviewertab"><i class="mif-3d-rotation fa-fw fg-blue" id="3dviewicon"></i><span id="3dviewlabel"> 3D View</span></a></li>
+                  <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
                   <li><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
                   <li><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
                 </ul>
 
-                <div class="content-holder">
-                  <div class="section" id="tab-one">
+                <div class="content-holder" id="mainTabHolder" style="flex-grow:1; min-height:0;">
+                  <div class="section" id="tab-one" style="height:100%; flex-direction:column;">
                     <div id="console"></div>
-                    <div class="fixed-bottom m-3 mb-9">
+                    <div class="mt-1">
                       <form class="inline-form" id="commandform" autocomplete="off">
-                        <input title="Tip: Press F6 anywhere on the CONTROL window to quickly jump to this input" data-prepend="&nbsp;<i class='fas fa-terminal'></i>" data-role="input" data-clear-button="false" data-role="input" id="command"
-                          type="text" autocomplete="on" class=" dark needs-connection" style="width:800px;" data-editable="true" placeholder="Enter G-code/Serial commands here to send it to your machine" />
-                        <button id="sendCommand" class="button dark needs-connection" type="button" title="Execute command">
-                          <i class="fa fa-play" style="margin-right: 10px;"></i> Send
-                        </button>
-                        <button class="button dark emptylog" type="button" onclick="$('#console').empty();" title="Clear the Log screen">
-                          <i class="fa fa-trash"></i>
-                        </button>
+                        <div style="margin:3px 0px 0px 3px; min-width:100px; max-width:800px; flex-grow:1;">
+                          <input title="Tip: Press F6 anywhere on the CONTROL window to quickly jump to this input" data-prepend="&nbsp;<i class='fas fa-terminal'></i>" data-role="input" data-clear-button="false" data-role="input" id="command"
+                            type="text" autocomplete="on" class=" dark needs-connection" style="margin:0;" data-editable="true" placeholder="Enter G-code commands to send to your machine" />
+                        </div>
+                        <div style="display:flex; flex-wrap:nowrap; margin:3px 0px 0px 3px;">
+                          <button id="sendCommand" class="button dark needs-connection" type="button" title="Execute command">
+                            <i class="fa fa-play" style="margin-right: 10px;"></i> Send
+                          </button>
+                          <button class="button dark emptylog" type="button" onclick="$('#console').empty();" title="Clear the Log screen">
+                            <i class="fa fa-trash"></i>
+                          </button>
+                        </div>
                       </form>
                     </div>
                   </div>
-                  <div class="section" id="tab-two">
+
+                  <div class="section" id="tab-two" style="height:100%; flex-direction:column;">
                     <div id="editor"></div>
 
-                    <div class="fixed-bottom m-3 mb-9">
-                      <!-- <form class="inline-form"> -->
-                      <button title="Update the 3D View with the edited G-code" class="button success editorEnabled" onclick="previewGcode()"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
-                      <button title="Save G-code to file" class="button primary editorEnabled" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
-                      <button title="Find and Replace" class="button dark editorEnabled" onclick="editor.execCommand('replace')"><i class="fas fa-search"></i> Find/Replace</button>&nbsp;
-                      <button title="Select All" class="button dark editorEnabled" onclick="editor.execCommand('selectall')"><i class="far fa-check-square"></i> Select All</button>&nbsp;
-                      <button title="Undo" class="button dark editorEnabled" onclick="editor.execCommand('undo')"><i class="fas fa-undo"></i> Undo</button>&nbsp;
-                      <button title="Redo" class="button dark editorEnabled" onclick="editor.execCommand('redo')"><i class="fas fa-redo"></i> Redo</button>&nbsp;
-                      <button title="Go to End" class="button dark editorEnabled" onclick="editor.execCommand('gotoend')"><i class="fas fa-chevron-down"></i></button>&nbsp;
-                      <button title="Go to Start" class="button dark editorEnabled" onclick="editor.execCommand('gotostart')"><i class="fas fa-chevron-up"></i></button>&nbsp;
-                      <button title="Clear Editor" class="button dark" onclick="clearGcode()"><i class="fas fa-eraser"></i>
-                        Clear</button>&nbsp;
-                      <!-- </form> -->
+                    <div class="mt-1" style="display:flex; flex-direction:row; flex-wrap: wrap; justify-content: center;">
+                      <button style="margin:1px;" title="Update the 3D View with the edited G-code" class="button success editorEnabled" onclick="previewGcode()"><i class="mif-3d-rotation fa-fw"></i> Update 3D View</button>&nbsp;
+                      <button style="margin:1px;" title="Save G-code to file" class="button primary editorEnabled" onclick="saveGcode();"><i class="fa fa-save icon"></i></button>&nbsp;
+                      <button style="margin:1px;" title="Find and Replace" class="button dark editorEnabled" onclick="editor.execCommand('replace')"><i class="fas fa-search"></i> Find/Replace</button>&nbsp;
+                      <button style="margin:1px;" title="Select All" class="button dark editorEnabled" onclick="editor.execCommand('selectall')"><i class="far fa-check-square"></i> Select All</button>&nbsp;
+                      <button style="margin:1px;" title="Undo" class="button dark editorEnabled" onclick="editor.execCommand('undo')"><i class="fas fa-undo"></i> Undo</button>&nbsp;
+                      <button style="margin:1px;" title="Redo" class="button dark editorEnabled" onclick="editor.execCommand('redo')"><i class="fas fa-redo"></i> Redo</button>&nbsp;
+                      <button style="margin:1px;" title="Go to End" class="button dark editorEnabled" onclick="editor.execCommand('gotoend')"><i class="fas fa-chevron-down"></i></button>&nbsp;
+                      <button style="margin:1px;" title="Go to Start" class="button dark editorEnabled" onclick="editor.execCommand('gotostart')"><i class="fas fa-chevron-up"></i></button>&nbsp;
+                      <button style="margin:1px;" title="Clear Editor" class="button dark" onclick="clearGcode()"><i class="fas fa-eraser"></i>Clear</button>
                     </div>
                   </div>
-                  <div class="section" id="tab-three">
+
+
+                  <div class="section" id="tab-three" style="height:100%">
                     <div id="renderArea"></div>
                     <div id="renderToolbar" class="toolbar no-divider" style="height:39px; position:absolute; padding:0px; margin:6px;">
                       <div>
@@ -1108,7 +1130,7 @@ Restore previous origins from history.">
                     </div>
                     <div class="fixed-bottom" style="position:absolute; left:10px; bottom:0px; display:flex; flex-direction:row; align-items:self-end; justify-content:flex-start;">
                       <button id="runSimBtn" style="margin-right:11px; margin-bottom:10px;" title="Run simulation" class="button dark" onclick="sim(0, true)"><i class="fas fa-fighter-jet"></i> Simulate</button>
-                      <div class="content-holder" id="simControls" style="display:none; height: auto; padding:5px;  margin-left:-6px; margin-bottom:4px; border: 1px solid;">
+                      <div id="simControls" style="display:none; height: auto; padding:5px; margin-left:-6px; margin-bottom:4px; border: 1px solid; text-wrap:nowrap;">
                         <input id="simProgress" class="thin cycle-marker" data-on-start="simDragStart()" data-on-stop="simDragStop()" data-on-change="if (typeof simSetProgress == 'function') simSetProgress(arguments[0])" data-role="slider" data-accuracy="1" data-vertical="false" data-size="100%" data-min="0" data-max="100" data-value="0" data-hint="true"
                          data-hint-position="top" data-hint-always="true" data-hint-mask="$1%" data-cls-hint="bg-light fg-dark shadow-1" data-cls-complete="bg-openbuilds"/>
                         <button id="stopSimBtn" title="Stop Sim" class="button dark" onclick="simstop()"><i class="fas fa-stop"></i> Stop Sim</button>
@@ -1127,13 +1149,15 @@ Restore previous origins from history.">
                           </ul>
                         </div>
                       </div>
-                      <div class="content-holder" id="simText" style="display:none; height:auto; padding:5px; margin-left:2px; margin-bottom:4px; border: 1px solid; z-index:100;">
+                      <div id="simText" style="display:none; height:auto; padding:5px; margin-left:2px; margin-bottom:4px; border: 1px solid; z-index:100;">
                         <span style="display:block; height:auto; text-align:left; line-height:1; font-size:0.75rem; font-weight:600;"></span>
                       </div>
                     </div>
                     <div id="conetext" style="position:absolute; top:0px; left:0px; padding:2px; display:none; z-index:100;"></div>
                   </div>
-                  <div class="section" id="tab-four">
+
+
+                  <div class="section" id="tab-four" style="height:100%">
                     <ul id="macroVerticalTabs" data-tabs-position="vertical" data-role="tabs" data-expand="true" vertical></ul>
                     <div style="flex:1">
                       <ul id="macroHorizontalTabs" data-role="tabs" data-expand="true"></ul>
@@ -1164,12 +1188,15 @@ Restore previous origins from history.">
                       </div>
                     </div>
                   </div>
+
                 </div>
               </nav>
             </div>
             <!-- End controlLogs -->
           </center>
+          <div id="sidePanel" style="height:calc(100vh - 224px);"></div>
         </div>
+
         <div id="grblPanel" style="display: none;">
           <div id="grblconfig"></div>
         </div>

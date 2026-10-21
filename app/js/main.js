@@ -53,6 +53,7 @@ $(document).ready(function() {
     servoDocReady();
     themeDocReady();
     heightmapDocReady();
+    uiDocReady();
 
     $("#command").inputHistory({
       enter: function() {
@@ -76,9 +77,7 @@ $(document).ready(function() {
 
       // The editor doesn't update when its text changes, unless it is visible.
       // The observer forces an update when the editor becomes visible.
-      const observer = new IntersectionObserver(
-        () => { editor.resize(); },
-        {root: document.documentElement});
+      const observer = new ResizeObserver(() => { editor.resize(); });
       observer.observe(document.getElementById("editor"));
 
       editor.container.addEventListener("contextmenu", function(e) {

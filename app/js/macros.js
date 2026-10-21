@@ -88,7 +88,7 @@ function populateMacroButtons(runStartups) {
       }
     }
   }
-  $("#macros").append(`<small style="flex-basis:100%"><i class="fas fa-info-circle"></i>  Right click your Macro buttons to edit/sort/delete/export</small>`);
+  $("#macros").append(`<small style="flex-basis:100%; text-align:center; padding-top: 8px;"><i class="fas fa-info-circle"></i>  Right click your Macro buttons to edit/sort/delete/export</small>`);
 
   saveMacroButtons();
   rebuildMacroGroups();
@@ -715,12 +715,12 @@ function setMacroGroupView(view) {
   }
   if (view == 0) {
     setCurrentMacroGroup("");
-    $('#macros').css('height', 'calc(100vh - 495px)');
+    $('#macros').css('height', '100%');
   } else {
     const activeIdx = Math.max(0, macroGroupsLower.indexOf(currentMacroGroupLower));
     setCurrentMacroGroup(macroGroupsLower[activeIdx]);
     createMacroTabs($(view == 1 ? '#macroHorizontalTabs' : '#macroVerticalTabs'), activeIdx);
-    $('#macros').css('height', view == 1 ? 'calc(100vh - 537px)' : 'calc(100vh - 495px)');
+    $('#macros').css('height', view == 1 ? 'calc(100% - 30px)' : '100%');
   }
 
   refreshMacroVisibility();

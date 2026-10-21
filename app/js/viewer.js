@@ -419,7 +419,7 @@ function init3D() {
 
     // The viewport doesn't resize if it is hidden.
     // The observer forces an update when the viewport becomes visible.
-    const observer = new IntersectionObserver(fixRenderSize, {root: document.documentElement});
+    const observer = new ResizeObserver(fixRenderSize);
     observer.observe(document.getElementById("renderArea"));
 
   } else {
@@ -547,9 +547,6 @@ function makeSprite(rendererType, vals) {
   return textObject;
 }
 
-
-// Global Function to keep three fullscreen
-
 function fixRenderSize() {
   if (renderer) {
     setTimeout(function() {
@@ -563,8 +560,6 @@ function fixRenderSize() {
     }, 0);
   }
 }
-
-$(window).on('resize', fixRenderSize);
 
 function resetView(object) {
   if (object && object.userData.pointCount > 1) {

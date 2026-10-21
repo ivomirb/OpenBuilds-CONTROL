@@ -2,6 +2,7 @@
 
 var MAX_WCS_HISTORY = 5;
 var WCS_HISTORY_TIMEOUT = 3000; // WCS changes within that timeout of the last one are ignored
+var MIN_SIDEPANEL_WIDTH = 1500; // the window width at which the side panel becomes available
 
 var wcsHistory = {
   G54: [],
@@ -15,6 +16,7 @@ var wcsHistory = {
 var wcsHistoryEmpty = true;
 var lastWcsCapture = {};
 var rippleTimeout = undefined;
+var currentTabName = undefined;
 
 function addRemoveClass(element, className, add) {
   if (typeof element == "string") {
@@ -344,4 +346,69 @@ function clearWcsHistory() {
   wcsHistory.G59.length = 0;
   updateWcsHistory();
   wcsHistoryEmpty = true;
+}
+
+function sidePanelTabInternal(tabName) {
+  if (currentTabName == tabName) {
+    return;
+  }
+
+  if (currentTabName) {
+    const tab = $('#' + currentTabName);
+    const contentId = tab.attr('href');
+    const content = $(contentId);
+    $('#mainTabHolder').append(content);
+    tab.show().click();
+  }
+
+  $('#sidePanelMenu li').removeClass('checked');
+  $('#sidePanel-' + tabName).addClass('checked');
+  if (tabName) {
+    const tab = $('#' + tabName);
+    const contentId = tab.attr('href');
+    const content = $(contentId);
+    $('#sidePanel').append(content);
+    $('#sidePanel').show();
+    $('#manualControlPanel > .gutter').show();
+    tab.hide();
+    if (tab.parent().hasClass("active") && !currentTabName) {
+      let next = tab.parent().next();
+      if (next.length == 0) {
+        next = tab.parent().prev();
+      }
+      next.children('a').click();
+    }
+  }
+  else {
+    $('#sidePanel').hide();
+    $('#manualControlPanel > .gutter').hide();
+  }
+  currentTabName = tabName;
+}
+
+function sidePanelTab(tabName) {
+  sidePanelTabInternal(tabName);
+  localStorage.setItem("sidePanelTab", tabName);
+}
+
+function onWindowResize() {
+  const width = window.innerWidth;
+  if (width >= MIN_SIDEPANEL_WIDTH) {
+    $('#sidePanelBtn').show();
+    sidePanelTabInternal(localStorage.getItem("sidePanelTab"));
+  }
+  else {
+    sidePanelTabInternal("");
+    $('#sidePanelBtn').hide();
+    $('#sidePanel').hide();
+    $('#manualControlPanel > .gutter').hide();
+  }
+}
+
+function uiDocReady() {
+  $(window).on('resize', onWindowResize);
+  if (localStorage.getItem("sidePanelTab") == null) {
+		localStorage.setItem("sidePanelTab", "gcodeviewertab");
+	}
+  onWindowResize();
 }
