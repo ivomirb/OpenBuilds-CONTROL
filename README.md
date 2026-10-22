@@ -136,7 +136,7 @@ Others are new features that can be added to either Groove or the original OpenB
 * **Find Hole Center** - Fast and precise method for finding the center of a circular or rectangular hole
 * **Spindle Delay** - Inserts a short delay after the spindle starts, without using the G4 command. Useful for hardware that has problems with G4.
 
-## Building the app
+## Building Groove Control
 
 These steps work for Windows and Linux, and I suspect it is the same for Mac:
 * Install a recent version of node js (22 or above should work)
@@ -153,6 +153,7 @@ These steps work for Windows and Linux, and I suspect it is the same for Mac:
 
 The first few iterations of the public release will focus on stability, addressing bugs and compatibility issues that people report.<br>
 Please, report any issues you encounter. They can't be fixed if I don't know about them.
+You can post in the Issues and Discussions pages, or just email cnc@ibeltchev.com if you don't want to register to GitHub.
 
 ### Future Features
 
@@ -167,6 +168,8 @@ The benefits of any additions will be weighed against their impact on the overal
 * **Rotary preview** - correctly show toolpaths that use the A axis in the 3d view
 
 * **Tool change support** - allow for manual or assisted tool change
+
+* **Better use of larger screens** - will allow moving one of the main components (e.g. 3d view) to a secondary panel
 
 That said, new features can be added via macros as well. The bar for those is lower than for features in the main software,
 since they are optional addons, and usually address a niche need.
