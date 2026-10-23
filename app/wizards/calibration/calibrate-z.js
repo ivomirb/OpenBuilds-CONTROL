@@ -1,7 +1,7 @@
 var zcalmovedistance = 50;
 
 
-var zcaltemplate = `
+const zcaltemplate = `
    <div id="zcalstep1">
       <table class="table">
          <tr>
@@ -80,11 +80,11 @@ var zcaltemplate = `
 
 function applycalibrationz() {
   autoBackup("Calibrated Z");
-  var actualdist = $('#zcaltraveldist').val();
-  var currentstepspermm = parseFloat(grblParams['$102']);
-  // var currentstepspermm = 199.9;
+  const actualdist = $('#zcaltraveldist').val();
+  const currentstepspermm = parseFloat(grblParams['$102']);
+  // const currentstepspermm = 199.9;
   // newstepsval = currentsteps * (intended distance  / actual distance)
-  var newsteps = (currentstepspermm * (zcalmovedistance / actualdist)).toFixed(2);
+  const newsteps = (currentstepspermm * (zcalmovedistance / actualdist)).toFixed(2);
   // alert("New Steps Per MM Value:  " + newsteps);
   // $('#val-102-input').val(newsteps)
   // checkifchanged();
@@ -113,11 +113,11 @@ function zstepscalibrate() {
     zcalmovedistance = $("#zcalmovedistance").val();
     $(".zcalmovedistanceval").html(zcalmovedistance);
     $("#zcaltraveldist").val(zcalmovedistance)
-    var actualdist = $('#zcaltraveldist').val();
-    var currentstepspermm = parseFloat(grblParams['$102']);
-    // var currentstepspermm = 199.9;
+    const actualdist = $('#zcaltraveldist').val();
+    const currentstepspermm = parseFloat(grblParams['$102']);
+    // const currentstepspermm = 199.9;
     // newstepsval = currentsteps * (intended distance  / actual distance)
-    var newsteps = (currentstepspermm * (zcalmovedistance / actualdist)).toFixed(2);
+    const newsteps = (currentstepspermm * (zcalmovedistance / actualdist)).toFixed(2);
     $("#newsteps").html(newsteps)
     $("#currentstepspermm").html(currentstepspermm)
     $("#reqdistance").html(zcalmovedistance)
@@ -125,11 +125,11 @@ function zstepscalibrate() {
   });
 
   $("#zcaltraveldist").keyup(function() {
-    var actualdist = $('#zcaltraveldist').val();
-    var currentstepspermm = parseFloat(grblParams['$102']);
-    // var currentstepspermm = 199.9;
+    const actualdist = $('#zcaltraveldist').val();
+    const currentstepspermm = parseFloat(grblParams['$102']);
+    // const currentstepspermm = 199.9;
     // newstepsval = currentsteps * (intended distance  / actual distance)
-    var newsteps = (currentstepspermm * (zcalmovedistance / actualdist)).toFixed(2);
+    const newsteps = (currentstepspermm * (zcalmovedistance / actualdist)).toFixed(2);
     $("#showcalc").show()
     $("#newsteps").html(newsteps)
     $("#currentstepspermm").html(currentstepspermm)

@@ -73,7 +73,6 @@ const usedFunctions = {
   jogWidget,
   onShortcutInputClick,
   onShortcutInputChange,
-  keyboardShortcutsEditor,
   simSpeed,
   runSimFrom,
   simStepBack,

@@ -36,7 +36,7 @@ const appSettingsDlg = `
   <li><a id="keyboardSettingsTab" href="#keyboardSettings" style="font-size:14px;"><i class="fas fa-keyboard"></i> Keyboard</a></li>
 <!--  <li><a id="gamepadSettingsTab" href="#gamepadSettings" style="font-size:14px;"><i class="fas fa-gamepad"></i> Gamepad</a></li> -->
   <li><a id="rotarySettingsTab" href="#rotarySettings" style="font-size:14px;"><i class="fab fa-ubuntu"></i> Rotary</a></li>
-<!--  <li><a id="toolchangeSettingsTab" href="#toolchangeSettings" style="font-size:14px;"><i class="fas fa-wrench"></i> Toolchange</a></li> -->
+<!--  <li><a id="toolchangeSettingsTab" href="#toolchangeSettings" style="font-size:14px;"><i class="fas fa-tools"></i> Toolchange</a></li> -->
 </ul>
 <div class="content-holder" style="background-color:inherit;">
 

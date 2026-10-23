@@ -450,7 +450,7 @@ function runProbeNew() {
   probemode.stock.x = $("#stockwidth").val();
   probemode.stock.y = $("#stocklength").val();
 
-  var template = `Code todo: run: \n`
+  let template = `Code todo: run: \n`
   template += `Mode: ` + probemode.mode + `\n`
   template += `Probe: ` + probemode.probe.name + `\n`
   template += `Probe: X:` + probemode.probe.xoffset + `\n`
@@ -458,7 +458,7 @@ function runProbeNew() {
   template += `Probe: Z:` + probemode.probe.zoffset + `\n`
 
   if (probemode.mode == "xyz" || probemode.mode == "xzero" || probemode.mode == "yzero" || probemode.mode == "zzero") {
-    var endmillUnit = $("#probeunitxyz").val();
+    const endmillUnit = $("#probeunitxyz").val();
     if (endmillUnit == "mm") {
       probemode.endmilldia = parseFloat($("#probediameterxyz").val());
     } else {
@@ -467,7 +467,7 @@ function runProbeNew() {
     template += `Endmill: ` + probemode.endmilldia + `mm\n`
   }
 
-  var stockoffset = {
+  let stockoffset = {
     x: 0,
     y: 0
   }
@@ -634,7 +634,7 @@ function runProbeNew() {
 
     captureWcsHistory('Before <b>Probe XYZ</b>');
 
-    var xyzmacro = `
+    let xyzmacro = `
     ; Header
     G21 ; mm mode
     G10 P0 L20 X0 Y0 Z0 ; zero out current location

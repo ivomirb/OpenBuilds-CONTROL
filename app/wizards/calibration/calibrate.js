@@ -1,4 +1,4 @@
-var grblcalctemplate = `<div>
+const grblcalctemplate = `<div>
       Use the wizard below to calculate theoretical steps-per-mm values for this axis. This will get you quite close and ready for initial testing. To fine tune final calibration, make use of the Calibration Wizards under Wizards and Tools.
       <hr>
       <table class="table striped compact">
@@ -95,9 +95,7 @@ function xstepspermm() {
       }
     ]
   });
-  setTimeout(function() {
-    processpreset()
-  }, 100)
+  setTimeout(processpreset, 100);
 
 }
 
@@ -123,9 +121,7 @@ function ystepspermm() {
       }
     ]
   });
-  setTimeout(function() {
-    processpreset()
-  }, 100)
+  setTimeout(processpreset, 100);
 }
 
 function zstepspermm() {
@@ -150,9 +146,7 @@ function zstepspermm() {
       }
     ]
   });
-  setTimeout(function() {
-    processpreset()
-  }, 100)
+  setTimeout(processpreset, 100);
 }
 
 // function motorselect() {
@@ -161,7 +155,7 @@ function zstepspermm() {
 // }
 
 function actuatorselect() {
-  var select = $("#actuatorselect").data('select');
+  const select = $("#actuatorselect").data('select');
   console.log("Current value: " + select.val());
 
   if (select.val() == "belt") {
@@ -177,22 +171,22 @@ function actuatorselect() {
 }
 
 function processpreset() {
-  var actuatorselect = $("#actuatorselect").data('select');
+  const actuatorselect = $("#actuatorselect").data('select');
   // console.log("actuatorselect value: " + actuatorselect.val());
 
-  var motorselect = $("#motorselect").data('select');
+  const motorselect = $("#motorselect").data('select');
   // console.log("motorselect value: " + motorselect.val());
 
-  var microstepselect = $("#microstepselect").data('select');
+  const microstepselect = $("#microstepselect").data('select');
   // console.log("microstepselect value: " + microstepselect.val());
 
-  var beltselect = $("#beltselect").data('select');
+  const beltselect = $("#beltselect").data('select');
   // console.log("beltselect value: " + beltselect.val());
 
-  var pulleyselect = $("#pulleyselect").data('select');
+  const pulleyselect = $("#pulleyselect").data('select');
   // console.log("pulleyselect value: " + pulleyselect.val());
 
-  var leadscrewselect = $("#leadscrewselect").data('select');
+  const leadscrewselect = $("#leadscrewselect").data('select');
   // console.log("leadscrewselect value: " + leadscrewselect.val());
 
   if (actuatorselect.val() == "belt") {

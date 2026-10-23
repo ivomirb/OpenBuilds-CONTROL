@@ -133,22 +133,20 @@ function parseGcodeInWebWorker(gcode) {
             redrawGrid(object.userData.bbbox2.min.x, object.userData.bbbox2.max.x, object.userData.bbbox2.min.y, object.userData.bbbox2.max.y, false);
           }
 
-          setTimeout(function() {
-            if (webgl) {
-              activateContentTab('gcodeviewertab');
-            }
-            clearSceneFlag = true;
-            resetView(object);
-            const timeremain = object.userData.totalTime;
+          if (webgl) {
+            activateContentTab('gcodeviewertab');
+          }
+          clearSceneFlag = true;
+          resetView(object);
+          const timeremain = object.userData.totalTime;
 
-            if (!isNaN(timeremain)) {
-              // output formattedTime to UI here
-              $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-              printLog("<span class='fg-darkRed'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
-            } else {
-              $('#timeRemaining').html("");
-            }
-          }, 200);
+          if (!isNaN(timeremain)) {
+            // output formattedTime to UI here
+            $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
+            printLog("<span class='fg-darkRed'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
+          } else {
+            $('#timeRemaining').html("");
+          }
           $('#3dviewicon').removeClass('fa-pulse');
           $('#3dviewlabel').html(' 3D View');
         } else {
