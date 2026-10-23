@@ -1,13 +1,12 @@
 ![Groove Control](docs/groove-control-logo.png)
 
-# Groove Control
 Groove Control is a G-code sender software for CNC machines running Grbl, GrblHAL, and FluidNC.
 
 It is the spiritual successor of the popular OpenBuilds CONTROL software.
 It builds on what made the original great - its simple and extremely approachable interface -
 and takes it to the next level of polish, safety and usability.
 
-Every feature has been enhanced. Frustrating bugs and quirks have been fixed. The job control is improved and more reliable.
+Every feature has been enhanced. Frustrating bugs and quirks have been fixed. The job controls are improved and more reliable.
 New features like the file history, origin history, a macro manager, a heightmap tool,
 and a slick job simulator fit seamlessly into the existing design.
 
@@ -48,7 +47,7 @@ Here are the major changes from the original OpenBuilds CONTROL
 * **Improvement:** More accurate machine limits, compatible with a variety of homing settings for Grbl, GrblHAL and FluidNC
 * **Improvement:** The Pause and Stop buttons remain available until the very end of the job
 * **Improvement:** A new setting to hide the controls for the 4th axis if it is supported, but not used
-* **Improvement:** The "Recover from line" feature is more reliable
+* **Improvement:** The "Recover from line" feature is smarter and more reliable
 * **Improvement:** Doesn't reset the "recently homed" status for errors and alerts that don't invalidate the machine position
 * **Improvement:** The homing button prevents accidental homing, and has a menu for homing a single axis if the hardware supports it
 * **Improvement:** Improved the speed and reliability of the controller detection over USB cable
@@ -81,8 +80,8 @@ Here are the major changes from the original OpenBuilds CONTROL
 * **Improvement:** Added a new option to view only the modified settings, and buttons to revert each change
 * **Improvement:** Added more known GrblHAL settings and updated wrong descriptions
 * **Improvement:** Added support for a 4th axis in settings $3 and $23
-* **Improvement:** Basic support for FluidNC that shows the configuration file
-* **Improvement:** The "Basic" settings tab is removed, as it is specific to hardware that is no longer manufactured
+* **Improvement:** Rudimentary support for FluidNC that shows the configuration file
+* **Improvement:** The "Basic" settings tab is removed, as it relates to hardware that is no longer manufactured
 * **Improvement:** The flashing capabilities are removed for the same reason
 * **Bug Fix:** Fixed a bug where using the search filter loses all unsaved changes
 * **Bug Fix:** Fixed the broken tooltips for the setting descriptions
@@ -172,7 +171,7 @@ The benefits of any additions will be weighed against their impact on the overal
 
 * **Tool change support** - allow for manual or assisted tool change
 
-* **Better use of larger screens** - will allow moving one of the main components (e.g. 3d view) to a secondary panel
+* **Better use of larger screens** - will allow moving one of the main tabs (e.g. 3d view) to a secondary panel
 
 That said, new features can be added via macros as well. The bar for those is lower than for features in the main software,
 since they are optional addons, and usually address a niche need.
