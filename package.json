@@ -49,7 +49,7 @@
   "keywords": [
     "usb"
   ],
-  "repository": "https://github.com/ivomirb/OpenBuilds-CONTROL",
+  "repository": "https://github.com/ivomirb/GrooveControl",
   "build": {
     "publish": [
       {

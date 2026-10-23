@@ -1,17 +1,9 @@
 "use strict";
 
 var servo = false;
-var penupval = 128;
-var pendownval = 128;
 
 if (localStorage.getItem("servo-calibration")) {
   servo = JSON.parse(localStorage.getItem("servo-calibration"));
-  penupval = servo.up;
-  pendownval = servo.down;
-} else {
-  servo = false;
-  penupval = 128
-  pendownval = 128
 }
 
 function servoDocReady() {

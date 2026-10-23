@@ -222,7 +222,7 @@ function createMacMenu() {
 }
 
 function onShowTraySettings() {
-  serverEmit('showSettings', "os");
+  serverEmit('showSettings', "main:os");
   removeDocReadyHandler(onShowTraySettings);
 }
 
@@ -245,7 +245,7 @@ function createTrayIcon() {
         click() {
           if (jogWindow) {
             showJogWindow();
-            serverEmit('showSettings', "os");
+            serverEmit('showSettings', "main:os");
           } else {
             addDocReadyHandler(onShowTraySettings);
             showJogWindow();
@@ -466,7 +466,7 @@ function initElectron() {
 
 function onConnection(socket) {
   socket.on("opengroove", function() {
-    shell.openExternal('https://github.com/ivomirb/OpenBuilds-CONTROL')
+    shell.openExternal('https://github.com/ivomirb/GrooveControl')
   });
 
   socket.on("opencam", function() {
@@ -478,7 +478,7 @@ function onConnection(socket) {
   });
 
   socket.on("openforum", function() {
-    shell.openExternal('https://github.com/ivomirb/OpenBuilds-CONTROL/discussions')
+    shell.openExternal('https://github.com/ivomirb/GrooveControl/discussions')
   });
 
   socket.on("minimisetotray", function() {

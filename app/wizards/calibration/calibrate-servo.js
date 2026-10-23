@@ -159,8 +159,6 @@ function closeServoCal() {
     up: $('#penupslider').data('slider').val(),
     down: $('#pendownslider').data('slider').val()
   }
-  penupval = $('#penupslider').data('slider').val();
-  pendownval = $('#pendownslider').data('slider').val();
   localStorage.setItem("servo-calibration", JSON.stringify(servo));
   Metro.dialog.close($('#servocalstep1').parent().parent());
   console.log(servo)
