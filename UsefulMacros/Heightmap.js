@@ -7,6 +7,7 @@ const HEIGHTMAP_GCODE_HEADER1b = "; This G-code was modified by the Heightmap to
 const HEIGHTMAP_GCODE_HEADER2 = "; The original lines that were removed are prefixed with 'HM'. The new lines added in their place end with 'HM'";
 const HEIGHTMAP_GCODE_END_MARKER = " ; HM";
 const HEIGHTMAP_GCODE_START_MARKER = "; HM: ";
+const HEIGHTMAP_FILE_VERSION = 1;
 
 // Heightmap data
 var g_HeightmapStart = {x: -50, y: -50};
@@ -666,7 +667,13 @@ function LoadHeightmap(file)
 	try
 	{
 		var lines = file.split('\n');
-		var config = lines[0].split(',').map(Number);
+		var config = lines[0].split(',');
+		var version = 0;
+		if (config[0].startsWith('v')) {
+			version = parseInt(config[0].substr(1));
+			config.shift();
+		}
+		config = config.map(Number);
 		if (config.length != 12)
 		{
 			throw new Error("Line 1 doesn't have the correct number of values. Expecting 12 numbers.");
@@ -759,7 +766,7 @@ window.LoadHeightmapNew = function()
 
 window.SaveHeightmap = function()
 {
-	var heightmapTxt = g_HeightmapStart.x.toFixed(2) + "," + g_HeightmapStart.y.toFixed(2);
+	var heightmapTxt =  'v' + HEIGHTMAP_FILE_VERSION + "," + g_HeightmapStart.x.toFixed(2) + "," + g_HeightmapStart.y.toFixed(2);
 	heightmapTxt += "," + g_HeightmapSize.x.toFixed(2) + "," + g_HeightmapSize.y.toFixed(2);
 	heightmapTxt += "," + g_HeightmapPointCount.x.toFixed(0) + "," + g_HeightmapPointCount.y.toFixed(0);
 	heightmapTxt += "," + g_HeightmapAnchor.x.toFixed(2) + "," + g_HeightmapAnchor.y.toFixed(2);
