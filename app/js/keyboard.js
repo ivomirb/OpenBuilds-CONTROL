@@ -479,8 +479,9 @@ function initKeyboardEditor() {
       <div class="row mt-1 ml-1 mr-1">
         <label class="cell-sm-6" style="margin-top:4px">` + action.label + `</label>
         <div class="cell-sm-6">
-          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true" onchange="onShortcutInputChange()"
-              id="` + action.name + `newKey" value="` + keyboardShortcuts[action.name] + `" onclick="onShortcutInputClick('` + action.name + `newKey')">
+          <input type="text" class="keyboardshortcutinput" readonly data-role="input" data-clear-button="true" data-editable="true"
+              onfocus="onShortcutInputClick('` + action.name + `newKey')" onblur="newKeyAssignment = undefined" onchange="onShortcutInputChange()"
+              id="` + action.name + `newKey" value="` + keyboardShortcuts[action.name] + `" >
         </div>
       </div>`);
   }
