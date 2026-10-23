@@ -413,9 +413,9 @@ function init3D() {
     readViewSettings();
 
     setTimeout(function() {
-      resetView()
+      resetView();
       animate();
-    }, 200)
+    }, 0)
 
     // The viewport doesn't resize if it is hidden.
     // The observer forces an update when the viewport becomes visible.
@@ -455,12 +455,11 @@ function animate() {
   }
 }
 
-function viewExtents(objecttosee) {
-  // lets override the bounding box with a newly
-  // generated one
-  // get its bounding box
+var previousCenter = undefined;
+var previousMaxLen = undefined;
+
+function viewExtents(objecttosee, force) {
   if (objecttosee) {
-    // console.log(objecttosee)
     const helper = new THREE.BoxHelper(objecttosee);
     helper.update();
     const box3 = new THREE.Box3();
@@ -481,6 +480,22 @@ function viewExtents(objecttosee) {
 
     const maxlen = Math.max(lenx, leny, lenz);
     const target = new THREE.Vector3(centerx, centery, centerz);
+
+    if (!force && previousCenter) {
+      if (previousMaxLen >= maxlen * 0.9 && previousMaxLen <= maxlen * 1.1) { // the size is within 90% and 110% of the previous size
+        const dx = centerx - previousCenter.x;
+        const dy = centery - previousCenter.y;
+        const dz = centerz - previousCenter.z;
+        if (Math.sqrt(dx*dx + dy*dy + dz*dz) < previousMaxLen * 0.05) { // the center is within 5% of the previous size
+          previousMaxLen = maxlen;
+          previousCenter = {x:centerx, y:centery, z:centerz};
+          return; // the new bounds are similar => don't reset the viewport
+        }
+      }
+    }
+
+    previousMaxLen = maxlen;
+    previousCenter = {x:centerx, y:centery, z:centerz};
 
     // place the camera above the center, at twice the maxlen, looking straight down
     camera.position.set(centerx, centery, centerz + 2 * maxlen);
@@ -561,11 +576,11 @@ function fixRenderSize() {
   }
 }
 
-function resetView(object) {
+function resetView(object, force) {
   if (object && object.userData.pointCount > 1) {
-    viewExtents(object);
+    viewExtents(object, force);
   } else {
-    viewExtents(gridsystem);
+    viewExtents(gridsystem, force);
   }
 }
 

@@ -95,9 +95,7 @@ function xstepspermm() {
       }
     ]
   });
-  setTimeout(function() {
-    processpreset()
-  }, 100)
+  setTimeout(processpreset, 100);
 
 }
 
@@ -123,9 +121,7 @@ function ystepspermm() {
       }
     ]
   });
-  setTimeout(function() {
-    processpreset()
-  }, 100)
+  setTimeout(processpreset, 100);
 }
 
 function zstepspermm() {
@@ -150,9 +146,7 @@ function zstepspermm() {
       }
     ]
   });
-  setTimeout(function() {
-    processpreset()
-  }, 100)
+  setTimeout(processpreset, 100);
 }
 
 // function motorselect() {
