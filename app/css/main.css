@@ -286,7 +286,7 @@ select {
 
 #grblSettingsTableView .table-container {
   overflow-y: scroll;
-  max-height: calc(100vh - 313px);
+  max-height: calc(100vh - 270px);
 }
 
 #grblSettingsTableView thead {
@@ -340,4 +340,19 @@ select {
 .gutter {
   border-color: #ddd !important;
   background-color: #ddd !important;
+}
+.light_theme_only {
+  display: block;
+}
+
+.dark_theme_only {
+  display: none;
+}
+
+.ribbon-dropdown a {
+  padding-right: 12px;
+}
+
+#simControls, #simText {
+  background-color: #f5f6f7;
 }

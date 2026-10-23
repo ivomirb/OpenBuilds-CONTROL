@@ -36,14 +36,20 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
   color: #FFF;
 }
 
-.theme_dark .ribbon-button, .theme_dark .ribbon-button-dropdown, .theme_dark .ribbon-icon-button, .theme_dark .ribbon-tool-button {
+.theme_dark .ribbon-button, .theme_dark .ribbon-button-dropdown, .theme_dark .ribbon-main,
+.theme_dark .ribbon-icon-button, .theme_dark .ribbon-tool-button {
   background-color: #333;
   color: #FFF;
 }
 
-.theme_dark .ribbon-button:disabled, .theme_dark .ribbon-button-dropdown:disabled, .theme_dark .ribbon-icon-button:disabled, .theme_dark .ribbon-tool-button:disabled {
+.theme_dark .ribbon-button:disabled, .theme_dark .ribbon-button-dropdown:disabled, .theme_dark .ribbon-main:disabled,
+.theme_dark .ribbon-icon-button:disabled, .theme_dark .ribbon-tool-button:disabled {
   background-color: #333;
   color: #777;
+}
+
+.theme_dark .ribbon-split-button .ribbon-split.dropdown-toggle::after {
+  border-bottom-color: #FFF;
 }
 
 .theme_dark .ribbon-dropdown {
@@ -521,4 +527,15 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
 .theme_dark .gutter {
   border-color: #888 !important;
   background-color: #888 !important;
+}
+.theme_dark .light_theme_only {
+  display: none !important;
+}
+
+.theme_dark .dark_theme_only {
+  display: block !important;
+}
+
+.theme_dark #simControls, .theme_dark #simText {
+  background-color: #333;
 }

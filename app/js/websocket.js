@@ -139,7 +139,7 @@ function onSocketDisconnect() {
   console.log("WEBSOCKET DISCONNECTED")
   const icon = ''
   const source = "websocket"
-  const string = "Disconnected.  OpenBuilds CONTROL probably quit or crashed"
+  const string = "Disconnected. Groove Control probably quit or crashed"
   const printLogCls = "fg-darkRed"
   printLogModern(icon, source, string, printLogCls)
   $("#websocketstatus").html("Disconnected")
@@ -740,10 +740,6 @@ function initSocket() {
 
   socket.on("jobComplete", onJobComplete);
 
-  if (typeof setMachineButton !== 'undefined') {
-    socket.on("machinename", setMachineButton);
-  }
-
   socket.on('status', onStatus);
 
   socket.on('features', onFeatures);
@@ -757,8 +753,6 @@ function initSocket() {
   socket.on("errorsCleared", errorsCleared);
 
   if (!isJogWidget) {
-    socket.on('progStatus', onProgStatus);
-
     socket.on('sysinfo', onSysInfo);
 
     socket.on("interfaceOutdated", function(status) {
@@ -769,7 +763,7 @@ function initSocket() {
      captureWcsHistoryInternal(data.position, data.wcs, data.name, data.tooltip, data.isRunJob);
     });
 
-    socket.on('showSettings', appSettings);
+    socket.on('showSettings', showAppSettings);
 
     socket.on('recentFiles', onRecentFiles);
   }
