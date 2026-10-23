@@ -1,3 +1,5 @@
+![Groove Control](docs/groove-control-logo.png)
+
 # Groove Control
 Groove Control is a G-code sender software for CNC machines running Grbl, GrblHAL, and FluidNC.
 
@@ -12,6 +14,7 @@ and a slick job simulator fit seamlessly into the existing design.
 ![Screenshot](docs/screenshot.png)
 
 ## Download
+*work in progress, public release expected mid-November*
 
 **Latest version**
 
@@ -60,18 +63,18 @@ Here are the major changes from the original OpenBuilds CONTROL
 * **Improvement:** The dialogs for opening and saving files have independent default directories for G-code, macros and grbl settings
 * **Improvement:** The position of the main window is preserved between runs
 * **Improvement:** Improved readability for Light and Dark themes
-* **Bug fix:** Fix for dragging sliders with the mouse
+* **Bug Fix:** Fix for dragging sliders with the mouse
 
 ### 3D View
 
 * **New Feature:** Added playback controls to the simulation and fixed many bugs
 * **Improvement:** Options to hide graphical elements like the grid, ruler, tool marker, and more
 * **Improvement:** Optimized memory usage to allow for loading of larger files
-* **Bug fix:** Updated the 3D view to properly show arcs in the XZ and YZ planes
-* **Bug fix:** Fixed the orbiting controls rotation axis
-* **Bug fix:** Fixed the wrong bounding box for the machine area
-* **Bug fix:** Fixed the grid alignment and sizing
-* **Bug fix:** Fixed GPU memory leaks
+* **Bug Fix:** Updated the 3D view to properly show arcs in the XZ and YZ planes
+* **Bug Fix:** Fixed the orbiting controls rotation axis
+* **Bug Fix:** Fixed the wrong bounding box for the machine area
+* **Bug Fix:** Fixed the grid alignment and sizing
+* **Bug Fix:** Fixed GPU memory leaks
 
 ### Grbl Settings Editor
 
@@ -81,14 +84,14 @@ Here are the major changes from the original OpenBuilds CONTROL
 * **Improvement:** Basic support for FluidNC that shows the configuration file
 * **Improvement:** The "Basic" settings tab is removed, as it is specific to hardware that is no longer manufactured
 * **Improvement:** The flashing capabilities are removed for the same reason
-* **Bug fix:** Fixed a bug where using the search filter loses all unsaved changes
-* **Bug fix:** Fixed the broken tooltips for the setting descriptions
-* **Bug fix:** Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
+* **Bug Fix:** Fixed a bug where using the search filter loses all unsaved changes
+* **Bug Fix:** Fixed the broken tooltips for the setting descriptions
+* **Bug Fix:** Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
 
 ### Surfacing Wizard
 
 * **Improvement:** New option to extend the surfaced area by the tool radius
-* **Bug fix:** Fix for a bug where the last row was sometimes skipped
+* **Bug Fix:** Fix for a bug where the last row was sometimes skipped
 
 ### Macro Management
 
