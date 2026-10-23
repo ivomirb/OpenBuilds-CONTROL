@@ -177,10 +177,10 @@ function applySettings() {
 
   spindleDelay(parseInt($('#spindleDelay').val()));
 
-	const themeId = $('#selectTheme').val();
-	if (themeId != ThemeData.currentThemeId) {
-		Theme.set(themeId);
-	}
+  const themeId = $('#selectTheme').val();
+  if (themeId != ThemeData.currentThemeId) {
+    Theme.set(themeId);
+  }
 
   applyKeyboardSettings();
 
@@ -230,9 +230,9 @@ function showAppSettings(category) {
 
   for (let themeId in ThemeData.THEMES) {
     let theme = ThemeData.THEMES[themeId];
-		$('#selectTheme').append('<option value="' + themeId + '" data-template="<span class=\'fas fa-fw fa-' + theme.ICON + '\'></span> $1">' + theme.DESCRIPTION + '</option>');
-	}
-	$('#selectTheme').val(ThemeData.currentThemeId);
+    $('#selectTheme').append('<option value="' + themeId + '" data-template="<span class=\'fas fa-fw fa-' + theme.ICON + '\'></span> $1">' + theme.DESCRIPTION + '</option>');
+  }
+  $('#selectTheme').val(ThemeData.currentThemeId);
 
   $('#enable3DviewerCheck').prop('checked', !disable3Dviewer);
   $('#enable3DskyboxCheck').prop('checked', !disable3Dskybox);
