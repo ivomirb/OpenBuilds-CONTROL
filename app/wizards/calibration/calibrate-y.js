@@ -1,6 +1,6 @@
 var ycalmovedistance = 100;
 
-var ycaltemplate = `
+const ycaltemplate = `
 
    <div id="ycalstep1">
       <table class="table">
@@ -80,11 +80,11 @@ var ycaltemplate = `
 
 function applycalibrationy() {
   autoBackup("Calibrated Y");
-  var actualdist = $('#ycaltraveldist').val();
-  var currentstepspermm = parseFloat(grblParams['$101']);
-  // var currentstepspermm = 199.9;
+  const actualdist = $('#ycaltraveldist').val();
+  const currentstepspermm = parseFloat(grblParams['$101']);
+  // const currentstepspermm = 199.9;
   // newstepsval = currentsteps * (intended distance  / actual distance)
-  var newsteps = (currentstepspermm * (ycalmovedistance / actualdist)).toFixed(2);
+  const newsteps = (currentstepspermm * (ycalmovedistance / actualdist)).toFixed(2);
   // alert("New Steps Per MM Value:  " + newsteps);
   // $('#val-101-input').val(newsteps)
   // checkifchanged();
@@ -115,11 +115,11 @@ function ystepscalibrate() {
     ycalmovedistance = $("#ycalmovedistance").val();
     $(".ycalmovedistanceval").html(ycalmovedistance);
     $("#ycaltraveldist").val(ycalmovedistance)
-    var actualdist = $('#ycaltraveldist').val();
-    var currentstepspermm = parseFloat(grblParams['$101']);
-    // var currentstepspermm = 199.9;
+    const actualdist = $('#ycaltraveldist').val();
+    const currentstepspermm = parseFloat(grblParams['$101']);
+    // const currentstepspermm = 199.9;
     // newstepsval = currentsteps * (intended distance  / actual distance)
-    var newsteps = (currentstepspermm * (ycalmovedistance / actualdist)).toFixed(2);
+    const newsteps = (currentstepspermm * (ycalmovedistance / actualdist)).toFixed(2);
     $("#newsteps").html(newsteps)
     $("#currentstepspermm").html(currentstepspermm)
     $("#reqdistance").html(ycalmovedistance)
@@ -127,11 +127,11 @@ function ystepscalibrate() {
   });
 
   $("#ycaltraveldist").keyup(function() {
-    var actualdist = $('#ycaltraveldist').val();
-    var currentstepspermm = parseFloat(grblParams['$101']);
-    // var currentstepspermm = 199.9;
+    const actualdist = $('#ycaltraveldist').val();
+    const currentstepspermm = parseFloat(grblParams['$101']);
+    // const currentstepspermm = 199.9;
     // newstepsval = currentsteps * (intended distance  / actual distance)
-    var newsteps = (currentstepspermm * (ycalmovedistance / actualdist)).toFixed(2);
+    const newsteps = (currentstepspermm * (ycalmovedistance / actualdist)).toFixed(2);
     $("#showcalc").show()
     $("#newsteps").html(newsteps)
     $("#currentstepspermm").html(currentstepspermm)

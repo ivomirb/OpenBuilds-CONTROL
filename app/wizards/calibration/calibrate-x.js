@@ -1,6 +1,6 @@
 var xcalmovedistance = 100;
 
-var xcaltemplate = `
+const xcaltemplate = `
 
    <div id="xcalstep1">
       <table class="table">
@@ -82,11 +82,11 @@ var xcaltemplate = `
 
 function applycalibrationx() {
   autoBackup("Calibrated X");
-  var actualdist = $('#xcaltraveldist').val();
-  var currentstepspermm = parseFloat(grblParams['$100']);
-  // var currentstepspermm = 199.9;
+  const actualdist = $('#xcaltraveldist').val();
+  const currentstepspermm = parseFloat(grblParams['$100']);
+  // const currentstepspermm = 199.9;
   // newstepsval = currentsteps * (intended distance  / actual distance)
-  var newsteps = (currentstepspermm * (xcalmovedistance / actualdist)).toFixed(2);
+  const newsteps = (currentstepspermm * (xcalmovedistance / actualdist)).toFixed(2);
   // alert("New Steps Per MM Value:  " + newsteps);
   // $('#val-100-input').val(newsteps)
   // checkifchanged();
@@ -117,11 +117,11 @@ function xstepscalibrate() {
     xcalmovedistance = $("#xcalmovedistance").val();
     $(".xcalmovedistanceval").html(xcalmovedistance);
     $("#xcaltraveldist").val(xcalmovedistance)
-    var actualdist = $('#xcaltraveldist').val();
-    var currentstepspermm = parseFloat(grblParams['$100']);
-    // var currentstepspermm = 199.9;
+    const actualdist = $('#xcaltraveldist').val();
+    const currentstepspermm = parseFloat(grblParams['$100']);
+    // const currentstepspermm = 199.9;
     // newstepsval = currentsteps * (intended distance  / actual distance)
-    var newsteps = (currentstepspermm * (xcalmovedistance / actualdist)).toFixed(2);
+    const newsteps = (currentstepspermm * (xcalmovedistance / actualdist)).toFixed(2);
     $("#newsteps").html(newsteps)
     $("#currentstepspermm").html(currentstepspermm)
     $("#reqdistance").html(xcalmovedistance)
@@ -129,11 +129,11 @@ function xstepscalibrate() {
   });
 
   $("#xcaltraveldist").keyup(function() {
-    var actualdist = $('#xcaltraveldist').val();
-    var currentstepspermm = parseFloat(grblParams['$100']);
-    // var currentstepspermm = 199.9;
+    const actualdist = $('#xcaltraveldist').val();
+    const currentstepspermm = parseFloat(grblParams['$100']);
+    // const currentstepspermm = 199.9;
     // newstepsval = currentsteps * (intended distance  / actual distance)
-    var newsteps = (currentstepspermm * (xcalmovedistance / actualdist)).toFixed(2);
+    const newsteps = (currentstepspermm * (xcalmovedistance / actualdist)).toFixed(2);
     $("#showcalc").show()
     $("#newsteps").html(newsteps)
     $("#currentstepspermm").html(currentstepspermm)

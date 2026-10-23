@@ -25,7 +25,7 @@ function storeJob(completedJob) {
 
 function showJobLog() {
 
-  var template = `
+  let template = `
   <div style="height: calc(100vh - 550px); min-height: 90px; overflow-x: auto;">
   <table class="table striped compact">
     <thead>
@@ -40,8 +40,8 @@ function showJobLog() {
     `
 
   for (let i = 0; i < pastJobs.length; i++) {
-    var date = new Date(pastJobs[i].startdate).toDateString()
-    var time = new Date(pastJobs[i].startdate).toLocaleTimeString([], {
+    const date = new Date(pastJobs[i].startdate).toDateString()
+    const time = new Date(pastJobs[i].startdate).toLocaleTimeString([], {
       // year: 'numeric',
       // month: 'numeric',
       // day: 'numeric',

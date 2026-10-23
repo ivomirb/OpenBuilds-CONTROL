@@ -1,4 +1,4 @@
-var surfacingWizardTemplate = `
+const surfacingWizardTemplate = `
     <form>
       <div class="row mb-2">
         <div class="cell-sm-7">
@@ -146,7 +146,7 @@ function populateSurfaceToolForm() {
     ]
   });
 
-	var data;
+  let data;
   if (localStorage.getItem("lastSurfacingTool")) {
     data = JSON.parse(localStorage.getItem("lastSurfacingTool"));
   } else {
@@ -187,7 +187,7 @@ function populateSurfaceToolForm() {
   }
 
   $('#surfaceRPM').val(data.surfaceRPM)
-  var $radios = $("input:radio[name=surfaceType]");
+  const $radios = $("input:radio[name=surfaceType]");
   $radios.filter("[value=" + data.surfaceType + "]").prop("checked", true);
 
   if (data.surfaceDirection != undefined) {
@@ -197,7 +197,7 @@ function populateSurfaceToolForm() {
 }
 
 function createSurfaceGcode() {
-  var data = {
+  let data = {
     surfaceDiameter: $("#surfaceDiameter").val(),
     surfaceStepover: $("#surfaceStepover").val(),
     surfaceFeedrate: $("#surfaceFeedrate").val(),
@@ -222,8 +222,8 @@ function createSurfaceGcode() {
 
   localStorage.setItem("lastSurfacingTool", JSON.stringify(data));
 
-  var startpoint, endpoint, primaryAxis, secondaryAxis;
-  var offsetRadius = data.extendRadius == "enabled" ? 0 : data.surfaceDiameter / 2;
+  let startpoint, endpoint, primaryAxis, secondaryAxis;
+  const offsetRadius = data.extendRadius == "enabled" ? 0 : data.surfaceDiameter / 2;
   if (data.surfaceDirection === "X") {
     primaryAxis = "X";
     secondaryAxis = "Y";
@@ -248,18 +248,18 @@ function createSurfaceGcode() {
     };
   }
 
-  var lineOver = data.surfaceDiameter * (data.surfaceStepover / 100);
+  let lineOver = data.surfaceDiameter * (data.surfaceStepover / 100);
 
   // add extra line if necessary to cover the entire area
-  var totalDistance = endpoint.secondary - startpoint.secondary;
-  var lines = Math.floor(totalDistance / lineOver) + 1;
+  const totalDistance = endpoint.secondary - startpoint.secondary;
+  let lines = Math.floor(totalDistance / lineOver) + 1;
   if (totalDistance - (lines-1) * lineOver > 0.01)
   {
     lineOver = totalDistance / lines;
     lines = lines + 1;
   }
 
-  var gcode =
+  let gcode =
     `; Surfacing / Flattening Operation
 ; Endmill Diameter: ` +
     data.surfaceDiameter +
@@ -295,15 +295,15 @@ G1 F` +
 
   // MULTIPASS
   for (let q = data.surfaceDepth; q < data.surfaceFinalDepth + data.surfaceDepth; q += data.surfaceDepth) {
-    var zval = q > data.surfaceFinalDepth ? -data.surfaceFinalDepth : -q;
+    const zval = q > data.surfaceFinalDepth ? -data.surfaceFinalDepth : -q;
 
     gcode += `\nG0 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + startpoint.secondary.toFixed(4) + ` Z10 ; Move to start Position
 `;
     gcode += `G1 ` + primaryAxis + startpoint.primary.toFixed(4) + ` ` + secondaryAxis + startpoint.secondary.toFixed(4) + ` Z` + zval + `; Plunge\n`;
 
-    var reverse = false;
+    let reverse = false;
 
-    var secondary = startpoint.secondary;
+    let secondary = startpoint.secondary;
     for (let i = 0; i < lines; i++) {
       if (!reverse) {
         gcode += `G1 ` + secondaryAxis + secondary.toFixed(4) + `\n`;

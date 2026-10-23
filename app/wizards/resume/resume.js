@@ -3,7 +3,7 @@
 // Thanks @rlwoodjr
 
 function recoverCrashedJob() {
-  var resumeTemplate = `
+  const resumeTemplate = `
   <form>
     Enter the starting line to recover the job from:
     <br>
@@ -43,23 +43,23 @@ function recoverCrashedJob() {
 
 
 function startFromHere(lineNumber) {
-  var moveType = undefined; // 0 or 1
-  var arcPlane = undefined; // 17, 18 or 19
-  var absolute = undefined; // 90 or 91
-  var coordSys = undefined; // 54..59
-  var coolant = undefined; // 7 or 8
+  let moveType = undefined; // 0 or 1
+  let arcPlane = undefined; // 17, 18 or 19
+  let absolute = undefined; // 90 or 91
+  let coordSys = undefined; // 54..59
+  let coolant = undefined; // 7 or 8
 
-  var lastX = undefined;
-  var lastY = undefined;
-  var lastZ = undefined;
-  var lastA = undefined;
-  var lastF = undefined;
-  var lastPlungeF = undefined; // feed strictly down on Z
-  var lastRampF = undefined; // feed in any down direction involving Z
+  let lastX = undefined;
+  let lastY = undefined;
+  let lastZ = undefined;
+  let lastA = undefined;
+  let lastF = undefined;
+  let lastPlungeF = undefined; // feed strictly down on Z
+  let lastRampF = undefined; // feed in any down direction involving Z
 
-  var preserveLines = undefined;
+  let preserveLines = undefined;
 
-  var error = undefined;
+  let error = undefined;
   if (!useEditor)
     error = "The G-code is too large to be edited.";
   else if (editor.session.getLength() <= 1)
@@ -67,13 +67,12 @@ function startFromHere(lineNumber) {
   else if (lineNumber < 1 || lineNumber > editor.session.getLength())
     error = "The line number " + lineNumber + " is out of range.";
 
-  for (var i = 0; i < lineNumber-1; i++) {
+  for (let i = 0; i < lineNumber-1; i++) {
     if (error) break;
-    var currentLine = editor.session.getLine(i);
+    let currentLine = editor.session.getLine(i);
     if (currentLine.length > 0) {
       currentLine = currentLine.split(/[;(]/); // Remove everything after ; or ( = comment
-      var line = currentLine[0]
-      line = line.toUpperCase();
+      const line = currentLine[0].toUpperCase();
 
       const Xindex = line.indexOf("X");
       const Yindex = line.indexOf("Y");
@@ -82,12 +81,12 @@ function startFromHere(lineNumber) {
       const Findex = line.indexOf("F");
 
       // find G codes
-      var gline = line;
+      let gline = line;
       while (true) {
-        var pos = gline.indexOf('G');
+        const pos = gline.indexOf('G');
         if (pos == -1) break;
         gline = gline.slice(pos + 1);
-        var g = parseInt(gline);
+        const g = parseInt(gline);
         if (g == 0) moveType = 0;
         if (g == 1 || g == 2 || g == 3) moveType = 1;
         if (g == 90 || g == 91) absolute = g;
@@ -139,7 +138,7 @@ function startFromHere(lineNumber) {
 
       if (line.contains('M3') || line.contains('M03') || line.contains('M4') || line.contains('M04')) {
         preserveLines = i + 1;
-        var nextLine = editor.session.getLine(i + 1).toUpperCase();
+        const nextLine = editor.session.getLine(i + 1).toUpperCase();
         if (nextLine.contains('G4') || nextLine.contains('G04'))
           preserveLines++;
       }
@@ -180,23 +179,23 @@ function startFromHere(lineNumber) {
     return;
   }
 
-  var resumeXYA = "G0" + (coordSys ? (" G" + coordSys) : "") + (coolant ? (" M" + coolant) : "") + " G90 X" + lastX.toFixed(3) + " Y" + lastY.toFixed(3);
+  let resumeXYA = "G0" + (coordSys ? (" G" + coordSys) : "") + (coolant ? (" M" + coolant) : "") + " G90 X" + lastX.toFixed(3) + " Y" + lastY.toFixed(3);
   if (lastA)
     resumeXYA += " A" + lastA.toFixed(3);
 
-  var resumeZ;
+  let resumeZ;
   if (lastPlungeF != undefined)
     resumeZ = "G1 G90 Z" + lastZ.toFixed(3) + " F" + lastPlungeF.toFixed(0);
   else
     resumeZ = "G0 G90 Z" + lastZ.toFixed(3);
 
-  var context = "";
+  let context = "";
   if (moveType != undefined) context += "G" + moveType + " ";
   if (arcPlane != undefined) context += "G" + arcPlane + " ";
   if (absolute != undefined) context += "G" + absolute + " ";
   if (lastF != undefined) context += "F" + lastF.toFixed(0);
 
-  var resumeFileTemplate = `
+  const resumeFileTemplate = `
     <form>
       <div>
         The Recovery strategy will modify the currently loaded G-code like this:
@@ -252,14 +251,14 @@ function startFromHere(lineNumber) {
 }
 
 function redoJob() {
-  var gcode = "; Recovered G-code. Use at your OWN RISK\n;===== Original header\n";
+  let gcode = "; Recovered G-code. Use at your OWN RISK\n;===== Original header\n";
 
-  var preserveLines = $('#preserveLines').html();
-  var XYAGcode = $('#resumeXYA').html();
-  var ZGcode = $('#resumeZ').html();
-  var ContextGcode = $('#context').html();
-  var resumeLineNumber = $('#resumeLastLine').html();
-  var resumeLastNumber = editor.session.getLength();
+  const preserveLines = $('#preserveLines').html();
+  const XYAGcode = $('#resumeXYA').html();
+  const ZGcode = $('#resumeZ').html();
+  const ContextGcode = $('#context').html();
+  const resumeLineNumber = $('#resumeLastLine').html();
+  const resumeLastNumber = editor.session.getLength();
 
   for (let i = 0; i < preserveLines; i++) {
     const line = editor.session.getLine(i);

@@ -1,9 +1,9 @@
 function findCenter() {
-  var xoffset = (probemode.probe.xoffset) * -1 // *-1 to make negative as we are off to the left too far from x0
-  var yoffset = (probemode.probe.yoffset) * -1 // *-1 to make negative as we are off to the front too far from y0
-  var zoffset = parseFloat(probemode.probe.zoffset) // not *-1 as its offset in z pos
-  var step = 0;
-  var rightside = 0,
+  const xoffset = (probemode.probe.xoffset) * -1 // *-1 to make negative as we are off to the left too far from x0
+  const yoffset = (probemode.probe.yoffset) * -1 // *-1 to make negative as we are off to the front too far from y0
+  const zoffset = parseFloat(probemode.probe.zoffset) // not *-1 as its offset in z pos
+  let step = 0;
+  let rightside = 0,
     leftside = 0,
     farside = 0,
     nearside = 0,
@@ -13,7 +13,7 @@ function findCenter() {
   socket.off('prbResult'); // Disable old listeners
 
   captureWcsHistory('Before <b>Hole Finder</b>');
-  var holefindermacroStep1 = `
+  const holefindermacroStep1 = `
   ; Header
 
   G21 ; mm mode

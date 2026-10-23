@@ -18,7 +18,7 @@ function servocalibrate() {
 
   servoMaxScale = parseInt(grblParams.$30);
 
-  var servocaltemplate = `
+  const servocaltemplate = `
 
      <div id="servocalstep1">
         <table class="table">
@@ -97,8 +97,6 @@ function servocalibrate() {
      </div>
 
   `
-
-  console.log(servocaltemplate)
 
   Metro.dialog.create({
     clsDialog: 'dark',
