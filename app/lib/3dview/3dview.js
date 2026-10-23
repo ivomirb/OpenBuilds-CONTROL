@@ -113,7 +113,7 @@ function parseGcodeInWebWorker(gcode) {
     const worker = new Worker('lib/3dview/workers/verylitegcodeviewer.js');
     worker.addEventListener('message', function(e) {
       if (e.data.progress != undefined) {
-        $('#3dviewlabel').html(' 3D View (rendering, please wait... ' + e.data.progress + '% )')
+        $('.3dviewlabel').html(' 3D View (rendering, please wait... ' + e.data.progress + '% )')
       } else {
         object = convertParsedDataToObject(e.data);
         if (!viewSettings.toolpath) {
@@ -147,15 +147,14 @@ function parseGcodeInWebWorker(gcode) {
           } else {
             $('#timeRemaining').html("");
           }
-          $('#3dviewicon').removeClass('fa-pulse');
-          $('#3dviewlabel').html(' 3D View');
+          $('.3dviewicon').removeClass('fa-pulse');
+          $('.3dviewlabel').html(' 3D View');
         } else {
           // Didn't get an Object
           activateContentTab('consoletab');
           $('#timeRemaining').html("");
-          $('#3dviewicon').removeClass('fa-pulse');
-          $('#3dviewlabel').html(' 3D View');
-
+          $('.3dviewicon').removeClass('fa-pulse');
+          $('.3dviewlabel').html(' 3D View');
         }
       }
 
@@ -165,8 +164,8 @@ function parseGcodeInWebWorker(gcode) {
       'data': gcode
     });
 
-    $('#3dviewicon').addClass('fa-pulse');
-    $('#3dviewlabel').html(' 3D View (rendering, please wait...)')
+    $('.3dviewicon').addClass('fa-pulse');
+    $('.3dviewlabel').html(' 3D View (rendering, please wait...)')
 
     // populateToolChanges(gcode)
   }

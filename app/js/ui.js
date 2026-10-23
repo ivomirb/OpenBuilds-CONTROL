@@ -16,7 +16,7 @@ var wcsHistory = {
 var wcsHistoryEmpty = true;
 var lastWcsCapture = {};
 var rippleTimeout = undefined;
-var currentTabName = undefined;
+var pinnedTabName = undefined;
 
 function addRemoveClass(element, className, add) {
   if (typeof element == "string") {
@@ -352,40 +352,40 @@ function deleteContentTab(tabName) {
   // only called on startup
   const tab = $('#' + tabName);
   tab.remove();
-  $('#sidePanel-' + tabName).remove();
 }
 
 function activateContentTab(tabName) {
-  if (tabName != currentTabName) {
+  if (tabName != pinnedTabName) {
     const tab = $('#' + tabName);
     tab.click();
   }
 }
 
-function sidePanelTabInternal(tabName) {
-  if (currentTabName == tabName) {
+function pinTabInternal(tabName) {
+  if (pinnedTabName == tabName) {
     return;
   }
 
-  if (currentTabName) {
-    const tab = $('#' + currentTabName);
+  if (pinnedTabName) {
+    const tab = $('#' + pinnedTabName);
     const contentId = tab.attr('href');
     const content = $(contentId);
     $('#mainTabHolder').append(content);
     tab.show().click();
   }
 
-  $('#sidePanelMenu li').removeClass('checked');
-  $('#sidePanel-' + tabName).addClass('checked');
+	$('#sidePanelTab').children('span').hide();
   if (tabName) {
     const tab = $('#' + tabName);
     const contentId = tab.attr('href');
     const content = $(contentId);
+    $('#sidePanelTab').parent().show();
+    $('#sidePanelTab').show().children('#' + tabName + '2').show();
     $('#sidePanel').append(content);
     $('#sidePanel').show();
     $('#manualControlPanel > .gutter').show();
     tab.hide();
-    if (tab.parent().hasClass("active") && !currentTabName) {
+    if (tab.parent().hasClass("active") && !pinnedTabName) {
       let next = tab.parent().next();
       if (next.length == 0) {
         next = tab.parent().prev();
@@ -394,26 +394,28 @@ function sidePanelTabInternal(tabName) {
     }
   }
   else {
+    $('#sidePanelTab').parent().hide();
     $('#sidePanel').hide();
     $('#manualControlPanel > .gutter').hide();
   }
-  currentTabName = tabName;
+  pinnedTabName = tabName;
 }
 
-function sidePanelTab(tabName) {
-  sidePanelTabInternal(tabName);
-  localStorage.setItem("sidePanelTab", tabName);
+function pinTab(event, tabName) {
+  event.stopPropagation();
+  pinTabInternal(tabName);
+  localStorage.setItem("pinnedTab", tabName);
 }
 
 function onWindowResize() {
   const width = window.innerWidth;
   if (width >= MIN_SIDEPANEL_WIDTH) {
-    $('#sidePanelBtn').show();
-    sidePanelTabInternal(localStorage.getItem("sidePanelTab"));
+    $('.pinbutton').show();
+    pinTabInternal(localStorage.getItem("pinnedTab"));
   }
   else {
-    sidePanelTabInternal("");
-    $('#sidePanelBtn').hide();
+    pinTabInternal("");
+    $('.pinbutton').hide();
     $('#sidePanel').hide();
     $('#manualControlPanel > .gutter').hide();
   }
@@ -421,12 +423,12 @@ function onWindowResize() {
 
 function uiDocReady() {
   $(window).on('resize', onWindowResize);
-  if (localStorage.getItem("sidePanelTab") == null) { // on first run show the viewer
-    localStorage.setItem("sidePanelTab", "gcodeviewertab");
+  if (localStorage.getItem("pinnedTab") == null) { // on first run show the viewer
+    localStorage.setItem("pinnedTab", "gcodeviewertab");
   }
-  const tabName = localStorage.getItem("sidePanelTab");
+  const tabName = localStorage.getItem("pinnedTab");
   if (tabName && $('#' + tabName).length == 0) { // tab doesn't exist
-    localStorage.setItem("sidePanelTab", "");
+    localStorage.setItem("pinnedTab", "");
   }
 
   if (localStorage.getItem("sidePanelSize")) {

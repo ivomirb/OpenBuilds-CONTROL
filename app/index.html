@@ -344,6 +344,22 @@ The spindle will automatically start when the job is resumed.">
                 <span class="title">E-Stop</span>
               </div>
 
+
+              <!-- A dummy tab in the top right corner to indicate the pinned selection -->
+              <nav data-role="ribbonmenu" style="margin-left:auto; margin-top:auto;">
+                <ul class="tabs-holder" style="margin-bottom:-5px;">
+                  <li><a href="#" id="sidePanelTab" onclick="event.stopPropagation()">
+                  <span id="gcodeviewertab2"><i class="mif-3d-rotation fa-fw fg-blue 3dviewicon"></i><span class="3dviewlabel"> 3D View</span></span>
+                  <span id="consoletab2"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</span>
+                  <span id="macrostab2"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</span>
+                  <span id="gcodeeditortab2"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</span>
+                    <button class="button small light pinbutton" title="Unpin this tab from the right side" onclick="pinTab(event, '')">
+                      <i class="fas fa-thumbtack" style="margin-bottom:3px;"></i>
+                    </button>
+                  </a></li>
+                </ul>
+              </nav>
+
             </div>
 
             <!-- End Jog/Main -->
@@ -976,30 +992,34 @@ Restore previous origins from history.">
 
               <nav data-role="ribbonmenu" style="height: calc(100vh - 465px); display:flex; flex-direction:column;">
                 <div style="display:flex">
+
+                  <!-- When adding a new tab here, also add a matching <span> entry to the sidePanelTab -->
                   <ul class="tabs-holder">
-                    <li><a href="#tab-three" id="gcodeviewertab"><i class="mif-3d-rotation fa-fw fg-blue" id="3dviewicon"></i><span id="3dviewlabel"> 3D View</span></a></li>
-                    <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
-                    <li><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
-                    <li><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
+                    <li><a href="#tab-three" id="gcodeviewertab"><i class="mif-3d-rotation fa-fw fg-blue 3dviewicon"></i><span class="3dviewlabel"> 3D View</span>
+                      <button class="button small light pinbutton" title="Pin this tab to the right side of the window" onclick="pinTab(event, 'gcodeviewertab')">
+                        <i class="fas fa-thumbtack" data-fa-transform="rotate-90" style="margin-bottom:3px;"></i>
+                      </button>
+                    </a></li>
+
+                    <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console
+                      <button class="button small light pinbutton" title="Pin this tab to the right side of the window" onclick="pinTab(event, 'consoletab')">
+                        <i class="fas fa-thumbtack" data-fa-transform="rotate-90" style="margin-bottom:3px;"></i>
+                      </button>
+                    </a></li>
+
+                    <li><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros
+                      <button class="button small light pinbutton" title="Pin this tab to the right side of the window" onclick="pinTab(event, 'macrostab')">
+                        <i class="fas fa-thumbtack" data-fa-transform="rotate-90" style="margin-bottom:3px;"></i>
+                      </button>
+                    </a></li>
+
+                    <li><a href="#tab-two" id="gcodeeditortab">
+                      <i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor
+                      <button class="button small light pinbutton" title="Pin this tab to the right side of the window" onclick="pinTab(event, 'gcodeeditortab')">
+                        <i class="fas fa-thumbtack" data-fa-transform="rotate-90" style="margin-bottom:3px;"></i>
+                      </button>
+                    </a></li>
                   </ul>
-                  <div>
-                    <button id="sidePanelBtn" class="button small" style="margin:0px 5px;" title="Select which tab to pin to the right side of the main window.
-Only available if the window is wider than 1400 pixels">Pin To Side <i class="fas fa-angle-double-right"></i></button>
-                    <ul class="ribbon-dropdown" id="sidePanelMenu" data-role="dropdown" data-duration="100">
-                      <style>
-                        #sidePanelMenu > li > a {
-                          white-space: nowrap;
-                          padding-right: 12px !important;
-                          text-align:left;
-                        }
-                      </style>
-                      <li id="sidePanel-" class="checked" onclick="sidePanelTab('')"><a href="#">Hide</a></li>
-                      <li id="sidePanel-gcodeviewertab" onclick="sidePanelTab('gcodeviewertab')"><a href="#"><i class="mif-3d-rotation fa-fw fg-blue"></i> 3D View</a></li>
-                      <li id="sidePanel-consoletab" onclick="sidePanelTab('consoletab')"><a href="#"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
-                      <li id="sidePanel-macrostab" onclick="sidePanelTab('macrostab')"><a href="#"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
-                      <li id="sidePanel-gcodeeditortab" onclick="sidePanelTab('gcodeeditortab')"><a href="#"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
-                    </ul>
-                  </div>
                 </div>
                 <div class="content-holder" id="mainTabHolder" style="flex-grow:1; min-height:0;">
                   <div class="section" id="tab-one" style="height:100%; flex-direction:column;">

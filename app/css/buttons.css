@@ -225,3 +225,18 @@ hr {
   line-height: 20px;
   pointer-events:none;
 }
+
+.pinbutton {
+  height:20px !important;
+  padding:0 4px !important;
+  margin:0px -5px 5px 5px !important;
+}
+
+.pinbutton:not(:hover) {
+  background-color:inherit !important;
+}
+
+.pinbutton i {
+	margin-bottom:3px;
+	rotate: 90deg;
+}
