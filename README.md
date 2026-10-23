@@ -57,12 +57,13 @@ Here are the major changes from the original OpenBuilds CONTROL
 * **New Feature:** New button to reload the current G-code file or load from a list of recent files
 * **Improvement:** Removed the dropdown menu from the Open G-code button to save unnecessary mouse click
 * **Improvement:** New dialog for editing all application settings in one place
-* **Improvement:** New settings to disable the autostart and the tray icon, making it behave like a regular desktop app
 * **Improvement:** Allow clearing the key assignment in the keyboard shortcut editor and the macro editor
-* **Improvement:** The dialogs for opening and saving files have independent default directories for G-code, macros and grbl settings
+* **Improvement:** New settings to disable the autostart and the tray icon, making it behave like a regular desktop app
+* **Improvement:** Windows installer setting to control the file associations for G-code file extensions
+* **Improvement:** The dialogs for opening files remember their directory, with separate settings for G-code, macros and grbl settings
 * **Improvement:** The position of the main window is preserved between runs
 * **Improvement:** Improved readability for Light and Dark themes
-* **Bug Fix:** Fix for dragging sliders with the mouse
+* **Bug Fix:** Fix for dragging sliders with the mouse to their min and max position
 
 ### 3D View
 
@@ -80,9 +81,8 @@ Here are the major changes from the original OpenBuilds CONTROL
 * **Improvement:** Added a new option to view only the modified settings, and buttons to revert each change
 * **Improvement:** Added more known GrblHAL settings and updated wrong descriptions
 * **Improvement:** Added support for a 4th axis in settings $3 and $23
-* **Improvement:** Rudimentary support for FluidNC that shows the configuration file
-* **Improvement:** The "Basic" settings tab is removed, as it relates to hardware that is no longer manufactured
-* **Improvement:** The flashing capabilities are removed for the same reason
+* **Improvement:** Basic support for FluidNC that shows the configuration file
+* **Improvement:** The presets and flashing tools for OpenBuilds hardware have been removed, since it is no longer in production
 * **Bug Fix:** Fixed a bug where using the search filter loses all unsaved changes
 * **Bug Fix:** Fixed the broken tooltips for the setting descriptions
 * **Bug Fix:** Fixed bugs in the backup feature that would corrupt certain settings, especially for GrblHAL
