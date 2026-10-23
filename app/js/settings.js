@@ -40,25 +40,21 @@ const appSettingsDlg = `
 </ul>
 <div class="content-holder" style="background-color:inherit;">
 
-<div class="section" id="mainSettings" style="height:500px; flex-direction:column; border-bottom: 0px;">
+<div class="section" id="mainSettings" style="height:500px; flex-direction:column; border-bottom: 0px; overflow-y:auto; overflow-x:clip;">
   <div class="row">
-    <label class="cell-sm-8 mt-1"><b>Performance</b></label>
+    <label class="cell-sm-8 mt-1"><b>User Interface</b></label>
   </div>
 
-  <div class="row ml-2" title="You may try disabling this for slower computers">
-    <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable 3D Viewer System" id="enable3DviewerCheck" onclick="updateSettingsState()"/>
+  <div class="row ml-3">
+    <label class="cell-sm-3" style="padding-left:0px; padding-top:5px;">Color Theme</label>
+    <div class="cell-sm-6">
+      <select data-role="select" id="selectTheme" data-filter="false" data-drop-height="">
+      </select>
+    </div>
   </div>
 
-  <div class="row ml-8">
-    <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable 3D Viewer Skybox/Fog"id="enable3DskyboxCheck" />
-  </div>
-
-  <div class="row ml-8">
-    <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable 3D Viewer Realtime Jog Position Indicator" id="enable3DrealtimeposCheck" />
-  </div>
-
-  <div class="row ml-8">
-    <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable 3D Viewer G-code Preview" id="enable3DgcodepreviewCheck" />
+  <div class="row ml-3 pt-2">
+    <button class="button" title="Resets &quot;Don't show this again&quot; for all warning dialogs" onclick="resetWarnings()">Reset Warnings</button>
   </div>
 
   <div id="osSettings">
@@ -95,6 +91,28 @@ const appSettingsDlg = `
         <option value="5">Delay 5 sec (G4 P5)</option>
         <option value="8">Delay 8 sec (G4 P8)</option>
       </select>
+    </div>
+  </div>
+
+  <div class="row ml border-top mt-3 bd-gray" style="margin-left:-4px; font-weight:700;" title="You may try disabling this for slower computers">
+    <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable 3D Viewer" id="enable3DviewerCheck" onclick="updateSettingsState()"/>
+  </div>
+
+  <div class="row" style="padding-left:8px;">
+    <div class="cell-sm-8" id="enableTrayIconCell">
+      <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable Skybox/Fog"id="enable3DskyboxCheck" />
+    </div>
+  </div>
+
+  <div class="row" style="padding-left:8px;">
+    <div class="cell-sm-8" id="enableTrayIconCell">
+      <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable Realtime Jog Position Indicator" id="enable3DrealtimeposCheck" />
+    </div>
+  </div>
+
+  <div class="row" style="padding-left:8px;">
+    <div class="cell-sm-8" id="enableTrayIconCell">
+      <input type="checkbox" data-role="checkbox" data-style="2" data-caption="Enable G-code Preview" id="enable3DgcodepreviewCheck" />
     </div>
   </div>
 
@@ -159,6 +177,11 @@ function applySettings() {
 
   spindleDelay(parseInt($('#spindleDelay').val()));
 
+  const themeId = $('#selectTheme').val();
+  if (themeId != ThemeData.currentThemeId) {
+    Theme.set(themeId);
+  }
+
   applyKeyboardSettings();
 
   if (reload) {
@@ -193,11 +216,6 @@ function showAppSettings(category) {
     width: 600,
     actions: [
       {
-        caption: "Reset Warnings",
-        cls: "reset-warnings float-left",
-        onclick: resetWarnings
-      },
-      {
         caption: "OK",
         cls: "js-dialog-close success",
         onclick: applySettings
@@ -210,7 +228,11 @@ function showAppSettings(category) {
     ],
   });
 
-  initKeyboardEditor();
+  for (let themeId in ThemeData.THEMES) {
+    let theme = ThemeData.THEMES[themeId];
+    $('#selectTheme').append('<option value="' + themeId + '" data-template="<span class=\'fas fa-fw fa-' + theme.ICON + '\'></span> $1">' + theme.DESCRIPTION + '</option>');
+  }
+  $('#selectTheme').val(ThemeData.currentThemeId);
 
   $('#enable3DviewerCheck').prop('checked', !disable3Dviewer);
   $('#enable3DskyboxCheck').prop('checked', !disable3Dskybox);
@@ -234,9 +256,8 @@ function showAppSettings(category) {
 
   $('#disable4thAxisCheck').prop('checked', disable4thAxis);
 
-  $('.reset-warnings').attr('title', "Resets \"Don't show this again\" for all warning dialogs");
-
   updateSettingsState();
+  initKeyboardEditor();
 
   if (category) {
     const tab = $('#' + category + "SettingsTab");

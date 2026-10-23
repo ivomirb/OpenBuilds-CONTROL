@@ -13,7 +13,7 @@ and a slick job simulator fit seamlessly into the existing design.
 ![Screenshot](docs/screenshot.png)
 
 ## Download
-*work in progress, public release expected mid-November*
+*work in progress, the first public release is expected mid-November*
 
 **Latest version**
 
@@ -29,7 +29,7 @@ See all past versions here: [All Releases](releases)
 Signing the installer requires a certificate, which is not free.
 One will be added in the future, but at this time I can't justify the expense until I know that enough people are even going to use it
 
-* The Mac binaries are completely untested and not notarized. I don't have a Mac to test them.
+* The Mac binaries are completely untested and not notarized. I don't have a Mac to test them.<br>
 If you are a Mac developer and you are willing to help get things started, let me know
 
 

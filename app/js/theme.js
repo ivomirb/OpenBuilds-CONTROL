@@ -223,7 +223,7 @@ function themeDocReady() {
     if (themeId != "light") {
       $('head').append('<link rel="stylesheet" type="text/css" href="css/themes/' + themeId + '.css">');
     }
-
   }
+
   ThemeData.init();
 }
