@@ -345,3 +345,14 @@ function clearWcsHistory() {
   updateWcsHistory();
   wcsHistoryEmpty = true;
 }
+
+function deleteContentTab(tabName) {
+  // only called on startup
+  const tab = $('#' + tabName);
+  tab.remove();
+}
+
+function activateContentTab(tabName) {
+  const tab = $('#' + tabName);
+  tab.click();
+}

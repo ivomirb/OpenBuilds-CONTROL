@@ -30,30 +30,21 @@ body {
 
 #macros {
   /* Note only uses height attribs from here, before we connect to websocket. After that, it gets set by websocket.js */
-  height: calc(100vh - 495px);
   width: 100%;
   border-top: 1px solid #ccc;
-  /* margin-top: 5px; */
   box-shadow: 0 0 2px 2px #ddd;
-  /* background-color: #fff; */
 }
 
 #renderArea {
-  /* Note only uses height attribs from here, before we connect to websocket. After that, it gets set by websocket.js */
-  height: calc(100vh - 495px);
   width: 100%;
   border-top: 1px solid #ccc;
-  /* margin-top: 5px; */
   box-shadow: 0 0 2px 2px #ddd;
-  /* background-color: #fff; */
 }
 
 #editor {
-  /* Note only uses height attribs from here, before we connect to websocket. After that, it gets set by websocket.js */
-  height: calc(100vh - 535px);
+  flex-grow: 1;
   width: 100%;
   border-top: 1px solid #ccc;
-  /* margin-top: 5px; */
   box-shadow: 0 0 2px 2px #ddd;
 }
 
@@ -72,14 +63,13 @@ body {
 }
 
 #console {
-  /*font-family: "Courier New", Courier, monospace;*/
   font-family: "Lucida Console", Monaco, monospace;
-  height: calc(100vh - 537px);
+  flex-grow: 1;
   width: 100%;
   overflow-y: auto;
   overflow-x: none;
   text-align: left;
-  /* background-color: #fff; */
+  border-top: 1px solid #ccc;
   box-shadow: 0 0 2px 2px #ddd;
   padding: 0px;
   font-size: 12px;
@@ -341,4 +331,8 @@ select {
 
 .ribbon-dropdown a {
   padding-right: 12px;
+}
+
+#simControls, #simText {
+  background-color: #f5f6f7;
 }

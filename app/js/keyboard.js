@@ -314,7 +314,7 @@ function bindKeys() {
       // F6 - switch to serial console and focus on Console Input
       event.preventDefault();
       $("#controlTab").click();
-      $("#consoletab").click();
+      activateContentTab("consoletab");
       $("#command").focus();
     } else if (event.which === 112) {
       // F1 - troubleshooting

@@ -61,8 +61,7 @@ function printLog(string) {
 
 function onGcodeUpload(gcode, filename) {
   if (isJogWidget) return;
-  printLogModern('', "api", "Received new G-code from API", "fg-darkGreen");
-  printLogModern('', "api", "API called window into focus", "fg-darkGreen");
+  printLogModern('', "g-code parser", "Received new G-code", "fg-darkGreen");
 
   currentGcode = gcode;
   loadedFileName = filename;
@@ -88,9 +87,9 @@ The editor is currently disabled. You can click the Clear button to clear the cu
   parseGcodeInWebWorker(gcode);
   $('#controlTab').click()
   if (webgl) {
-    $('#gcodeviewertab').click();
+    activateContentTab('gcodeviewertab');
   } else {
-    $('#gcodeeditortab').click();
+    activateContentTab('gcodeeditortab');
   }
 }
 
@@ -486,13 +485,19 @@ function onStatus(status) {
     }
   }
 
+  let html;
   if (unit == "in") {
-    $("#realFeed").html((status.machine.overrides.realFeed / 25.4).toFixed(0) + "<br>in/min");
+    html = (status.machine.overrides.realFeed / 25.4).toFixed(0) + "<br>in/min";
   } else {
-    $("#realFeed").html(status.machine.overrides.realFeed.toFixed(0) + "<br>mm/min");
+    html = status.machine.overrides.realFeed.toFixed(0) + "<br>mm/min";
   }
-  $("#realSpeed").html( status.machine.overrides.realSpindle.toFixed(0) + "<br>rpm");
-
+  if ($("#realFeed").html() != html) {
+    $("#realFeed").html(html);
+  }
+  html = status.machine.overrides.realSpindle.toFixed(0) + "<br>rpm";
+  if ($("#realSpeed").html() != html) {
+    $("#realSpeed").html(html);
+  }
 
   // Windows Power Management
   if (status.driver.operatingsystem == "windows") {
@@ -597,6 +602,7 @@ function onStatus(status) {
   // Enable or disable 4th axis UI elements
   $(".4thaxis-present").toggle(status.machine.has4thAxis);
   $(".4thaxis-active").toggle(status.machine.has4thAxis && !disable4thAxis);
+  $("#jogcell").css('max-width', (status.machine.has4thAxis && !disable4thAxis) ? "427px" : "348px");
 
   if (!isJogWidget && (!laststatus || laststatus.misc.trayIcon != status.misc.trayIcon) &&
       (status.driver.platform == 'win32' || status.driver.platform == 'linux')) {
@@ -827,7 +833,7 @@ function scanNetwork() {
         const range = network + ".1-" + network + ".254"
         socket.emit('scannetwork', range)
         $('#controlTab').click();
-        $('#consoletab').click();
+        activateContentTab('consoletab');
       }
     }, {
       caption: "Cancel",
@@ -839,7 +845,7 @@ function scanNetwork() {
 }
 
 function selectPort(port) {
-  $('#consoletab').click();
+  activateContentTab('consoletab');
   if (port == undefined) {
     port = $("#portUSB").val()
   }
@@ -872,7 +878,7 @@ function closePort() {
   socket.emit('closePort', 1);
   populatePortsMenu();
   $('#controlTab').click();
-  $('#consoletab').click();
+  activateContentTab('consoletab');
 }
 
 function populatePortsMenu() {

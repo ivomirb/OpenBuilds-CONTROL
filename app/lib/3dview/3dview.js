@@ -135,7 +135,7 @@ function parseGcodeInWebWorker(gcode) {
 
           setTimeout(function() {
             if (webgl) {
-              $('#gcodeviewertab').click();
+              activateContentTab('gcodeviewertab');
             }
             clearSceneFlag = true;
             resetView(object);
@@ -144,7 +144,7 @@ function parseGcodeInWebWorker(gcode) {
             if (!isNaN(timeremain)) {
               // output formattedTime to UI here
               $('#timeRemaining').html(timeConvert(timeremain) + " / " + timeConvert(timeremain));
-              printLog("<span class='fg-red'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
+              printLog("<span class='fg-darkRed'>[ g-code parser ]</span><span class='fg-darkGreen'> G-code Preview Rendered Succesfully: Estimated G-code Run Time: <b>" + timeConvert(timeremain) + "</b>")
             } else {
               $('#timeRemaining').html("");
             }
@@ -153,7 +153,7 @@ function parseGcodeInWebWorker(gcode) {
           $('#3dviewlabel').html(' 3D View');
         } else {
           // Didn't get an Object
-          $('#consoletab').click();
+          activateContentTab('consoletab');
           $('#timeRemaining').html("");
           $('#3dviewicon').removeClass('fa-pulse');
           $('#3dviewlabel').html(' 3D View');
@@ -185,7 +185,7 @@ function simSpeed(speed) {
 }
 
 function runSimFrom(startindex) {
-  $('#gcodeviewertab').click()
+  activateContentTab('gcodeviewertab');
   if (startindex > 1) {
     for (let i = 0; i < object.userData.pointCount; i++) {
       if (object.userData.srcArray[i] >= startindex-1) {

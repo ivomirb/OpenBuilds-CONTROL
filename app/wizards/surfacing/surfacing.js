@@ -345,5 +345,5 @@ G1 F` +
   editor.session.setValue(gcode);
   parseGcodeInWebWorker(gcode);
   loadedFileName = "Surfacing Job";
-  printLog("<span class='fg-red'>[ Surfacing / Flattening Wizard ] </span><span class='fg-green'>G-code Loaded</span>");
+  printLog("<span class='fg-darkRed'>[ Surfacing / Flattening Wizard ] </span><span class='fg-green'>G-code Loaded</span>");
 }

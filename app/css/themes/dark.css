@@ -519,3 +519,7 @@ body.theme_dark, .theme_dark div.window, .theme_dark .card {
 .theme_dark .dark_theme_only {
   display: block !important;
 }
+
+.theme_dark #simControls, .theme_dark #simText {
+  background-color: #333;
+}
