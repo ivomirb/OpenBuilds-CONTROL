@@ -975,31 +975,31 @@ Restore previous origins from history.">
             <div id="controlLogs" class="mt-0">
 
               <nav data-role="ribbonmenu" style="height: calc(100vh - 465px); display:flex; flex-direction:column;">
-<div style="display:flex">
-                <ul class="tabs-holder">
-                  <li><a href="#tab-three" id="gcodeviewertab"><i class="mif-3d-rotation fa-fw fg-blue" id="3dviewicon"></i><span id="3dviewlabel"> 3D View</span></a></li>
-                  <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
-                  <li><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
-                  <li><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
-                </ul>
-              <div style="margin-left:auto;">
-                <button id="sidePanelBtn" class="button small dropdown2-toggle" style="position:absolute; right:0px; bottom:0px;">Side Panel <i class="fas fa-angle-double-right"></i></button>
-                <ul class="ribbon-dropdown" id="sidePanelMenu" data-role="dropdown" data-duration="100" style="left:auto; right:1px; width:max-content;">
-                  <style>
-                    #sidePanelMenu > li > a {
-                      white-space: nowrap;
-                      padding-right: 12px !important;
-text-align:left;
-                    }
-                  </style>
-                  <li id="sidePanel-" class="checked" onclick="sidePanelTab('')"><a href="#">Hide</a></li>
-                  <li id="sidePanel-gcodeviewertab" onclick="sidePanelTab('gcodeviewertab')"><a href="#"><i class="mif-3d-rotation fa-fw fg-blue"></i> 3D View</a></li>
-                  <li id="sidePanel-consoletab" onclick="sidePanelTab('consoletab')"><a href="#"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
-                  <li id="sidePanel-macrostab" onclick="sidePanelTab('macrostab')"><a href="#"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
-                  <li id="sidePanel-gcodeeditortab" onclick="sidePanelTab('gcodeeditortab')"><a href="#"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
-                </ul>
-              </div>
-</div>
+                <div style="display:flex">
+                  <ul class="tabs-holder">
+                    <li><a href="#tab-three" id="gcodeviewertab"><i class="mif-3d-rotation fa-fw fg-blue" id="3dviewicon"></i><span id="3dviewlabel"> 3D View</span></a></li>
+                    <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
+                    <li><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
+                    <li><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
+                  </ul>
+                  <div style="margin-left:auto;">
+                    <button id="sidePanelBtn" class="button small dropdown2-toggle" style="position:absolute; right:0px; bottom:0px;">Side Panel <i class="fas fa-angle-double-right"></i></button>
+                    <ul class="ribbon-dropdown" id="sidePanelMenu" data-role="dropdown" data-duration="100" style="left:auto; right:1px; width:max-content;">
+                      <style>
+                        #sidePanelMenu > li > a {
+                          white-space: nowrap;
+                          padding-right: 12px !important;
+                          text-align:left;
+                        }
+                      </style>
+                      <li id="sidePanel-" class="checked" onclick="sidePanelTab('')"><a href="#">Hide</a></li>
+                      <li id="sidePanel-gcodeviewertab" onclick="sidePanelTab('gcodeviewertab')"><a href="#"><i class="mif-3d-rotation fa-fw fg-blue"></i> 3D View</a></li>
+                      <li id="sidePanel-consoletab" onclick="sidePanelTab('consoletab')"><a href="#"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Console</a></li>
+                      <li id="sidePanel-macrostab" onclick="sidePanelTab('macrostab')"><a href="#"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
+                      <li id="sidePanel-gcodeeditortab" onclick="sidePanelTab('gcodeeditortab')"><a href="#"><i class="far fa-fw fa-edit fg-darkLime"></i> G-code Editor</a></li>
+                    </ul>
+                  </div>
+                </div>
                 <div class="content-holder" id="mainTabHolder" style="flex-grow:1; min-height:0;">
                   <div class="section" id="tab-one" style="height:100%; flex-direction:column;">
                     <div id="console"></div>
@@ -1177,7 +1177,6 @@ text-align:left;
                       </div>
                     </div>
                   </div>
-
                 </div>
               </nav>
             </div>
@@ -1185,7 +1184,6 @@ text-align:left;
           </center>
           <div id="sidePanel" style="height:calc(100vh - 224px);"></div>
         </div>
-
         <div id="grblPanel" style="display: none;">
           <div id="grblconfig"></div>
         </div>

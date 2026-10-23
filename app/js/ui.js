@@ -349,17 +349,17 @@ function clearWcsHistory() {
 }
 
 function deleteContentTab(tabName) {
-	// only called on startup
+  // only called on startup
   const tab = $('#' + tabName);
-	tab.remove();
+  tab.remove();
   $('#sidePanel-' + tabName).remove();
 }
 
 function activateContentTab(tabName) {
   if (tabName != currentTabName) {
     const tab = $('#' + tabName);
-	  tab.click();
-	}
+    tab.click();
+  }
 }
 
 function sidePanelTabInternal(tabName) {
@@ -424,23 +424,23 @@ function uiDocReady() {
   if (localStorage.getItem("sidePanelTab") == null) { // on first run show the viewer
     localStorage.setItem("sidePanelTab", "gcodeviewertab");
   }
-	const tabName = localStorage.getItem("sidePanelTab");
-	if (tabName && $('#' + tabName).length == 0) { // tab doesn't exist
+  const tabName = localStorage.getItem("sidePanelTab");
+  if (tabName && $('#' + tabName).length == 0) { // tab doesn't exist
     localStorage.setItem("sidePanelTab", "");
-	}
+  }
 
-	if (localStorage.getItem("sidePanelSize")) {
-		let panelSize = JSON.parse(localStorage.getItem("sidePanelSize"));
-		if (Array.isArray(panelSize) && typeof panelSize[0] == 'string' && typeof panelSize[1] == 'string') {
-			$('#jogcontrols').parent().css('flex-basis', panelSize[0]);
-			$('#sidePanel').css('flex-basis', panelSize[1]);
-		}
-	}
+  if (localStorage.getItem("sidePanelSize")) {
+    let panelSize = JSON.parse(localStorage.getItem("sidePanelSize"));
+    if (Array.isArray(panelSize) && typeof panelSize[0] == 'string' && typeof panelSize[1] == 'string') {
+      $('#jogcontrols').parent().css('flex-basis', panelSize[0]);
+      $('#sidePanel').css('flex-basis', panelSize[1]);
+    }
+  }
 
   const observer = new ResizeObserver(() => {
-		const panelSize = [$('#jogcontrols').parent().css('flex-basis'), $('#sidePanel').css('flex-basis')];
-		localStorage.setItem("sidePanelSize", JSON.stringify(panelSize));
-	});
+    const panelSize = [$('#jogcontrols').parent().css('flex-basis'), $('#sidePanel').css('flex-basis')];
+    localStorage.setItem("sidePanelSize", JSON.stringify(panelSize));
+  });
   observer.observe(document.getElementById("sidePanel"));
   onWindowResize();
 }
