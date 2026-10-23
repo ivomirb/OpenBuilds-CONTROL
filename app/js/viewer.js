@@ -497,8 +497,8 @@ function viewExtents(objecttosee, force) {
     previousMaxLen = maxlen;
     previousCenter = {x:centerx, y:centery, z:centerz};
 
-    // place the camera above the center, at twice the maxlen, looking straight down
-    camera.position.set(centerx, centery, centerz + 2 * maxlen);
+    // place the camera at an angle looking at the target
+    camera.position.set(centerx - maxlen*0.33, centery - maxlen*1.33, centerz + maxlen*0.75);
     camera.fov = 30; // degrees
     camera.lookAt(target);
     camera.rotation.set(0, 0, 0);
