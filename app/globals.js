@@ -19,6 +19,7 @@ const usedFunctions = {
   gotoHistory,
   updateSettingsState,
   showAppSettings,
+  resetWarnings,
   onMacroShortcutInputClick,
   onMacroShortcutInputChange,
   createMacro,
