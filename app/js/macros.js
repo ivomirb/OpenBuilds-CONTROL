@@ -225,12 +225,12 @@ function editMacro(buttonIdx, fileName, script) {
           <div class="cell-sm-9">
             <div id="macroGcodeEditField">
               <span class="text-small">Enter G-code to execute</span>
-              <textarea  wrap="off" id="macrogcode" type="text" value="` + gcode + `" style="overflow-y: auto; height: calc(100vh - 540px); resize: none;" rows="4"  data-editable="true"></textarea>
+              <textarea  wrap="off" id="macrogcode" type="text" value="` + gcode + `" style="overflow-y: auto; height: calc(100vh - 560px); resize: none;" rows="4"  data-editable="true"></textarea>
             </div>
             <div id="macroJavascriptEditField" style="display:none;" >
               <span class="text-small">Enter Javascript to execute</span><br>
               <span class="text-small">Tip: Prototype your code using (Ctrl+Shift+i > Console)</span>
-              <textarea  wrap="off" id="macrojs" type="text" value="" style="overflow-y: auto; height: calc(100vh - 600px); resize: none; tab-size: 2;" rows="4"  data-editable="true"></textarea>
+              <textarea  wrap="off" id="macrojs" type="text" value="" style="overflow-y: auto; height: calc(100vh - 620px); resize: none; tab-size: 2;" rows="4"  data-editable="true"></textarea>
               <input type="checkbox" data-role="checkbox" data-caption="Run Macro on startup (use with caution, no serial comms)" data-caption-position="left" data-style="2" id="jsRunOnStartup" ` + jsrunonstartup + `>
             </div>
           </div>
@@ -290,7 +290,7 @@ function editMacro(buttonIdx, fileName, script) {
     if (newVal != "") {
       const alreadyAssigned = newVal != macrokeyboardshortcut && newVal.length > 0 && keyInUse(newVal, true).inUse;
       if (alreadyAssigned) {
-        $('#alreadyAssignedWarnMacro').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal, true).source);
+        $('#alreadyAssignedWarnMacro').html("\"" + newVal + "\" is already assigned to " + keyInUse(newVal, true).source + "<br>");
         $('#alreadyAssignedWarnMacro').show();
         $('#macrokeyboardshortcut').removeClass("primary").addClass("alert");
       } else {
